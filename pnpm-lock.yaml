@@ -75,6 +75,9 @@ importers:
       '@fastify/cors':
         specifier: ^11.2.0
         version: 11.2.0
+      '@prism/adapter-claude-code':
+        specifier: workspace:*
+        version: link:../adapters/adapter-claude-code
       '@prism/adapter-codebuddy':
         specifier: workspace:*
         version: link:../adapters/adapter-codebuddy

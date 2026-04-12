@@ -17,7 +17,8 @@
       "@prism/server": ["packages/server/src/index.ts"],
       "@prism/server/*": ["packages/server/src/*"],
       "@prism/adapter-openclaw": ["packages/adapters/adapter-openclaw/src/index.ts"],
-      "@prism/adapter-codebuddy": ["packages/adapters/adapter-codebuddy/src/index.ts"]
+      "@prism/adapter-codebuddy": ["packages/adapters/adapter-codebuddy/src/index.ts"],
+      "@prism/adapter-claude-code": ["packages/adapters/adapter-claude-code/src/index.ts"]
     }
   }
 }

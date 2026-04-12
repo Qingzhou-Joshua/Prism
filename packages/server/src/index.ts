@@ -1,32 +1,28 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { scanPlatforms } from '@prism/core'
+import { createAdapterRegistry } from '@prism/core'
 import { openclawAdapter } from '@prism/adapter-openclaw'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
+import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 
 const app = Fastify({ logger: true })
 
-const start = async () => {
-  try {
-    await app.register(cors, {
-      origin: true
-    })
+const registry = createAdapterRegistry([
+  openclawAdapter,
+  codebuddyAdapter,
+  claudeCodeAdapter,
+])
 
-    app.get('/health', async () => {
-      return { ok: true, service: 'prism-server' }
-    })
+await app.register(cors, {
+  origin: ['http://localhost:5173', 'http://localhost:4173'],
+})
 
-    app.get('/platforms', async () => {
-      const items = await scanPlatforms([openclawAdapter, codebuddyAdapter])
+app.get('/health', async () => ({ status: 'ok' }))
 
-      return { items }
-    })
+app.get('/platforms', async () => {
+  const items = await registry.scanAll()
+  return { items }
+})
 
-    await app.listen({ port: 3001, host: '0.0.0.0' })
-  } catch (error) {
-    app.log.error(error)
-    process.exit(1)
-  }
-}
-
-start()
+const port = Number(process.env.PORT ?? 3001)
+await app.listen({ port, host: '0.0.0.0' })

@@ -10,3 +10,6 @@ export interface PlatformAdapter {
 export async function scanPlatforms(adapters: PlatformAdapter[]) {
   return Promise.all(adapters.map((adapter) => adapter.scan()))
 }
+
+export { createAdapterRegistry } from './registry.js'
+export type { AdapterRegistry } from './registry.js'

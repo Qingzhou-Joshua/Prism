@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "@prism/adapter-claude-code": "workspace:*",
     "@prism/adapter-codebuddy": "workspace:*",
     "@prism/adapter-openclaw": "workspace:*",
     "@prism/core": "workspace:*",
