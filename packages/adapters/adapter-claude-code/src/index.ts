@@ -3,6 +3,7 @@ import type { PlatformAdapter } from '@prism/core'
 export const claudeCodeAdapter: PlatformAdapter = {
   id: 'claude-code',
   displayName: 'Claude Code',
+  capabilities: { rules: true, profiles: true },
   async scan() {
     return {
       id: 'claude-code',

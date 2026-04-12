@@ -5,6 +5,7 @@ import type { PlatformAdapter } from '@prism/core'
 export const codebuddyAdapter: PlatformAdapter = {
   id: 'codebuddy',
   displayName: 'CodeBuddy',
+  capabilities: { rules: true, profiles: true },
   async scan() {
     const home = process.env.HOME
 

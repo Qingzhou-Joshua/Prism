@@ -32,7 +32,7 @@ describe('openclawAdapter', () => {
   })
 
   it('returns detected: false when ~/.openclaw does not exist', async () => {
-    vi.mocked(access).mockRejectedValue(new Error('ENOENT'))
+    vi.mocked(access).mockRejectedValueOnce(new Error('ENOENT'))
 
     const result = await openclawAdapter.scan()
     expect(result.detected).toBe(false)
@@ -62,8 +62,9 @@ describe('openclawAdapter', () => {
     expect(result.message).toContain('rules')
   })
 
-  it('has correct adapter id and displayName', () => {
+  it('has correct adapter id, displayName, and capabilities', () => {
     expect(openclawAdapter.id).toBe('openclaw')
     expect(openclawAdapter.displayName).toBe('OpenClaw')
+    expect(openclawAdapter.capabilities).toEqual({ rules: true, profiles: true })
   })
 })
