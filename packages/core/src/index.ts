@@ -1,11 +1,6 @@
-import type { PlatformCapabilities, PlatformId, PlatformScanResult } from '@prism/shared'
+import type { PlatformAdapter } from './types.js'
 
-export interface PlatformAdapter {
-  id: PlatformId
-  displayName: string
-  capabilities: PlatformCapabilities
-  scan: () => Promise<PlatformScanResult>
-}
+export type { PlatformAdapter } from './types.js'
 
 export async function scanPlatforms(adapters: PlatformAdapter[]) {
   return Promise.all(adapters.map((adapter) => adapter.scan()))

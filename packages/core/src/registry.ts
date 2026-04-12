@@ -1,4 +1,4 @@
-import type { PlatformAdapter } from './index.js'
+import type { PlatformAdapter } from './types.js'
 import type { PlatformId, PlatformScanResult } from '@prism/shared'
 
 export interface AdapterRegistry {

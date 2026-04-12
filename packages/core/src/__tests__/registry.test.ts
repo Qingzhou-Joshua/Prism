@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createAdapterRegistry } from '../registry.js'
 import type { PlatformAdapter } from '../index.js'
+import type { PlatformId } from '@prism/shared'
 
 function makeAdapter(id: string): PlatformAdapter {
   return {
-    id: id as any,
+    id: id as PlatformId,
     displayName: id,
     capabilities: { rules: false, profiles: false },
     scan: vi.fn().mockResolvedValue({
@@ -28,12 +29,12 @@ describe('createAdapterRegistry', () => {
   it('returns adapter by id via get()', () => {
     const a = makeAdapter('openclaw')
     const registry = createAdapterRegistry([a])
-    expect(registry.get('openclaw' as any)).toBe(a)
+    expect(registry.get('openclaw' as PlatformId)).toBe(a)
   })
 
   it('returns undefined for unknown id', () => {
     const registry = createAdapterRegistry([])
-    expect(registry.get('cursor' as any)).toBeUndefined()
+    expect(registry.get('cursor' as PlatformId)).toBeUndefined()
   })
 
   it('scanAll() calls scan on all adapters and returns results', async () => {
