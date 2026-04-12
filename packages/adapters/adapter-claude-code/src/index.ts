@@ -10,9 +10,7 @@ const BASE_RESULT = {
 } satisfies Pick<PlatformScanResult, 'id' | 'displayName' | 'capabilities'>
 
 export const claudeCodeAdapter: PlatformAdapter = {
-  id: 'claude-code',
-  displayName: 'Claude Code',
-  capabilities: { rules: true, profiles: true },
+  ...BASE_RESULT,
   async scan() {
     const home = process.env.HOME
 

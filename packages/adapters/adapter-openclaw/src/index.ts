@@ -10,9 +10,7 @@ const BASE_RESULT = {
 } satisfies Pick<PlatformScanResult, 'id' | 'displayName' | 'capabilities'>
 
 export const openclawAdapter: PlatformAdapter = {
-  id: 'openclaw',
-  displayName: 'OpenClaw',
-  capabilities: { rules: true, profiles: true },
+  ...BASE_RESULT,
   async scan() {
     const home = process.env.HOME
 
