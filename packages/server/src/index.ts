@@ -4,6 +4,7 @@ import { createAdapterRegistry } from '@prism/core'
 import { openclawAdapter } from '@prism/adapter-openclaw'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
+import { registerScanRoutes } from './routes/scan.js'
 
 const app = Fastify({ logger: true })
 
@@ -23,6 +24,8 @@ app.get('/platforms', async () => {
   const items = await registry.scanAll()
   return { items }
 })
+
+await registerScanRoutes(app, registry)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
