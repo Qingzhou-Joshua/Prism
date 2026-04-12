@@ -45,14 +45,15 @@ describe('scanPlatforms', () => {
   })
 
   it('runs adapter scans in parallel', async () => {
-    const callOrder: number[] = []
+    // 追踪 resolve 完成顺序（而非 start 顺序）
+    const resolveOrder: string[] = []
 
     const slowAdapter: PlatformAdapter = {
       id: 'openclaw',
       displayName: 'OpenClaw',
       scan: vi.fn().mockImplementation(async () => {
-        callOrder.push(1)
         await new Promise((resolve) => setTimeout(resolve, 50))
+        resolveOrder.push('slow')
         return {
           id: 'openclaw',
           displayName: 'OpenClaw',
@@ -66,7 +67,7 @@ describe('scanPlatforms', () => {
       id: 'codebuddy',
       displayName: 'CodeBuddy',
       scan: vi.fn().mockImplementation(async () => {
-        callOrder.push(2)
+        resolveOrder.push('fast')
         return {
           id: 'codebuddy',
           displayName: 'CodeBuddy',
@@ -80,10 +81,10 @@ describe('scanPlatforms', () => {
     await scanPlatforms([slowAdapter, fastAdapter])
     const elapsed = Date.now() - startTime
 
-    // 并行执行时 elapsed 应该约 50ms，而非 100ms+
-    expect(elapsed).toBeLessThan(90)
-    // 两个 adapter 都被调用了
-    expect(callOrder).toContain(1)
-    expect(callOrder).toContain(2)
+    // 并行时 fastAdapter 先 resolve，slowAdapter 后 resolve
+    expect(resolveOrder).toEqual(['fast', 'slow'])
+    // 并行执行总耗时应远小于顺序执行（50ms + 0ms = 50ms，而非 50ms + 0ms 顺序）
+    // 使用宽松阈值（150ms）保证 CI 稳定性
+    expect(elapsed).toBeLessThan(150)
   })
 })
