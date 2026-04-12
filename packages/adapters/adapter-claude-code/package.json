@@ -8,6 +8,9 @@
     "build": "tsc -p tsconfig.json",
     "lint": "echo 'adapter-claude-code lint placeholder'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo 'adapter-claude-code test placeholder'"
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.4"
   }
 }
