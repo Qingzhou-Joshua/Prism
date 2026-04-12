@@ -27,11 +27,13 @@ describe('scanPlatforms', () => {
     const adapter1: PlatformAdapter = {
       id: 'openclaw',
       displayName: 'OpenClaw',
+      capabilities: { rules: true, profiles: false },
       scan: vi.fn().mockResolvedValue(mockResult1),
     }
     const adapter2: PlatformAdapter = {
       id: 'codebuddy',
       displayName: 'CodeBuddy',
+      capabilities: { rules: false, profiles: false },
       scan: vi.fn().mockResolvedValue(mockResult2),
     }
 
@@ -51,6 +53,7 @@ describe('scanPlatforms', () => {
     const slowAdapter: PlatformAdapter = {
       id: 'openclaw',
       displayName: 'OpenClaw',
+      capabilities: { rules: true, profiles: false },
       scan: vi.fn().mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 50))
         resolveOrder.push('slow')
@@ -66,6 +69,7 @@ describe('scanPlatforms', () => {
     const fastAdapter: PlatformAdapter = {
       id: 'codebuddy',
       displayName: 'CodeBuddy',
+      capabilities: { rules: false, profiles: false },
       scan: vi.fn().mockImplementation(async () => {
         resolveOrder.push('fast')
         return {
