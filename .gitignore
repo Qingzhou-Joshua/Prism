@@ -1,0 +1,13 @@
+node_modules
+.pnpm-store
+.turbo
+.dist
+coverage
+.env
+.env.*
+dist
+.DS_Store
+*.log
+apps/web/dist
+packages/*/dist
+docs/

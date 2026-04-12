@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@prism/shared": ["packages/shared/src/index.ts"],
+      "@prism/shared/*": ["packages/shared/src/*"],
+      "@prism/core": ["packages/core/src/index.ts"],
+      "@prism/core/*": ["packages/core/src/*"],
+      "@prism/server": ["packages/server/src/index.ts"],
+      "@prism/server/*": ["packages/server/src/*"],
+      "@prism/adapter-openclaw": ["packages/adapters/adapter-openclaw/src/index.ts"],
+      "@prism/adapter-codebuddy": ["packages/adapters/adapter-codebuddy/src/index.ts"]
+    }
+  }
+}

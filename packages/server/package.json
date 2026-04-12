@@ -1,0 +1,25 @@
+{
+  "name": "@prism/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "echo 'server lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo 'server test placeholder'"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@prism/adapter-codebuddy": "workspace:*",
+    "@prism/adapter-openclaw": "workspace:*",
+    "@prism/core": "workspace:*",
+    "fastify": "^5.2.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}
