@@ -15,4 +15,6 @@ export interface PlatformScanResult {
   configPath?: string
   message?: string
   capabilities: PlatformCapabilities
+  rulesDetected?: boolean       // whether rules/ subdir was found
+  configFilesFound?: string[]   // detected config files list
 }

@@ -16,8 +16,8 @@ export const openclawAdapter: PlatformAdapter = {
         message: 'HOME environment variable is not available',
         capabilities: {
           rules: true,
-          profiles: true
-        }
+          profiles: true,
+        },
       }
     }
 
@@ -25,30 +25,41 @@ export const openclawAdapter: PlatformAdapter = {
 
     try {
       await access(configPath)
-
-      return {
-        id: 'openclaw',
-        displayName: 'OpenClaw',
-        detected: true,
-        configPath,
-        message: 'OpenClaw config directory detected',
-        capabilities: {
-          rules: true,
-          profiles: true
-        }
-      }
     } catch {
       return {
         id: 'openclaw',
         displayName: 'OpenClaw',
         detected: false,
-        configPath,
-        message: 'OpenClaw config directory not found',
         capabilities: {
           rules: true,
-          profiles: true
-        }
+          profiles: true,
+        },
       }
     }
-  }
+
+    // Config dir exists — check for rules/ subdir
+    const rulesPath = path.join(configPath, 'rules')
+    let rulesDetected = false
+    try {
+      await access(rulesPath)
+      rulesDetected = true
+    } catch {
+      // rules/ not found, that's ok
+    }
+
+    return {
+      id: 'openclaw',
+      displayName: 'OpenClaw',
+      detected: true,
+      configPath,
+      message: rulesDetected
+        ? `OpenClaw detected at ${configPath} (rules directory found)`
+        : `OpenClaw detected at ${configPath}`,
+      rulesDetected,
+      capabilities: {
+        rules: true,
+        profiles: true,
+      },
+    }
+  },
 }
