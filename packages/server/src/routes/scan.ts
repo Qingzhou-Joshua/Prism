@@ -6,24 +6,35 @@ interface ScanBody {
   platformId?: PlatformId
 }
 
-export async function registerScanRoutes(
+export function registerScanRoutes(
   app: FastifyInstance,
   registry: AdapterRegistry
 ) {
   // POST /scan — 重新扫描全部或单个平台
-  app.post<{ Body: ScanBody }>('/scan', async (request) => {
+  app.post<{ Body: ScanBody }>('/scan', async (request, reply) => {
     const { platformId } = request.body ?? {}
 
     if (platformId) {
       const adapter = registry.get(platformId)
       if (!adapter) {
+        reply.code(404)
         return { error: `Unknown platform: ${platformId}` }
       }
-      const result = await adapter.scan()
-      return { items: [result], scannedAt: new Date().toISOString() }
+      try {
+        const result = await adapter.scan()
+        return { items: [result], scannedAt: new Date().toISOString() }
+      } catch (err) {
+        reply.code(500)
+        return { error: 'Scan failed', detail: err instanceof Error ? err.message : String(err) }
+      }
     }
 
-    const items = await registry.scanAll()
-    return { items, scannedAt: new Date().toISOString() }
+    try {
+      const items = await registry.scanAll()
+      return { items, scannedAt: new Date().toISOString() }
+    } catch (err) {
+      reply.code(500)
+      return { error: 'Scan failed', detail: err instanceof Error ? err.message : String(err) }
+    }
   })
 }
