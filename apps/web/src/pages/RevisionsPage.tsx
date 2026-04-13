@@ -113,11 +113,11 @@ export function RevisionsPage() {
                     <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>回滚中...</span>
                   )}
                   {result && result.ok && (
-                    <span style={{ fontSize: '0.875rem', color: '#16a34a' }}>已回滚</span>
+                    <span style={{ fontSize: '0.875rem', color: '#16a34a' }}>✅ 已回滚</span>
                   )}
                   {result && !result.ok && (
                     <span style={{ fontSize: '0.875rem', color: '#dc2626' }}>
-                      回滚失败
+                      ❌ 回滚失败: {(result as { ok: false; error: string }).error}
                     </span>
                   )}
                 </div>
