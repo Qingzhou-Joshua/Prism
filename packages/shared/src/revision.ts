@@ -3,7 +3,7 @@ import type { PlatformId } from './platform.js'
 export interface PublishedFile {
   platformId: PlatformId
   filePath: string        // absolute path written to
-  backupPath: string      // absolute path of backup (~/.prism/backups/{revisionId}/{platformId}/{filename})
+  backupPath?: string     // defined when isNew=false; path of backup copy
   isNew: boolean          // true = file did not exist before publish; rollback deletes it
   ruleId: string
   ruleName: string
