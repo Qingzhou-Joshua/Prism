@@ -7,7 +7,10 @@ export async function registerRevisionRoutes(
 ): Promise<void> {
   // GET /revisions
   app.get('/revisions', async () => {
-    const items = await revisionStore.listAll()
+    const raw = await revisionStore.listAll()
+    const items = [...raw].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    )
     return { items }
   })
 
