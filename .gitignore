@@ -11,3 +11,4 @@ dist
 apps/web/dist
 packages/*/dist
 docs/
+.worktrees/
