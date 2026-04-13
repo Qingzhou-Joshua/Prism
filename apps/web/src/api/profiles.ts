@@ -1,4 +1,4 @@
-import type { Profile, CreateProfileDto, UpdateProfileDto, PublishPreview } from '@prism/shared'
+import type { Profile, CreateProfileDto, UpdateProfileDto, PublishPreview, Revision } from '@prism/shared'
 import { request } from './client.js'
 
 export const profilesApi = {
@@ -20,5 +20,10 @@ export const profilesApi = {
   },
   preview(id: string): Promise<PublishPreview> {
     return request<PublishPreview>(`/profiles/${id}/preview`).then((r) => r!)
+  },
+  async publish(id: string): Promise<{ revision: Revision }> {
+    const r = await request<{ revision: Revision }>(`/profiles/${id}/publish`, { method: 'POST' })
+    if (!r) throw new Error('No response from publish endpoint')
+    return r
   },
 }

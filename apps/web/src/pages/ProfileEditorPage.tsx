@@ -28,6 +28,13 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set())
+  const [confirming, setConfirming] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [publishResult, setPublishResult] = useState<
+    | { ok: true; revisionId: string; fileCount: number }
+    | { ok: false; error: string }
+    | null
+  >(null)
 
   const loadRules = useCallback(async () => {
     try {
@@ -108,6 +115,28 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
       setPreviewError(e instanceof Error ? e.message : 'Preview failed')
     } finally {
       setPreviewLoading(false)
+    }
+  }
+
+  const handleConfirmPublish = async () => {
+    if (!profile) return
+    setConfirming(false)
+    setPublishing(true)
+    setPublishResult(null)
+    try {
+      const { revision } = await profilesApi.publish(profile.id)
+      setPublishResult({
+        ok: true,
+        revisionId: revision.id,
+        fileCount: revision.files.length,
+      })
+    } catch (err) {
+      setPublishResult({
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    } finally {
+      setPublishing(false)
     }
   }
 
@@ -240,10 +269,87 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
             >
               {previewLoading ? 'Loading…' : 'Preview Publish'}
             </button>
+            {preview !== null && (
+              <button
+                onClick={() => { setConfirming(true); setPublishResult(null) }}
+                disabled={publishing}
+                style={{ padding: '6px 14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: publishing ? 'not-allowed' : 'pointer', opacity: publishing ? 0.7 : 1 }}
+              >
+                发布
+              </button>
+            )}
           </div>
 
           {previewError && (
             <div style={{ color: '#dc2626', fontSize: '14px', marginBottom: '8px' }}>{previewError}</div>
+          )}
+
+          {/* Confirming dialog */}
+          {confirming && preview !== null && (() => {
+            const totalFiles = preview.files.length
+            const overwriteCount = preview.files.filter((f) => f.fileExists).length
+            const newCount = totalFiles - overwriteCount
+            const platformNames = preview.targetPlatforms.join(', ')
+            let breakdownText: string
+            if (overwriteCount > 0 && newCount > 0) {
+              breakdownText = `（${overwriteCount} 个覆盖，${newCount} 个新建）`
+            } else if (newCount === totalFiles) {
+              breakdownText = '（全部新建）'
+            } else {
+              breakdownText = '（全部覆盖）'
+            }
+            return (
+              <div style={{ marginBottom: '16px', padding: '16px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '6px' }}>
+                <div style={{ marginBottom: '4px', fontWeight: 500 }}>
+                  即将写入 {totalFiles} 个文件到 {platformNames}
+                </div>
+                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
+                  {breakdownText}
+                </div>
+                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
+                  此操作会自动备份现有文件
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => void handleConfirmPublish()}
+                    style={{ padding: '6px 14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    确认发布
+                  </button>
+                  <button
+                    onClick={() => setConfirming(false)}
+                    style={{ padding: '6px 14px', background: 'none', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Publishing indicator */}
+          {publishing && (
+            <div style={{ marginBottom: '16px', fontSize: '14px', color: '#6b7280' }}>
+              发布中…
+            </div>
+          )}
+
+          {/* Publish result */}
+          {publishResult !== null && (
+            <div style={{
+              marginBottom: '16px',
+              padding: '12px 16px',
+              background: publishResult.ok ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${publishResult.ok ? '#86efac' : '#fca5a5'}`,
+              borderRadius: '6px',
+              fontSize: '14px',
+              color: publishResult.ok ? '#166534' : '#991b1b',
+            }}>
+              {publishResult.ok
+                ? `✅ 发布成功 — 已写入 ${publishResult.fileCount} 个文件 (revision: ${publishResult.revisionId})`
+                : `❌ 发布失败: ${publishResult.error}`
+              }
+            </div>
           )}
 
           {preview && (
