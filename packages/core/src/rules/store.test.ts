@@ -80,4 +80,14 @@ describe('FileRuleStore', () => {
     const result = await store.delete('unknown-id')
     expect(result).toBe(false)
   })
+
+  it('persists rules across store instances', async () => {
+    const filePath = join(tmpDir, 'rules.json')
+    const store1 = new FileRuleStore(filePath)
+    const rule = await store1.create({ name: 'Persistent', content: 'x', scope: 'global' })
+
+    const store2 = new FileRuleStore(filePath)
+    const found = await store2.get(rule.id)
+    expect(found).toEqual(rule)
+  })
 })
