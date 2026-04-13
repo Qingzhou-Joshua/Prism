@@ -26,7 +26,7 @@ export interface ImportedRule {
 }
 
 export interface ImportableRule {
-  name: string      // 从文件名推导（去掉 .md 后缀，连字符转空格）
-  content: string   // 文件完整内容
-  fileName: string  // 原始文件名，用于展示
+  name: string      // derived from fileName: strip .md suffix, hyphens → spaces
+  content: string   // full file content
+  fileName: string  // original file name for display
 }
