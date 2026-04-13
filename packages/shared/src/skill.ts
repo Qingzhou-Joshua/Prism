@@ -1,5 +1,11 @@
 import type { PlatformId } from './platform.js'
 
+/** A skill file imported from a platform's skills directory */
+export interface ImportedSkill {
+  fileName: string
+  content: string
+}
+
 export interface UnifiedSkill {
   id: string
   name: string
