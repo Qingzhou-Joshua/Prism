@@ -5,6 +5,7 @@ import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { ProfileEditorPage } from './pages/ProfileEditorPage'
+import { RevisionsPage } from './pages/RevisionsPage.js'
 
 // ── Navigation state ────────────────────────────────────────────────────────
 type Page =
@@ -15,6 +16,7 @@ type Page =
   | { view: 'profiles-list' }
   | { view: 'profiles-new' }
   | { view: 'profiles-edit'; profile: Profile }
+  | { view: 'revisions' }
 
 interface PlatformCapabilities {
   rules: boolean
@@ -211,6 +213,7 @@ export default function App() {
 
   const isRulesTab = page.view === 'rules-list' || page.view === 'rules-edit' || page.view === 'rules-new'
   const isProfilesTab = page.view === 'profiles-list' || page.view === 'profiles-new' || page.view === 'profiles-edit'
+  const isRevisionsTab = page.view === 'revisions'
 
   return (
     <div
@@ -258,6 +261,12 @@ export default function App() {
             onClick={() => setPage({ view: 'profiles-list' })}
           >
             Profiles
+          </button>
+          <button
+            style={tabStyle(isRevisionsTab)}
+            onClick={() => setPage({ view: 'revisions' })}
+          >
+            Revisions
           </button>
         </div>
       </div>
@@ -416,6 +425,9 @@ export default function App() {
             onCancel={() => setPage({ view: 'profiles-list' })}
           />
         )}
+
+        {/* ── Revisions tab ────────────────────────────────────────────────── */}
+        {page.view === 'revisions' && <RevisionsPage />}
 
       </div>
     </div>
