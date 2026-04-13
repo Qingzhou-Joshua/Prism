@@ -1,8 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
 import type { UnifiedRule } from '@prism/shared'
+import type { Profile } from '@prism/shared'
 import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
+import { ProfilesPage } from './pages/ProfilesPage'
+import { ProfileEditorPage } from './pages/ProfileEditorPage'
 
 // ── Navigation state ────────────────────────────────────────────────────────
 type Page =
@@ -10,6 +13,9 @@ type Page =
   | { view: 'rules-list' }
   | { view: 'rules-edit'; rule: UnifiedRule }
   | { view: 'rules-new' }
+  | { view: 'profiles-list' }
+  | { view: 'profiles-new' }
+  | { view: 'profiles-edit'; profile: Profile }
 
 interface PlatformCapabilities {
   rules: boolean
@@ -205,6 +211,7 @@ export default function App() {
   })
 
   const isRulesTab = page.view === 'rules-list' || page.view === 'rules-edit' || page.view === 'rules-new'
+  const isProfilesTab = page.view === 'profiles-list' || page.view === 'profiles-new' || page.view === 'profiles-edit'
 
   return (
     <div
@@ -246,6 +253,12 @@ export default function App() {
             onClick={() => setPage({ view: 'rules-list' })}
           >
             Rules
+          </button>
+          <button
+            style={tabStyle(isProfilesTab)}
+            onClick={() => setPage({ view: 'profiles-list' })}
+          >
+            Profiles
           </button>
         </div>
       </div>
@@ -378,6 +391,28 @@ export default function App() {
             rule={null}
             onSave={() => setPage({ view: 'rules-list' })}
             onCancel={() => setPage({ view: 'rules-list' })}
+          />
+        )}
+
+        {/* ── Profiles list tab ─────────────────────────────────────────────── */}
+        {page.view === 'profiles-list' && (
+          <ProfilesPage
+            onNew={() => setPage({ view: 'profiles-new' })}
+            onEdit={(profile) => setPage({ view: 'profiles-edit', profile })}
+          />
+        )}
+        {page.view === 'profiles-edit' && (
+          <ProfileEditorPage
+            profile={page.profile}
+            onSave={() => setPage({ view: 'profiles-list' })}
+            onCancel={() => setPage({ view: 'profiles-list' })}
+          />
+        )}
+        {page.view === 'profiles-new' && (
+          <ProfileEditorPage
+            profile={undefined}
+            onSave={() => setPage({ view: 'profiles-list' })}
+            onCancel={() => setPage({ view: 'profiles-list' })}
           />
         )}
 
