@@ -52,12 +52,14 @@ export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) 
   useEffect(() => {
     setProjections([])
     if (!initialSkill) return
+    let cancelled = false
     setProjectionsLoading(true)
     skillsApi
       .projections(initialSkill.id)
-      .then(setProjections)
-      .catch(() => setProjections([]))
-      .finally(() => setProjectionsLoading(false))
+      .then(data  => { if (!cancelled) setProjections(data) })
+      .catch(()   => { if (!cancelled) setProjections([]) })
+      .finally(() => { if (!cancelled) setProjectionsLoading(false) })
+    return () => { cancelled = true }
   }, [initialSkill?.id])
 
   // 当 skill 切换时重置 draft 和 tagsInput
