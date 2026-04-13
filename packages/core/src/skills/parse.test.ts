@@ -53,4 +53,19 @@ Content here.`
     expect(result.trigger).toBeUndefined()
     expect(result.content).toBe('Content here.')
   })
+
+  // MEDIUM 3: CRLF line endings
+  it('handles CRLF line endings', () => {
+    const raw = '---\r\ntrigger: /deploy\r\n---\r\nContent'
+    const result = parseSkillFile(raw)
+    expect(result.trigger).toBe('/deploy')
+    expect(result.content).toBe('Content')
+  })
+
+  // MEDIUM 4: arguments scalar defense
+  it('returns undefined arguments when arguments is a scalar string', () => {
+    const raw = `---\narguments: not-a-list\n---\nContent`
+    const result = parseSkillFile(raw)
+    expect(result.arguments).toBeUndefined()
+  })
 })

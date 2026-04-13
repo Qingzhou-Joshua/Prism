@@ -9,6 +9,10 @@ export interface ParsedSkill {
 const FRONT_MATTER_RE = /^---\r?\n([\s\S]*?)^---\r?\n?([\s\S]*)$/m
 
 export function parseSkillFile(raw: string): ParsedSkill {
+  // HIGH 2: only attempt front matter parsing when the file literally starts with ---
+  if (!raw.startsWith('---\n') && !raw.startsWith('---\r\n')) {
+    return { content: raw }
+  }
   const match = FRONT_MATTER_RE.exec(raw)
   if (!match) {
     return { content: raw }
@@ -22,7 +26,8 @@ export function parseSkillFile(raw: string): ParsedSkill {
     arguments: Array.isArray(meta.arguments)
       ? (meta.arguments as unknown[]).filter((a): a is string => typeof a === 'string')
       : undefined,
-    content: body,
+    // MEDIUM 1: strip leading newline that appears when content follows closing ---
+    content: body.replace(/^\n/, ''),
   }
 }
 
@@ -35,13 +40,15 @@ function parseYamlBlock(block: string): Record<string, unknown> {
   const flushList = () => {
     if (currentKey !== null && listItems.length > 0) {
       result[currentKey] = [...listItems]
-      listItems.length = 0
     }
+    // HIGH 1: always clear listItems to prevent bleed-over to the next key
+    listItems.length = 0
   }
 
   for (const line of lines) {
     const listItemMatch = /^\s+-\s+(.+)$/.exec(line)
-    const keyValueMatch = /^(\w+):\s*(.*)$/.exec(line)
+    // MEDIUM 2: support kebab-case keys (e.g. my-key) in addition to plain \w+ keys
+    const keyValueMatch = /^([\w-]+):\s*(.*)$/.exec(line)
     if (listItemMatch) {
       listItems.push(listItemMatch[1].trim())
     } else if (keyValueMatch) {
