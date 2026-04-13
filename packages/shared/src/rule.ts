@@ -4,7 +4,7 @@ export type RuleScope = 'global' | 'project'
 
 /** 可扩展结构，预留 enabled/priority 等字段 */
 export interface PlatformOverride {
-  content: string
+  content: string | null
 }
 
 export interface UnifiedRule {

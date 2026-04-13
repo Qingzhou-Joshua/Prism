@@ -1,4 +1,4 @@
-import type { UnifiedRule, RuleScope } from '@prism/shared'
+import type { UnifiedRule, RuleScope, PlatformId } from '@prism/shared'
 
 export type RuleProjection = {
   ruleId: string
@@ -9,10 +9,10 @@ export type RuleProjection = {
   scope: RuleScope
 }
 
-export function projectRule(rule: UnifiedRule, platformId: string): RuleProjection {
-  const override = rule.platformOverrides[platformId as keyof typeof rule.platformOverrides]
+export function projectRule(rule: UnifiedRule, platformId: PlatformId): RuleProjection {
+  const override = rule.platformOverrides[platformId]
   if (override !== undefined) {
-    const content = override.content as string | null
+    const content = override.content
     return {
       ruleId: rule.id,
       name: rule.name,

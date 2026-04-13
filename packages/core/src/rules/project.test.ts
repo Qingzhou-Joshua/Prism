@@ -35,7 +35,7 @@ describe('projectRule', () => {
 
   it('marks projection hidden when override content is null', () => {
     const rule = makeRule({
-      platformOverrides: { cursor: { content: null as unknown as string } },
+      platformOverrides: { cursor: { content: null } },
     })
     const projection = projectRule(rule, 'cursor')
     expect(projection.content).toBeNull()
