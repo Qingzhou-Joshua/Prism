@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Profile, PlatformId } from '@prism/shared'
 import { profilesApi } from '../api/profiles'
 
@@ -20,7 +20,7 @@ export function ProfilesPage({ onNew, onEdit }: ProfilesPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -31,16 +31,16 @@ export function ProfilesPage({ onNew, onEdit }: ProfilesPageProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void load() }, [load])
 
   const handleDelete = async (profile: Profile) => {
     if (!confirm(`Delete profile "${profile.name}"?`)) return
     setDeletingId(profile.id)
     try {
       await profilesApi.delete(profile.id)
-      await load()
+      setProfiles((prev) => prev.filter((p) => p.id !== profile.id))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Delete failed')
     } finally {
