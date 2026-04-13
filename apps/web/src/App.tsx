@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import type { UnifiedRule, Profile, ImportableRule } from '@prism/shared'
+import type { UnifiedRule, Profile, ImportableRule, UnifiedSkill } from '@prism/shared'
 import { fetchPlatformRules } from './api/platformRules.js'
 import { rulesApi } from './api/rules.js'
 import { detectConflicts, type ConflictResult, type RuleStatus } from './utils/conflictDetection.js'
@@ -9,6 +9,8 @@ import { RuleEditorPage } from './pages/RuleEditorPage'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { ProfileEditorPage } from './pages/ProfileEditorPage'
 import { RevisionsPage } from './pages/RevisionsPage.js'
+import { SkillsPage } from './pages/SkillsPage'
+import { SkillEditorPage } from './pages/SkillEditorPage'
 
 // ── Navigation state ────────────────────────────────────────────────────────
 type Page =
@@ -20,6 +22,8 @@ type Page =
   | { view: 'profiles-new' }
   | { view: 'profiles-edit'; profile: Profile }
   | { view: 'revisions' }
+  | { view: 'skills-list' }
+  | { view: 'skill-editor'; skill?: UnifiedSkill }
 
 interface PlatformCapabilities {
   rules: boolean
@@ -486,6 +490,7 @@ export default function App() {
   })
 
   const isRulesTab = page.view === 'rules-list' || page.view === 'rules-edit' || page.view === 'rules-new'
+  const isSkillsTab = page.view === 'skills-list' || page.view === 'skill-editor'
   const isProfilesTab = page.view === 'profiles-list' || page.view === 'profiles-new' || page.view === 'profiles-edit'
   const isRevisionsTab = page.view === 'revisions'
 
@@ -529,6 +534,12 @@ export default function App() {
             onClick={() => setPage({ view: 'rules-list' })}
           >
             Rules
+          </button>
+          <button
+            style={tabStyle(isSkillsTab)}
+            onClick={() => setPage({ view: 'skills-list' })}
+          >
+            Skills
           </button>
           <button
             style={tabStyle(isProfilesTab)}
@@ -697,6 +708,22 @@ export default function App() {
             profile={undefined}
             onSave={() => setPage({ view: 'profiles-list' })}
             onCancel={() => setPage({ view: 'profiles-list' })}
+          />
+        )}
+
+        {/* ── Skills list tab ──────────────────────────────────────────────── */}
+        {page.view === 'skills-list' && (
+          <SkillsPage
+            onEdit={(skill) => setPage({ view: 'skill-editor', skill })}
+            onNew={() => setPage({ view: 'skill-editor' })}
+          />
+        )}
+
+        {/* ── Skill editor ─────────────────────────────────────────────────── */}
+        {page.view === 'skill-editor' && (
+          <SkillEditorPage
+            initialSkill={page.skill}
+            onBack={() => setPage({ view: 'skills-list' })}
           />
         )}
 
