@@ -12,3 +12,7 @@ apps/web/dist
 packages/*/dist
 docs/
 .worktrees/
+
+# Playwright artifacts
+artifacts/
+test-results/
