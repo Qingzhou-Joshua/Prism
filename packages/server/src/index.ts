@@ -23,6 +23,7 @@ const registry = createAdapterRegistry([
 
 await app.register(cors, {
   origin: ['http://localhost:5173', 'http://localhost:4173'],
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 })
 
 app.get('/health', async () => ({ status: 'ok' }))
