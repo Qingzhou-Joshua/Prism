@@ -11,5 +11,14 @@ export default defineConfig({
   },
   server: {
     port: 5173
-  }
+  },
+  test: {
+    globals: true,
+    environment: 'node',
+    resolve: {
+      alias: {
+        '@prism/shared': resolve(__dirname, '../../packages/shared/src/index.ts'),
+      },
+    },
+  },
 })
