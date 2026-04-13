@@ -105,6 +105,19 @@ All cross-package imports use `@prism/*` aliases (configured in `tsconfig.base.j
 
 CORS: `@fastify/cors` is imported in server but may not be installed. If browser fetches fail while `curl` succeeds, run `cd packages/server && npm install @fastify/cors` as a workaround for the pnpm/Node version incompatibility.
 
+## Development Workflow
+
+### Bug Fix E2E Requirement
+
+**After every bug fix, run a browser-level E2E test before marking it done.**
+
+`curl` bypasses CORS and browser fetch mechanics entirely — a fix that works in `curl` may still fail in the actual UI. Use the `e2e-runner` agent (Playwright) to exercise the affected user flow in a real browser.
+
+Minimum E2E checklist per bug fix:
+- [ ] Reproduce the original failure path in the browser
+- [ ] Confirm the fix resolves it
+- [ ] Verify no adjacent flows are broken (e.g., create/edit still work after fixing delete)
+
 ## Current State (v0.5 — Publish Pipeline ✅)
 
 v0.1 complete: monorepo scaffolding, three platform adapters scan real filesystem, `/platforms` API returns live data, frontend renders scan result cards with capability badges and rescan button.
