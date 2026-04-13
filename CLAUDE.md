@@ -51,9 +51,9 @@ packages/adapters/
   adapter-codebuddy/  → Scans ~/.codebuddy for platform presence
   adapter-claude-code/→ Scans ~/.claude-internal (falls back to ~/.claude)
 packages/server/      → Fastify API; wires adapters → HTTP.
-                         Routes: GET /health, GET /platforms, POST /scan, GET /rules, POST /rules, GET /rules/:id, PUT /rules/:id, DELETE /rules/:id, GET /rules/:id/projections, GET /profiles, POST /profiles, GET /profiles/:id, PUT /profiles/:id, DELETE /profiles/:id, POST /profiles/:id/publish, GET /revisions, GET /revisions/:id, POST /revisions/:id/rollback
+                         Routes: GET /health, GET /platforms, POST /scan, GET /rules, POST /rules, GET /rules/:id, PUT /rules/:id, DELETE /rules/:id, GET /rules/:id/projections, GET /skills, POST /skills, GET /skills/:id, PUT /skills/:id, DELETE /skills/:id, GET /skills/:id/projections, GET /profiles, POST /profiles, GET /profiles/:id, PUT /profiles/:id, DELETE /profiles/:id, POST /profiles/:id/publish, GET /revisions, GET /revisions/:id, POST /revisions/:id/rollback
 apps/web/             → React + Vite frontend; renders platform scan results.
-                         Pages: PlatformScanResult cards (Scanner tab), RulesPage list, RuleEditorPage with Monaco + projection preview (Rules tab), ProfilesPage list, ProfileEditorPage with publish flow (Profiles tab), RevisionsPage with rollback UI (Revisions tab)
+                         Pages: PlatformScanResult cards (Scanner tab), RulesPage list, RuleEditorPage with Monaco + projection preview (Rules tab), SkillsPage list, SkillEditorPage with Monaco + projection preview (Skills tab), ProfilesPage list, ProfileEditorPage with publish flow (Profiles tab), RevisionsPage with rollback UI (Revisions tab)
 ```
 
 ### Data Flow
@@ -118,7 +118,7 @@ Minimum E2E checklist per bug fix:
 - [ ] Confirm the fix resolves it
 - [ ] Verify no adjacent flows are broken (e.g., create/edit still work after fixing delete)
 
-## Current State (v0.5 — Publish Pipeline ✅)
+## Current State (v0.7 — Skills Management ✅)
 
 v0.1 complete: monorepo scaffolding, three platform adapters scan real filesystem, `/platforms` API returns live data, frontend renders scan result cards with capability badges and rescan button.
 
@@ -130,6 +130,8 @@ v0.4 complete: Profile system — `Profile` type (name, description, platformBin
 
 v0.5 complete: Publish Pipeline — `PublishEngine` writes rule files to platform config dirs with automatic backup; `FileRevisionStore` persists revision records to `~/.prism/revisions/`; `POST /profiles/:id/publish` API; `GET /revisions` + `GET /revisions/:id` + `POST /revisions/:id/rollback` API; ProfileEditorPage publish flow with dry-run preview and inline confirm; RevisionsPage with inline rollback confirm; Revisions top-level tab in the app shell.
 
+v0.7 complete: Skills Management — `UnifiedSkill` type (id, name, trigger, category, tags, content, createdAt, updatedAt), `FileSkillStore` JSON persistence (`~/.prism/skills/skills.json`), `projectSkill()` per-platform projection; `importSkills()` on Claude Code adapter (recursive `~/.claude-internal/skills/**/*.md`) and CodeBuddy adapter (flat `~/.codebuddy/skills/`); PublishEngine extended to write skill files; `Profile.skillIds: string[]` added; `/skills` CRUD + projections API; SkillsPage list + SkillEditorPage with Monaco + projection preview; Skills tab in app shell (between Rules and Profiles).
+
 ### Key paths added in v0.5
 - `packages/core/src/publish/` — PublishEngine, FileRevisionStore, platform-paths
 - `packages/server/src/routes/publish.ts` — POST /profiles/:id/publish
@@ -138,8 +140,20 @@ v0.5 complete: Publish Pipeline — `PublishEngine` writes rule files to platfor
 - `apps/web/src/api/revisions.ts` — revisionsApi
 - `apps/web/src/pages/RevisionsPage.tsx` — revision list + rollback UI
 
+### Key paths added in v0.7
+- `packages/shared/src/index.ts` — UnifiedSkill, CreateSkillDto, UpdateSkillDto, ImportedSkill types
+- `packages/core/src/skills/` — FileSkillStore, projectSkill
+- `packages/core/src/publish/platform-paths.ts` — getPlatformSkillsDir, skillFileName
+- `packages/adapters/adapter-claude-code/` — importSkills (recursive ~/.claude-internal/skills/**/*.md)
+- `packages/adapters/adapter-codebuddy/` — importSkills (flat ~/.codebuddy/skills/)
+- `packages/server/src/routes/skills.ts` — /skills CRUD + projections routes
+- `apps/web/src/api/skills.ts` — skillsApi
+- `apps/web/src/pages/SkillsPage.tsx` — skill list with import button
+- `apps/web/src/pages/SkillEditorPage.tsx` — Monaco editor + projection preview
+
 ### Server routes (complete list)
 GET /health, GET /platforms, POST /scan,
 GET /rules, POST /rules, GET /rules/:id, PUT /rules/:id, DELETE /rules/:id, GET /rules/:id/projections,
+GET /skills, POST /skills, GET /skills/:id, PUT /skills/:id, DELETE /skills/:id, GET /skills/:id/projections,
 GET /profiles, POST /profiles, GET /profiles/:id, PUT /profiles/:id, DELETE /profiles/:id, POST /profiles/:id/publish,
 GET /revisions, GET /revisions/:id, POST /revisions/:id/rollback
