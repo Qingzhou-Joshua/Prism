@@ -10,6 +10,7 @@ import { registerPlatformRulesRoutes } from './routes/platforms.js'
 import { registerProfileRoutes } from './routes/profiles.js'
 import { registerPublishRoutes } from './routes/publish.js'
 import { registerRevisionRoutes } from './routes/revisions.js'
+import { registerSkillsRoutes } from './routes/skills.js'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -51,6 +52,7 @@ const skillStore = new FileSkillStore(join(homedir(), '.prism', 'skills', 'skill
 const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillStore)
 await registerPublishRoutes(app, publishEngine, revisionStore)
 await registerRevisionRoutes(app, revisionStore)
+await registerSkillsRoutes(app, skillStore)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
