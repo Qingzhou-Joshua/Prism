@@ -1,6 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 import type { AdapterRegistry } from '@prism/core'
-import type { PlatformId } from '@prism/shared'
+import type { PlatformId, ImportableRule } from '@prism/shared'
+
+/** Convert a fileName like "common-coding-style.md" → "common coding style" */
+function fileNameToRuleName(fileName: string): string {
+  return fileName.replace(/\.md$/i, '').replace(/-/g, ' ')
+}
 
 export async function registerPlatformRulesRoutes(
   app: FastifyInstance,
@@ -20,8 +25,13 @@ export async function registerPlatformRulesRoutes(
         return reply.status(404).send({ error: `Platform '${platformId}' does not support rule import` })
       }
 
-      const rules = await adapter.importRules()
-      return { platformId, items: rules }
+      const imported = await adapter.importRules()
+      const items: ImportableRule[] = imported.map((r) => ({
+        name: fileNameToRuleName(r.fileName),
+        content: r.content,
+        fileName: r.fileName,
+      }))
+      return { platformId, items }
     },
   )
 }

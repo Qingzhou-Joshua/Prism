@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import type { UnifiedRule, Profile } from '@prism/shared'
+import type { UnifiedRule, Profile, ImportableRule } from '@prism/shared'
+import { fetchPlatformRules } from './api/platformRules.js'
+import { rulesApi } from './api/rules.js'
+import { detectConflicts, type ConflictResult, type RuleStatus } from './utils/conflictDetection.js'
 import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
 import { ProfilesPage } from './pages/ProfilesPage'
@@ -64,6 +67,130 @@ function CapabilityBadge({ label, active }: { label: string; active: boolean }) 
 }
 
 function PlatformCard({ platform }: { platform: PlatformScanResult }) {
+  const [expanded, setExpanded] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [results, setResults] = useState<ConflictResult[]>([])
+  const [statusMap, setStatusMap] = useState<Record<string, RuleStatus>>({})
+  const [importing, setImporting] = useState(false)
+  const [summary, setSummary] = useState<{ success: number; skipped: number; failed: number } | null>(null)
+
+  const canImport = platform.detected && platform.rulesDetected
+
+  const handleExpand = useCallback(async () => {
+    if (expanded) {
+      setExpanded(false)
+      return
+    }
+    setExpanded(true)
+    setLoading(true)
+    setLoadError(null)
+    setSummary(null)
+    try {
+      const [platformRules, existingRules] = await Promise.all([
+        fetchPlatformRules(platform.id),
+        rulesApi.list(),
+      ])
+      const detected = detectConflicts(platformRules, existingRules)
+      setResults(detected)
+      const initial: Record<string, RuleStatus> = {}
+      for (const r of detected) {
+        initial[r.rule.fileName] = r.status as RuleStatus
+      }
+      setStatusMap(initial)
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }, [expanded, platform.id])
+
+  const toggleOverwrite = useCallback((fileName: string) => {
+    setStatusMap((prev) => {
+      const cur = prev[fileName]
+      return {
+        ...prev,
+        [fileName]: cur === 'conflict-skip' ? 'conflict-overwrite' : 'conflict-skip',
+      }
+    })
+  }, [])
+
+  const toggleSelect = useCallback((fileName: string) => {
+    setStatusMap((prev) => {
+      const cur = prev[fileName]
+      const result = results.find((r) => r.rule.fileName === fileName)
+      if (!result) return prev
+      // If currently skipped, restore to original status
+      if (cur === 'skipped') {
+        return { ...prev, [fileName]: result.status as RuleStatus }
+      }
+      return { ...prev, [fileName]: 'skipped' }
+    })
+  }, [results])
+
+  const selectAll = useCallback(() => {
+    setStatusMap((prev) => {
+      const next = { ...prev }
+      for (const r of results) {
+        if (next[r.rule.fileName] === 'imported') continue
+        next[r.rule.fileName] = r.status as RuleStatus
+      }
+      return next
+    })
+  }, [results])
+
+  const deselectAll = useCallback(() => {
+    setStatusMap((prev) => {
+      const next = { ...prev }
+      for (const r of results) {
+        if (next[r.rule.fileName] === 'imported') continue
+        next[r.rule.fileName] = 'skipped'
+      }
+      return next
+    })
+  }, [results])
+
+  const selectedCount = results.filter((r) => {
+    const s = statusMap[r.rule.fileName]
+    return s === 'new' || s === 'conflict-overwrite'
+  }).length
+
+  const handleImport = useCallback(async () => {
+    if (importing) return
+    setImporting(true)
+    setSummary(null)
+    let success = 0
+    let skipped = 0
+    let failed = 0
+
+    for (const r of results) {
+      const status = statusMap[r.rule.fileName]
+      if (status === 'skipped' || status === 'imported') {
+        skipped++
+        continue
+      }
+      if (status === 'conflict-skip') {
+        skipped++
+        continue
+      }
+      try {
+        if (status === 'new') {
+          await rulesApi.create({ name: r.rule.name, content: r.rule.content, scope: 'global', tags: [] })
+        } else if (status === 'conflict-overwrite' && r.existingId) {
+          await rulesApi.update(r.existingId, { content: r.rule.content })
+        }
+        setStatusMap((prev) => ({ ...prev, [r.rule.fileName]: 'imported' }))
+        success++
+      } catch {
+        setStatusMap((prev) => ({ ...prev, [r.rule.fileName]: 'failed' }))
+        failed++
+      }
+    }
+
+    setSummary({ success, skipped, failed })
+    setImporting(false)
+  }, [results, statusMap, importing])
+
   return (
     <div
       style={{
@@ -74,63 +201,210 @@ function PlatformCard({ platform }: { platform: PlatformScanResult }) {
         minWidth: 240,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <span style={{ fontWeight: 700, fontSize: 16, color: '#f0f0f0' }}>
-          {platform.displayName}
-        </span>
-        <span
-          style={{
-            padding: '2px 8px',
-            borderRadius: 12,
-            fontSize: 11,
-            fontWeight: 700,
-            background: platform.detected ? '#14532d' : '#3b1f1f',
-            color: platform.detected ? '#4ade80' : '#f87171',
-            border: `1px solid ${platform.detected ? '#16a34a' : '#dc2626'}`,
-          }}
-        >
-          {platform.detected ? '✓ Detected' : '✗ Not Found'}
-        </span>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <span style={{ color: platform.detected ? '#22c55e' : '#6b7280', fontSize: 10 }}>●</span>
+        <span style={{ fontWeight: 600 }}>{platform.displayName}</span>
       </div>
 
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
-        ID: <code style={{ color: '#a78bfa' }}>{platform.id}</code>
-      </div>
-
+      {/* Config path */}
       {platform.configPath && (
-        <div
-          style={{
-            fontSize: 11,
-            color: '#666',
-            background: '#0a0a0a',
-            borderRadius: 4,
-            padding: '4px 8px',
-            marginBottom: 8,
-            fontFamily: 'monospace',
-            wordBreak: 'break-all',
-          }}
-        >
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
           {platform.configPath}
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-        <CapabilityBadge label="Rules" active={platform.capabilities.rules} />
-        <CapabilityBadge label="Profiles" active={platform.capabilities.profiles} />
-        {platform.capabilities.skills !== undefined && (
-          <CapabilityBadge label="Skills" active={platform.capabilities.skills} />
+      {/* Capability badges */}
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+        {platform.capabilities.rules && (
+          <span style={{ background: '#1e3a5f', color: '#93c5fd', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>
+            rules
+          </span>
         )}
-        {platform.capabilities.agents !== undefined && (
-          <CapabilityBadge label="Agents" active={platform.capabilities.agents} />
+        {platform.capabilities.profiles && (
+          <span style={{ background: '#1e3a5f', color: '#93c5fd', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>
+            profiles
+          </span>
         )}
-        {platform.capabilities.mcp !== undefined && (
-          <CapabilityBadge label="MCP" active={platform.capabilities.mcp} />
+        {platform.capabilities.mcp && (
+          <span style={{ background: '#1e3a5f', color: '#93c5fd', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>
+            mcp
+          </span>
+        )}
+        {platform.capabilities.agents && (
+          <span style={{ background: '#1e3a5f', color: '#93c5fd', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>
+            agents
+          </span>
         )}
       </div>
 
+      {/* Message */}
       {platform.message && (
-        <div style={{ fontSize: 11, color: '#888', fontStyle: 'italic' }}>
-          {platform.message}
+        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 8 }}>{platform.message}</div>
+      )}
+
+      {/* Import button — only when detected && rulesDetected */}
+      {canImport && (
+        <button
+          onClick={handleExpand}
+          style={{
+            background: 'transparent',
+            border: '1px solid #374151',
+            borderRadius: 4,
+            color: '#d1d5db',
+            cursor: 'pointer',
+            fontSize: 12,
+            padding: '4px 10px',
+            marginTop: 4,
+          }}
+        >
+          {expanded ? '▼ 收起规则列表' : '▶ 查看可导入规则'}
+        </button>
+      )}
+
+      {/* Expanded panel */}
+      {expanded && (
+        <div style={{ marginTop: 12, borderTop: '1px solid #1f2937', paddingTop: 12 }}>
+          {loading && <div style={{ color: '#6b7280', fontSize: 12 }}>加载中…</div>}
+
+          {loadError && (
+            <div style={{ color: '#f87171', fontSize: 12 }}>
+              {loadError}
+              <button
+                onClick={handleExpand}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#60a5fa',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  marginLeft: 8,
+                }}
+              >
+                重试
+              </button>
+            </div>
+          )}
+
+          {!loading && !loadError && results.length === 0 && (
+            <div style={{ color: '#6b7280', fontSize: 12 }}>该平台暂无可导入规则</div>
+          )}
+
+          {!loading && !loadError && results.length > 0 && (
+            <>
+              {/* Rule list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                {results.map((r) => {
+                  const s = statusMap[r.rule.fileName]
+                  const isChecked = s !== 'skipped'
+                  const labelColor =
+                    s === 'new' ? '#22c55e'
+                    : s === 'conflict-skip' ? '#f59e0b'
+                    : s === 'conflict-overwrite' ? '#f97316'
+                    : s === 'imported' ? '#6b7280'
+                    : s === 'failed' ? '#ef4444'
+                    : '#6b7280'
+                  const labelText =
+                    s === 'new' ? '新建'
+                    : s === 'conflict-skip' ? '冲突·跳过'
+                    : s === 'conflict-overwrite' ? '冲突·覆盖'
+                    : s === 'imported' ? '已导入'
+                    : s === 'failed' ? '失败'
+                    : '跳过'
+
+                  return (
+                    <div
+                      key={r.rule.fileName}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked && s !== 'imported' && s !== 'failed'}
+                        disabled={s === 'imported' || s === 'failed' || importing}
+                        onChange={() => toggleSelect(r.rule.fileName)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <span style={{ flex: 1, color: '#d1d5db' }}>{r.rule.fileName}</span>
+                      <span style={{ color: labelColor, minWidth: 60 }}>{labelText}</span>
+                      {(s === 'conflict-skip' || s === 'conflict-overwrite') && !importing && (
+                        <button
+                          onClick={() => toggleOverwrite(r.rule.fileName)}
+                          style={{
+                            background: 'transparent',
+                            border: `1px solid ${s === 'conflict-overwrite' ? '#f97316' : '#374151'}`,
+                            borderRadius: 3,
+                            color: s === 'conflict-overwrite' ? '#f97316' : '#6b7280',
+                            cursor: 'pointer',
+                            fontSize: 10,
+                            padding: '1px 5px',
+                          }}
+                        >
+                          {s === 'conflict-overwrite' ? '改为跳过' : '改为覆盖'}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Summary */}
+              {summary && (
+                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 8 }}>
+                  ✅ 成功 {summary.success} 条　⚠️ 跳过 {summary.skipped} 条　❌ 失败 {summary.failed} 条
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  onClick={selectAll}
+                  disabled={importing}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #374151',
+                    borderRadius: 3,
+                    color: '#9ca3af',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    padding: '2px 8px',
+                  }}
+                >
+                  全选
+                </button>
+                <button
+                  onClick={deselectAll}
+                  disabled={importing}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #374151',
+                    borderRadius: 3,
+                    color: '#9ca3af',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    padding: '2px 8px',
+                  }}
+                >
+                  取消全选
+                </button>
+                <button
+                  onClick={handleImport}
+                  disabled={importing || selectedCount === 0}
+                  style={{
+                    background: selectedCount > 0 && !importing ? '#1d4ed8' : '#1f2937',
+                    border: 'none',
+                    borderRadius: 4,
+                    color: selectedCount > 0 && !importing ? '#fff' : '#6b7280',
+                    cursor: selectedCount > 0 && !importing ? 'pointer' : 'not-allowed',
+                    fontSize: 12,
+                    padding: '4px 12px',
+                    marginLeft: 'auto',
+                  }}
+                >
+                  {importing ? '导入中…' : `导入已选 ${selectedCount} 条`}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
