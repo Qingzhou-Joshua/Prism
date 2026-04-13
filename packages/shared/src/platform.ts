@@ -24,3 +24,9 @@ export interface ImportedRule {
   content: string
   filePath: string
 }
+
+export interface ImportableRule {
+  name: string      // 从文件名推导（去掉 .md 后缀，连字符转空格）
+  content: string   // 文件完整内容
+  fileName: string  // 原始文件名，用于展示
+}
