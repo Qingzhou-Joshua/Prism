@@ -32,14 +32,12 @@ export class FileSkillStore implements SkillStore {
   }
 
   private enqueue<T>(fn: () => Promise<T>): Promise<T> {
-    let resolve!: (value: T) => void
-    let reject!: (reason: unknown) => void
-    const outer = new Promise<T>((res, rej) => {
-      resolve = res
-      reject = rej
-    })
-    this.writeQueue = this.writeQueue.then(() => fn().then(resolve, reject))
-    return outer
+    const result = this.writeQueue.then(fn)
+    this.writeQueue = result.then(
+      () => {},
+      () => {},
+    )
+    return result
   }
 
   async list(): Promise<UnifiedSkill[]> {
