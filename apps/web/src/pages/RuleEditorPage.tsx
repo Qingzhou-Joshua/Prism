@@ -40,6 +40,7 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
 
 export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) {
   const [draft, setDraft] = useState<DraftRule>(() => toDraft(rule))
+  const [tagsInput, setTagsInput] = useState(() => rule?.tags?.join(', ') ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [projections, setProjections] = useState<RuleProjectionItem[]>([])
@@ -54,7 +55,7 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
       .then(setProjections)
       .catch(() => setProjections([]))
       .finally(() => setProjectionsLoading(false))
-  }, [rule])
+  }, [rule?.id])
 
   async function handleSave() {
     if (!draft.name.trim()) return
@@ -65,7 +66,7 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
         name: draft.name.trim(),
         content: draft.content,
         scope: draft.scope,
-        tags: draft.tags.filter(t => t.trim()),
+        tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
         platformOverrides: draft.platformOverrides,
       }
       const saved =
@@ -133,16 +134,8 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
             Tags (comma-separated)
             <input
               type="text"
-              value={draft.tags.join(', ')}
-              onChange={e =>
-                setDraft(prev => ({
-                  ...prev,
-                  tags: e.target.value
-                    .split(',')
-                    .map(t => t.trim())
-                    .filter(Boolean),
-                }))
-              }
+              value={tagsInput}
+              onChange={e => setTagsInput(e.target.value)}
               placeholder="e.g. typescript, backend"
               className="form-input"
             />
