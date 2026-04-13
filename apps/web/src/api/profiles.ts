@@ -3,9 +3,15 @@ import type { Profile, CreateProfileDto, UpdateProfileDto, PublishPreview } from
 const API_BASE = 'http://localhost:3001'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
-  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...init })
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...init,
+  })
   if (res.status === 204) return null
-  if (!res.ok) { const text = await res.text(); throw new Error(`HTTP ${res.status}: ${text}`) }
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`HTTP ${res.status}: ${text}`)
+  }
   return res.json() as Promise<T>
 }
 
