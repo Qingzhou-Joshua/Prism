@@ -51,9 +51,9 @@ packages/adapters/
   adapter-codebuddy/  → Scans ~/.codebuddy for platform presence
   adapter-claude-code/→ Scans ~/.claude-internal (falls back to ~/.claude)
 packages/server/      → Fastify API; wires adapters → HTTP.
-                         Routes: GET /health, GET /platforms, POST /scan, GET /rules, POST /rules, GET /rules/:id, PUT /rules/:id, DELETE /rules/:id, GET /rules/:id/projections
+                         Routes: GET /health, GET /platforms, POST /scan, GET /rules, POST /rules, GET /rules/:id, PUT /rules/:id, DELETE /rules/:id, GET /rules/:id/projections, GET /profiles, POST /profiles, GET /profiles/:id, PUT /profiles/:id, DELETE /profiles/:id, POST /profiles/:id/publish, GET /revisions, GET /revisions/:id, POST /revisions/:id/rollback
 apps/web/             → React + Vite frontend; renders platform scan results.
-                         Pages: PlatformScanResult cards (Scanner tab), RulesPage list, RuleEditorPage with Monaco + projection preview (Rules tab)
+                         Pages: PlatformScanResult cards (Scanner tab), RulesPage list, RuleEditorPage with Monaco + projection preview (Rules tab), ProfilesPage list, ProfileEditorPage with publish flow (Profiles tab), RevisionsPage with rollback UI (Revisions tab)
 ```
 
 ### Data Flow
@@ -105,14 +105,28 @@ All cross-package imports use `@prism/*` aliases (configured in `tsconfig.base.j
 
 CORS: `@fastify/cors` is imported in server but may not be installed. If browser fetches fail while `curl` succeeds, run `cd packages/server && npm install @fastify/cors` as a workaround for the pnpm/Node version incompatibility.
 
-## Current State (v0.2 — Rule Editor ✅)
+## Current State (v0.5 — Publish Pipeline ✅)
 
 v0.1 complete: monorepo scaffolding, three platform adapters scan real filesystem, `/platforms` API returns live data, frontend renders scan result cards with capability badges and rescan button.
 
 v0.2 complete: UnifiedRule type system, FileRuleStore JSON persistence (`~/.prism/rules/rules.json`), `projectRule()` per-platform projection, `/rules` CRUD API (GET list, GET by id, POST create, PUT update, DELETE), Monaco editor frontend with projection preview panel, tab navigation between Scanner and Rules views.
 
-**Next milestone — v0.3 Platform Rule Scanning** (not yet started): optional `importRules()` on each adapter reads real `.md` files from platform directories, new `GET /platforms/:id/rules` API endpoint, platform sub-tabs in Rules Tab (Prism Rules / Claude Code / OpenClaw / CodeBuddy).
+v0.3 complete: Platform rule scanning — optional `importRules()` on each adapter reads real `.md` files from platform directories.
 
-After v0.3: real publish with backup/revision (v0.4 MVP).
+v0.4 complete: Profile system — `Profile` type (name, description, platformBindings, ruleIds), FileProfileStore JSON persistence (`~/.prism/profiles/profiles.json`), `/profiles` CRUD API, ProfilesPage list + ProfileEditorPage.
 
-Core asset types planned: **Rules** (text with scope/tags/platform overrides) and **Profiles** (Rule collections with target platform bindings). Publish flow must include dry-run preview, diff, backup, and revision history before writing to disk.
+v0.5 complete: Publish Pipeline — `PublishEngine` writes rule files to platform config dirs with automatic backup; `FileRevisionStore` persists revision records to `~/.prism/revisions/`; `POST /profiles/:id/publish` API; `GET /revisions` + `GET /revisions/:id` + `POST /revisions/:id/rollback` API; ProfileEditorPage publish flow with dry-run preview and inline confirm; RevisionsPage with inline rollback confirm; Revisions top-level tab in the app shell.
+
+### Key paths added in v0.5
+- `packages/core/src/publish/` — PublishEngine, FileRevisionStore, platform-paths
+- `packages/server/src/routes/publish.ts` — POST /profiles/:id/publish
+- `packages/server/src/routes/revisions.ts` — GET/POST revision routes
+- `apps/web/src/api/client.ts` — shared fetch client (request<T>())
+- `apps/web/src/api/revisions.ts` — revisionsApi
+- `apps/web/src/pages/RevisionsPage.tsx` — revision list + rollback UI
+
+### Server routes (complete list)
+GET /health, GET /platforms, POST /scan,
+GET /rules, POST /rules, GET /rules/:id, PUT /rules/:id, DELETE /rules/:id, GET /rules/:id/projections,
+GET /profiles, POST /profiles, GET /profiles/:id, PUT /profiles/:id, DELETE /profiles/:id, POST /profiles/:id/publish,
+GET /revisions, GET /revisions/:id, POST /revisions/:id/rollback
