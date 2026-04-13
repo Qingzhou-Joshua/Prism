@@ -103,14 +103,15 @@ export async function registerSkillsRoutes(
       }
 
       // Only include platforms that support skills (getPlatformSkillsDir won't throw)
-      const projections: Record<string, { fileName: string; content: string }> = {}
+      const projections: Array<{ platformId: string; fileName: string; content: string }> = []
       for (const platformId of ALL_PLATFORM_IDS) {
         try {
           getPlatformSkillsDir(platformId)
-          projections[platformId] = {
+          projections.push({
+            platformId,
             fileName: skillFileName(skill.name),
             content: skill.content,
-          }
+          })
         } catch {
           // Platform does not support skills — skip
         }

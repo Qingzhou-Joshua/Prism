@@ -1,9 +1,4 @@
-import type { ImportedRule, PlatformCapabilities, PlatformId, PlatformScanResult } from '@prism/shared'
-
-export interface ImportedSkill {
-  fileName: string
-  content: string  // raw file content including front-matter
-}
+import type { ImportedRule, ImportedSkill, PlatformCapabilities, PlatformId, PlatformScanResult } from '@prism/shared'
 
 export interface PlatformAdapter {
   id: PlatformId

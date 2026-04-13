@@ -144,16 +144,18 @@ describe('Skills API', () => {
     const { id } = created.json() as UnifiedSkill
     const res = await app.inject({ method: 'GET', url: `/skills/${id}/projections` })
     expect(res.statusCode).toBe(200)
-    const body = res.json<{ projections: Record<string, { fileName: string; content: string }> }>()
+    const body = res.json<{ projections: Array<{ platformId: string; fileName: string; content: string }> }>()
     expect(body.projections).toBeDefined()
+    expect(Array.isArray(body.projections)).toBe(true)
     // claude-code and codebuddy support skills
-    expect(body.projections['claude-code']).toBeDefined()
-    expect(body.projections['claude-code'].fileName).toBe('my-skill.md')
-    expect(body.projections['claude-code'].content).toBe('# My Skill\n\nThis is my skill content.')
-    expect(body.projections['codebuddy']).toBeDefined()
+    const claudeProj = body.projections.find(p => p.platformId === 'claude-code')
+    expect(claudeProj).toBeDefined()
+    expect(claudeProj!.fileName).toBe('my-skill.md')
+    expect(claudeProj!.content).toBe('# My Skill\n\nThis is my skill content.')
+    expect(body.projections.find(p => p.platformId === 'codebuddy')).toBeDefined()
     // openclaw and cursor do NOT support skills
-    expect(body.projections['openclaw']).toBeUndefined()
-    expect(body.projections['cursor']).toBeUndefined()
+    expect(body.projections.find(p => p.platformId === 'openclaw')).toBeUndefined()
+    expect(body.projections.find(p => p.platformId === 'cursor')).toBeUndefined()
   })
 
   it('GET /skills/:id/projections returns 404 for unknown id', async () => {

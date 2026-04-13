@@ -55,7 +55,7 @@ export function skillFileName(name: string): string {
   return (
     name
       .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '') + '.md'
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '.md'
   )
 }

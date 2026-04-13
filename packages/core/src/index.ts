@@ -1,6 +1,7 @@
 import type { PlatformAdapter } from './types.js'
 
-export type { PlatformAdapter, ImportedSkill } from './types.js'
+export type { PlatformAdapter } from './types.js'
+export type { ImportedSkill } from '@prism/shared'
 
 export async function scanPlatforms(adapters: PlatformAdapter[]) {
   return Promise.all(adapters.map((adapter) => adapter.scan()))
