@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import type { UnifiedRule } from '@prism/shared'
-import type { Profile } from '@prism/shared'
+import type { UnifiedRule, Profile } from '@prism/shared'
 import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
 import { ProfilesPage } from './pages/ProfilesPage'
@@ -401,6 +400,7 @@ export default function App() {
             onEdit={(profile) => setPage({ view: 'profiles-edit', profile })}
           />
         )}
+        {/* ── Profile editor (edit) ─────────────────────────────────────────── */}
         {page.view === 'profiles-edit' && (
           <ProfileEditorPage
             profile={page.profile}
@@ -408,6 +408,7 @@ export default function App() {
             onCancel={() => setPage({ view: 'profiles-list' })}
           />
         )}
+        {/* ── Profile editor (new) ──────────────────────────────────────────── */}
         {page.view === 'profiles-new' && (
           <ProfileEditorPage
             profile={undefined}
