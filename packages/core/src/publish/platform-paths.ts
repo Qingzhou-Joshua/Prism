@@ -31,3 +31,31 @@ export function ruleFileName(name: string): string {
       .replace(/^-|-$/g, '') + '.md'
   )
 }
+
+/**
+ * Returns the absolute path to the skills directory for a given platform.
+ * Only claude-code and codebuddy support skills.
+ */
+export function getPlatformSkillsDir(platformId: PlatformId): string {
+  switch (platformId) {
+    case 'claude-code':
+      return join(homedir(), '.claude-internal', 'skills')
+    case 'codebuddy':
+      return join(homedir(), '.codebuddy', 'skills')
+    default:
+      throw new Error(`Platform ${platformId} does not support skills`)
+  }
+}
+
+/**
+ * Converts a skill name to a kebab-case filename with .md extension.
+ * e.g. "My Skill" → "my-skill.md"
+ */
+export function skillFileName(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '') + '.md'
+  )
+}
