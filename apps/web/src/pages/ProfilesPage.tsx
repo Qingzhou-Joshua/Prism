@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { Profile, PlatformId } from '@prism/shared'
+import type { Profile } from '@prism/shared'
 import { profilesApi } from '../api/profiles'
-
-const PLATFORM_LABELS: Record<PlatformId, string> = {
-  'claude-code': 'Claude Code',
-  'openclaw': 'OpenClaw',
-  'codebuddy': 'CodeBuddy',
-  'cursor': 'Cursor',
-}
+import { PLATFORM_LABELS } from '../constants/platforms'
 
 interface ProfilesPageProps {
   onNew: () => void

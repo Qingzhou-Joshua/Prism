@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Profile, UnifiedRule, PlatformId, PublishPreview } from '@prism/shared'
 import { profilesApi } from '../api/profiles'
 import { rulesApi } from '../api/rules'
-
-const ALL_PLATFORMS: PlatformId[] = ['claude-code', 'openclaw', 'codebuddy', 'cursor']
-const PLATFORM_LABELS: Record<PlatformId, string> = {
-  'claude-code': 'Claude Code',
-  'openclaw': 'OpenClaw',
-  'codebuddy': 'CodeBuddy',
-  'cursor': 'Cursor',
-}
+import { ALL_PLATFORMS, PLATFORM_LABELS } from '../constants/platforms'
 
 interface ProfileEditorPageProps {
   profile: Profile | undefined
@@ -28,6 +21,7 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
   )
   const [availableRules, setAvailableRules] = useState<UnifiedRule[]>([])
   const [rulesLoading, setRulesLoading] = useState(true)
+  const [rulesError, setRulesError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [preview, setPreview] = useState<PublishPreview | null>(null)
@@ -35,15 +29,18 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    rulesApi
-      .list()
-      .then(setAvailableRules)
-      .catch(() => {
-        // rules load failure is non-fatal; editor still usable
-      })
-      .finally(() => setRulesLoading(false))
+  const loadRules = useCallback(async () => {
+    try {
+      const items = await rulesApi.list()
+      setAvailableRules(items)
+    } catch (e) {
+      setRulesError(e instanceof Error ? e.message : 'Failed to load rules')
+    } finally {
+      setRulesLoading(false)
+    }
   }, [])
+
+  useEffect(() => { void loadRules() }, [loadRules])
 
   const toggleRule = (id: string) => {
     setSelectedRuleIds((prev) => {
@@ -114,13 +111,17 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
     }
   }
 
-  const previewByPlatform = preview
-    ? ALL_PLATFORMS.filter((p) => preview.targetPlatforms.includes(p)).map((p) => ({
-        platformId: p,
-        platformDisplayName: PLATFORM_LABELS[p],
-        files: preview.files.filter((f) => f.platformId === p),
-      }))
-    : []
+  const previewByPlatform = useMemo(
+    () =>
+      preview
+        ? ALL_PLATFORMS.filter((p) => preview.targetPlatforms.includes(p)).map((p) => ({
+            platformId: p,
+            platformDisplayName: PLATFORM_LABELS[p],
+            files: preview.files.filter((f) => f.platformId === p),
+          }))
+        : [],
+    [preview],
+  )
 
   return (
     <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto' }}>
@@ -197,6 +198,8 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Rules</label>
           {rulesLoading ? (
             <div style={{ color: '#6b7280' }}>Loading rules…</div>
+          ) : rulesError ? (
+            <div style={{ color: '#dc2626', fontSize: '14px' }}>{rulesError}</div>
           ) : availableRules.length === 0 ? (
             <div style={{ color: '#6b7280' }}>No rules available</div>
           ) : (
