@@ -1,6 +1,7 @@
 import { access, readdir, readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import path from 'node:path'
-import type { PlatformAdapter } from '@prism/core'
+import type { ImportedSkill, PlatformAdapter } from '@prism/core'
 import type { ImportedRule, PlatformScanResult } from '@prism/shared'
 
 const BASE_RESULT = {
@@ -72,5 +73,26 @@ export const codebuddyAdapter: PlatformAdapter = {
     } catch {
       return []
     }
+  },
+
+  async importSkills(): Promise<ImportedSkill[]> {
+    const skillsDir = path.join(homedir(), '.codebuddy', 'skills')
+    let entries: string[]
+    try {
+      entries = await readdir(skillsDir)
+    } catch {
+      return []
+    }
+    const mdEntries = entries.filter((e) => e.endsWith('.md'))
+    const skills: ImportedSkill[] = []
+    for (const entry of mdEntries) {
+      try {
+        const content = await readFile(path.join(skillsDir, entry), 'utf-8')
+        skills.push({ fileName: entry, content })
+      } catch {
+        // skip unreadable files
+      }
+    }
+    return skills
   },
 }

@@ -1,6 +1,8 @@
 import { access, readdir, readFile } from 'node:fs/promises'
-import path from 'node:path'
-import type { PlatformAdapter } from '@prism/core'
+import { homedir } from 'node:os'
+import path, { relative } from 'node:path'
+import { glob } from 'glob'
+import type { ImportedSkill, PlatformAdapter } from '@prism/core'
 import type { ImportedRule, PlatformScanResult } from '@prism/shared'
 
 const BASE_RESULT = {
@@ -95,5 +97,34 @@ export const claudeCodeAdapter: PlatformAdapter = {
     } catch {
       return []
     }
+  },
+
+  async importSkills(): Promise<ImportedSkill[]> {
+    const primaryDir = path.join(homedir(), '.claude-internal', 'skills')
+    const fallbackDir = path.join(homedir(), '.claude', 'skills')
+
+    let skillsDir: string | undefined
+    for (const dir of [primaryDir, fallbackDir]) {
+      try {
+        await access(dir)
+        skillsDir = dir
+        break
+      } catch {
+        // try next
+      }
+    }
+    if (!skillsDir) return []
+
+    const mdFiles = await glob('**/*.md', { cwd: skillsDir, absolute: true })
+    const skills: ImportedSkill[] = []
+    for (const filePath of mdFiles) {
+      try {
+        const content = await readFile(filePath, 'utf-8')
+        skills.push({ fileName: relative(skillsDir, filePath), content })
+      } catch {
+        // skip unreadable files
+      }
+    }
+    return skills
   },
 }
