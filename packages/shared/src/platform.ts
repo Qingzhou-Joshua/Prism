@@ -17,3 +17,10 @@ export interface PlatformScanResult {
   capabilities: PlatformCapabilities
   rulesDetected?: boolean       // whether rules/ subdir was found
 }
+
+export interface ImportedRule {
+  platformId: PlatformId
+  fileName: string
+  content: string
+  filePath: string
+}

@@ -1,7 +1,7 @@
-import { access } from 'node:fs/promises'
+import { access, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { PlatformAdapter } from '@prism/core'
-import type { PlatformScanResult } from '@prism/shared'
+import type { ImportedRule, PlatformScanResult } from '@prism/shared'
 
 const BASE_RESULT = {
   id: 'codebuddy' as const,
@@ -44,6 +44,33 @@ export const codebuddyAdapter: PlatformAdapter = {
         ? `CodeBuddy detected at ${configPath} (rules directory found)`
         : `CodeBuddy detected at ${configPath}`,
       rulesDetected,
+    }
+  },
+
+  async importRules(): Promise<ImportedRule[]> {
+    const home = process.env.HOME
+    if (!home) return []
+
+    const rulesPath = path.join(home, '.codebuddy', 'rules')
+    try {
+      const entries = await readdir(rulesPath, { withFileTypes: true })
+      const mdFiles = entries.filter(e => e.isFile() && e.name.endsWith('.md'))
+
+      const rules = await Promise.all(
+        mdFiles.map(async (entry) => {
+          const filePath = path.join(rulesPath, entry.name)
+          const content = await readFile(filePath, 'utf-8')
+          return {
+            platformId: 'codebuddy' as const,
+            fileName: entry.name,
+            content,
+            filePath,
+          }
+        })
+      )
+      return rules
+    } catch {
+      return []
     }
   },
 }

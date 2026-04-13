@@ -111,7 +111,7 @@ v0.1 complete: monorepo scaffolding, three platform adapters scan real filesyste
 
 v0.2 complete: UnifiedRule type system, FileRuleStore JSON persistence (`~/.prism/rules/rules.json`), `projectRule()` per-platform projection, `/rules` CRUD API (GET list, GET by id, POST create, PUT update, DELETE), Monaco editor frontend with projection preview panel, tab navigation between Scanner and Rules views.
 
-**Next milestone — v0.3 Profile PoC** (not yet started): Profile type (Rule collection + platform bindings), FileProfileStore, publish dry-run preview.
+**Next milestone — v0.3 Platform Rule Scanning** (not yet started): optional `importRules()` on each adapter reads real `.md` files from platform directories, new `GET /platforms/:id/rules` API endpoint, platform sub-tabs in Rules Tab (Prism Rules / Claude Code / OpenClaw / CodeBuddy).
 
 After v0.3: real publish with backup/revision (v0.4 MVP).
 

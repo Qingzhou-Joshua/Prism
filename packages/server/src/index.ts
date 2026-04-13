@@ -6,6 +6,7 @@ import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { registerScanRoutes } from './routes/scan.js'
 import { registerRulesRoutes } from './routes/rules.js'
+import { registerPlatformRulesRoutes } from './routes/platforms.js'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -32,6 +33,7 @@ await registerScanRoutes(app, registry)
 
 const rulesStore = new FileRuleStore(join(homedir(), '.prism', 'rules', 'rules.json'))
 await registerRulesRoutes(app, rulesStore)
+await registerPlatformRulesRoutes(app, registry)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
