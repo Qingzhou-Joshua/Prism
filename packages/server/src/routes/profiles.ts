@@ -1,10 +1,9 @@
 import { access } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { FastifyInstance } from 'fastify'
 import type { ProfileStore } from '@prism/core'
 import type { RuleStore } from '@prism/core'
-import { projectRule } from '@prism/core'
+import { projectRule, getPlatformRulesDir, ruleFileName } from '@prism/core'
 import type { CreateProfileDto, UpdateProfileDto, PublishPreviewFile, PlatformId } from '@prism/shared'
 
 const PLATFORM_DISPLAY_NAMES: Record<PlatformId, string> = {
@@ -12,24 +11,6 @@ const PLATFORM_DISPLAY_NAMES: Record<PlatformId, string> = {
   'openclaw': 'OpenClaw',
   'codebuddy': 'CodeBuddy',
   'cursor': 'Cursor',
-}
-
-function getPlatformRulesDir(platformId: PlatformId): string {
-  const home = homedir()
-  switch (platformId) {
-    case 'claude-code': return join(home, '.claude-internal', 'rules')
-    case 'openclaw':    return join(home, '.openclaw', 'rules')
-    case 'codebuddy':   return join(home, '.codebuddy', 'rules')
-    case 'cursor':      return join(home, '.cursor', 'rules')
-  }
-}
-
-function ruleFileName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    + '.md'
 }
 
 async function fileExists(filePath: string): Promise<boolean> {
