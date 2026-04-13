@@ -1,28 +1,15 @@
 import type { Revision } from '@prism/shared'
-
-const API_BASE = 'http://localhost:3001'
-
-async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  })
-  if (res.status === 204) return null
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`HTTP ${res.status}: ${text}`)
-  }
-  return res.json() as Promise<T>
-}
+import { request } from './client.js'
 
 export const revisionsApi = {
   list(): Promise<Revision[]> {
     return request<{ items: Revision[] }>('/revisions').then((r) => r?.items ?? [])
   },
-  get(id: string): Promise<Revision> {
-    return request<{ revision: Revision }>(`/revisions/${id}`).then((r) => r!.revision)
+  async get(id: string): Promise<Revision | null> {
+    const r = await request<{ revision: Revision }>(`/revisions/${id}`)
+    return r?.revision ?? null
   },
   rollback(id: string): Promise<void> {
-    return request<{ ok: true }>(`/revisions/${id}/rollback`, { method: 'POST' }).then(() => undefined)
+    return request<unknown>(`/revisions/${id}/rollback`, { method: 'POST' }).then(() => undefined)
   },
 }
