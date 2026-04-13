@@ -23,7 +23,7 @@ type Page =
   | { view: 'profiles-edit'; profile: Profile }
   | { view: 'revisions' }
   | { view: 'skills-list' }
-  | { view: 'skill-editor'; skill?: UnifiedSkill }
+  | { view: 'skills-editor'; skill?: UnifiedSkill }
 
 interface PlatformCapabilities {
   rules: boolean
@@ -490,7 +490,7 @@ export default function App() {
   })
 
   const isRulesTab = page.view === 'rules-list' || page.view === 'rules-edit' || page.view === 'rules-new'
-  const isSkillsTab = page.view === 'skills-list' || page.view === 'skill-editor'
+  const isSkillsTab = page.view === 'skills-list' || page.view === 'skills-editor'
   const isProfilesTab = page.view === 'profiles-list' || page.view === 'profiles-new' || page.view === 'profiles-edit'
   const isRevisionsTab = page.view === 'revisions'
 
@@ -714,13 +714,13 @@ export default function App() {
         {/* ── Skills list tab ──────────────────────────────────────────────── */}
         {page.view === 'skills-list' && (
           <SkillsPage
-            onEdit={(skill) => setPage({ view: 'skill-editor', skill })}
-            onNew={() => setPage({ view: 'skill-editor' })}
+            onEdit={(skill) => setPage({ view: 'skills-editor', skill })}
+            onNew={() => setPage({ view: 'skills-editor' })}
           />
         )}
 
         {/* ── Skill editor ─────────────────────────────────────────────────── */}
-        {page.view === 'skill-editor' && (
+        {page.view === 'skills-editor' && (
           <SkillEditorPage
             initialSkill={page.skill}
             onBack={() => setPage({ view: 'skills-list' })}
