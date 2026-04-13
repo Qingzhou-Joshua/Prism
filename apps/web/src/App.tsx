@@ -1,4 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
+import type { CSSProperties } from 'react'
+import type { UnifiedRule } from '@prism/shared'
+import { RulesPage } from './pages/RulesPage'
+import { RuleEditorPage } from './pages/RuleEditorPage'
+
+// ── Navigation state ────────────────────────────────────────────────────────
+type Page =
+  | { view: 'scanner' }
+  | { view: 'rules-list' }
+  | { view: 'rules-edit'; rule: UnifiedRule }
+  | { view: 'rules-new' }
 
 interface PlatformCapabilities {
   rules: boolean
@@ -120,6 +131,10 @@ function PlatformCard({ platform }: { platform: PlatformScanResult }) {
 }
 
 export default function App() {
+  // ── Routing ────────────────────────────────────────────────────────────────
+  const [page, setPage] = useState<Page>({ view: 'scanner' })
+
+  // ── Scanner state ──────────────────────────────────────────────────────────
   const [data, setData] = useState<ScanResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -175,6 +190,22 @@ export default function App() {
 
   const detectedCount = data?.items.filter((p) => p.detected).length ?? 0
 
+  // ── Shared shell ────────────────────────────────────────────────────────────
+  const tabStyle = (active: boolean): CSSProperties => ({
+    padding: '8px 20px',
+    background: active ? '#1a1a1a' : 'transparent',
+    color: active ? '#f0f0f0' : '#666',
+    border: 'none',
+    borderBottom: `2px solid ${active ? '#3b82f6' : 'transparent'}`,
+    fontFamily: 'inherit',
+    fontSize: 13,
+    fontWeight: active ? 700 : 400,
+    cursor: 'pointer',
+    transition: 'color 0.15s, border-bottom-color 0.15s',
+  })
+
+  const isRulesTab = page.view === 'rules-list' || page.view === 'rules-edit' || page.view === 'rules-new'
+
   return (
     <div
       style={{
@@ -182,118 +213,175 @@ export default function App() {
         background: '#0d0d0d',
         color: '#f0f0f0',
         fontFamily: 'ui-monospace, "Cascadia Code", monospace',
-        padding: '40px 32px',
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: 40 }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: -1 }}>
-          ▲ Prism
-        </h1>
-        <p style={{ margin: '6px 0 0', color: '#666', fontSize: 13 }}>
-          Local-first AI config control plane
-        </p>
-      </div>
-
-      {/* Platform Scanner Section */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#ccc' }}>
-            Platform Scanner
-          </h2>
-          {data && (
-            <span style={{ fontSize: 12, color: '#555' }}>
-              {detectedCount}/{data.items.length} detected
-            </span>
-          )}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            {data?.scannedAt && (
-              <span style={{ fontSize: 11, color: '#444' }}>
-                Last scan: {new Date(data.scannedAt).toLocaleTimeString()}
-              </span>
-            )}
-            <button
-              onClick={rescan}
-              disabled={scanning || loading}
-              style={{
-                padding: '6px 14px',
-                background: scanning ? '#1a1a1a' : '#1d3557',
-                color: scanning ? '#555' : '#93c5fd',
-                border: '1px solid #1d4ed8',
-                borderRadius: 6,
-                fontSize: 12,
-                fontFamily: 'inherit',
-                cursor: scanning ? 'not-allowed' : 'pointer',
-                fontWeight: 600,
-              }}
-            >
-              {scanning ? '⟳ Scanning...' : '↺ Rescan'}
-            </button>
+      {/* App shell: header + tab bar */}
+      <div
+        style={{
+          padding: '28px 32px 0',
+          borderBottom: '1px solid #222',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: -1 }}>
+              ▲ Prism
+            </h1>
+            <p style={{ margin: '4px 0 12px', color: '#555', fontSize: 12 }}>
+              Local-first AI config control plane
+            </p>
           </div>
         </div>
 
-        {/* Loading state */}
-        {loading && (
-          <div style={{ color: '#555', fontSize: 13, padding: '32px 0' }}>
-            ⟳ Scanning platforms...
-          </div>
-        )}
-
-        {/* Error state */}
-        {!loading && error && (
-          <div
-            style={{
-              background: '#1a0a0a',
-              border: '1px solid #7f1d1d',
-              borderRadius: 8,
-              padding: '16px 20px',
-              color: '#fca5a5',
-              fontSize: 13,
-            }}
+        {/* Tab bar */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: -1 }}>
+          <button
+            style={tabStyle(page.view === 'scanner')}
+            onClick={() => setPage({ view: 'scanner' })}
           >
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>⚠ Scan Failed</div>
-            <div style={{ color: '#f87171', fontSize: 12, fontFamily: 'monospace' }}>
-              {error}
+            Scanner
+          </button>
+          <button
+            style={tabStyle(isRulesTab)}
+            onClick={() => setPage({ view: 'rules-list' })}
+          >
+            Rules
+          </button>
+        </div>
+      </div>
+
+      {/* Page content */}
+      <div style={{ padding: '32px 32px' }}>
+
+        {/* ── Scanner tab ──────────────────────────────────────────────────── */}
+        {page.view === 'scanner' && (
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#ccc' }}>
+                Platform Scanner
+              </h2>
+              {data && (
+                <span style={{ fontSize: 12, color: '#555' }}>
+                  {detectedCount}/{data.items.length} detected
+                </span>
+              )}
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+                {data?.scannedAt && (
+                  <span style={{ fontSize: 11, color: '#444' }}>
+                    Last scan: {new Date(data.scannedAt).toLocaleTimeString()}
+                  </span>
+                )}
+                <button
+                  onClick={rescan}
+                  disabled={scanning || loading}
+                  style={{
+                    padding: '6px 14px',
+                    background: scanning ? '#1a1a1a' : '#1d3557',
+                    color: scanning ? '#555' : '#93c5fd',
+                    border: '1px solid #1d4ed8',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontFamily: 'inherit',
+                    cursor: scanning ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  {scanning ? '⟳ Scanning...' : '↺ Rescan'}
+                </button>
+              </div>
             </div>
-            <div style={{ marginTop: 10, fontSize: 11, color: '#888' }}>
-              Make sure the server is running:{' '}
-              <code style={{ color: '#a78bfa' }}>pnpm --filter @prism/server dev</code>
-            </div>
-            <button
-              onClick={fetchPlatforms}
-              style={{
-                marginTop: 12,
-                padding: '5px 12px',
-                background: '#2a0a0a',
-                color: '#f87171',
-                border: '1px solid #7f1d1d',
-                borderRadius: 4,
-                fontSize: 11,
-                fontFamily: 'inherit',
-                cursor: 'pointer',
-              }}
-            >
-              Retry
-            </button>
-          </div>
+
+            {/* Loading state */}
+            {loading && (
+              <div style={{ color: '#555', fontSize: 13, padding: '32px 0' }}>
+                ⟳ Scanning platforms...
+              </div>
+            )}
+
+            {/* Error state */}
+            {!loading && error && (
+              <div
+                style={{
+                  background: '#1a0a0a',
+                  border: '1px solid #7f1d1d',
+                  borderRadius: 8,
+                  padding: '16px 20px',
+                  color: '#fca5a5',
+                  fontSize: 13,
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>⚠ Scan Failed</div>
+                <div style={{ color: '#f87171', fontSize: 12, fontFamily: 'monospace' }}>
+                  {error}
+                </div>
+                <div style={{ marginTop: 10, fontSize: 11, color: '#888' }}>
+                  Make sure the server is running:{' '}
+                  <code style={{ color: '#a78bfa' }}>pnpm --filter @prism/server dev</code>
+                </div>
+                <button
+                  onClick={fetchPlatforms}
+                  style={{
+                    marginTop: 12,
+                    padding: '5px 12px',
+                    background: '#2a0a0a',
+                    color: '#f87171',
+                    border: '1px solid #7f1d1d',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!loading && !error && data && data.items.length === 0 && (
+              <div style={{ color: '#555', fontSize: 13, padding: '32px 0' }}>
+                No platform adapters registered.
+              </div>
+            )}
+
+            {/* Platform cards */}
+            {!loading && !error && data && data.items.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                {data.items.map((platform) => (
+                  <PlatformCard key={platform.id} platform={platform} />
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
-        {/* Empty state */}
-        {!loading && !error && data && data.items.length === 0 && (
-          <div style={{ color: '#555', fontSize: 13, padding: '32px 0' }}>
-            No platform adapters registered.
-          </div>
+        {/* ── Rules list tab ───────────────────────────────────────────────── */}
+        {page.view === 'rules-list' && (
+          <RulesPage
+            onEdit={(rule) => setPage({ view: 'rules-edit', rule })}
+            onNew={() => setPage({ view: 'rules-new' })}
+          />
         )}
 
-        {/* Platform cards */}
-        {!loading && !error && data && data.items.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-            {data.items.map((platform) => (
-              <PlatformCard key={platform.id} platform={platform} />
-            ))}
-          </div>
+        {/* ── Rule editor (edit) ───────────────────────────────────────────── */}
+        {page.view === 'rules-edit' && (
+          <RuleEditorPage
+            rule={page.rule}
+            onSave={() => setPage({ view: 'rules-list' })}
+            onCancel={() => setPage({ view: 'rules-list' })}
+          />
         )}
-      </section>
+
+        {/* ── Rule editor (new) ────────────────────────────────────────────── */}
+        {page.view === 'rules-new' && (
+          <RuleEditorPage
+            rule={null}
+            onSave={() => setPage({ view: 'rules-list' })}
+            onCancel={() => setPage({ view: 'rules-list' })}
+          />
+        )}
+
+      </div>
     </div>
   )
 }
