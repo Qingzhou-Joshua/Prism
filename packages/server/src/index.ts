@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, FileRuleStore, FileProfileStore, PublishEngine, FileRevisionStore } from '@prism/core'
+import { createAdapterRegistry, FileRuleStore, FileProfileStore, FileSkillStore, PublishEngine, FileRevisionStore, getPlatformRulesDir } from '@prism/core'
 import { openclawAdapter } from '@prism/adapter-openclaw'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
@@ -46,7 +46,9 @@ const revisionStore = new FileRevisionStore(
   join(homedir(), '.prism', 'revisions'),
   join(homedir(), '.prism', 'backups'),
 )
-const publishEngine = new PublishEngine(rulesStore, profileStore)
+const skillStore = new FileSkillStore(join(homedir(), '.prism', 'skills', 'skills.json'))
+
+const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillStore)
 await registerPublishRoutes(app, publishEngine, revisionStore)
 await registerRevisionRoutes(app, revisionStore)
 
