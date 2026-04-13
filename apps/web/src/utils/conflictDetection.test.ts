@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { ImportableRule } from '@prism/shared'
-import type { UnifiedRule } from '@prism/shared'
+import type { ImportableRule, UnifiedRule } from '@prism/shared'
 import { detectConflicts } from './conflictDetection.js'
 
 // Helper to create a minimal UnifiedRule
@@ -52,7 +51,13 @@ describe('detectConflicts', () => {
   })
 
   it('returns empty array for empty importable list', () => {
-    const result = detectConflicts([], [makeRule('rule-1', 'coding style')])
+    // Arrange
+    const existing = [makeRule('rule-1', 'coding style')]
+
+    // Act
+    const result = detectConflicts([], existing)
+
+    // Assert
     expect(result).toHaveLength(0)
   })
 
@@ -66,6 +71,18 @@ describe('detectConflicts', () => {
   it('preserves the original ImportableRule in result', () => {
     const rule = makeImportable('coding style', 'coding-style.md')
     const result = detectConflicts([rule], [])
+    expect(result[0].rule).toBe(rule)
+  })
+
+  it('preserves the original ImportableRule in result when conflict is detected', () => {
+    // Arrange
+    const rule = makeImportable('coding style', 'coding-style.md')
+    const existing = [makeRule('rule-1', 'coding style')]
+
+    // Act
+    const result = detectConflicts([rule], existing)
+
+    // Assert
     expect(result[0].rule).toBe(rule)
   })
 })
