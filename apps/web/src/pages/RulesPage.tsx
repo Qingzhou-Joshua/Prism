@@ -11,6 +11,7 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
   const [rules, setRules] = useState<UnifiedRule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -31,16 +32,19 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
 
   async function handleDelete(rule: UnifiedRule) {
     if (!confirm(`Delete rule "${rule.name}"?`)) return
+    setDeletingId(rule.id)
     try {
       await rulesApi.delete(rule.id)
       setRules(prev => prev.filter(r => r.id !== rule.id))
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Delete failed')
+    } finally {
+      setDeletingId(null)
     }
   }
 
   if (loading) return <div className="loading">Loading rules…</div>
-  if (error) return <div className="error">{error} <button onClick={load}>Retry</button></div>
+  if (error) return <div className="error">{error} <button onClick={() => void load()}>Retry</button></div>
 
   return (
     <div className="rules-page">
@@ -66,11 +70,16 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
               <tr key={rule.id}>
                 <td>{rule.name}</td>
                 <td>{rule.scope}</td>
-                <td>{rule.tags.join(', ') || '—'}</td>
+                <td>{(rule.tags ?? []).join(', ') || '—'}</td>
                 <td>{new Date(rule.updatedAt).toLocaleDateString()}</td>
                 <td>
                   <button onClick={() => onEdit(rule)}>Edit</button>
-                  <button onClick={() => handleDelete(rule)}>Delete</button>
+                  <button
+                    onClick={() => void handleDelete(rule)}
+                    disabled={deletingId === rule.id}
+                  >
+                    {deletingId === rule.id ? 'Deleting…' : 'Delete'}
+                  </button>
                 </td>
               </tr>
             ))}
