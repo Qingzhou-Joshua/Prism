@@ -15,7 +15,6 @@ interface DraftRule {
   name: string
   content: string
   scope: RuleScope
-  tags: string[]
   platformOverrides: Partial<Record<PlatformId, PlatformOverride>>
 }
 
@@ -25,7 +24,6 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
       name: '',
       content: '',
       scope: 'global',
-      tags: [],
       platformOverrides: {},
     }
   }
@@ -33,8 +31,7 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
     name: rule.name,
     content: rule.content,
     scope: rule.scope,
-    tags: rule.tags,
-    platformOverrides: rule.platformOverrides,
+    platformOverrides: rule.platformOverrides ?? {},
   }
 }
 
@@ -49,12 +46,19 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
   // 编辑模式下加载当前 projections
   useEffect(() => {
     if (rule === null) return
+    setProjections([])
     setProjectionsLoading(true)
     rulesApi
       .projections(rule.id)
       .then(setProjections)
       .catch(() => setProjections([]))
       .finally(() => setProjectionsLoading(false))
+  }, [rule?.id])
+
+  // 当 rule 切换时重置 draft 和 tagsInput
+  useEffect(() => {
+    setDraft(toDraft(rule))
+    setTagsInput(rule?.tags?.join(', ') ?? '')
   }, [rule?.id])
 
   async function handleSave() {
