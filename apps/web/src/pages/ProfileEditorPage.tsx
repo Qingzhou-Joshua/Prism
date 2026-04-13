@@ -88,6 +88,7 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
         name: name.trim(),
         description: description.trim(),
         ruleIds: Array.from(selectedRuleIds),
+        skillIds: [],
         targetPlatforms: Array.from(selectedPlatforms),
       }
       if (profile) {
