@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { nanoid } from 'nanoid'
 import type { PlatformId, Revision, PublishedFile } from '@prism/shared'
+import { NotFoundError } from '@prism/shared'
 import type { RuleStore } from '../rules/store.js'
 import type { ProfileStore } from '../profiles/store.js'
 import { getPlatformRulesDir, ruleFileName } from './platform-paths.js'
@@ -19,7 +20,7 @@ export class PublishEngine {
   async publish(profileId: string): Promise<Revision> {
     const profile = await this.profileStore.get(profileId)
     if (!profile) {
-      throw new Error(`Profile not found: ${profileId}`)
+      throw new NotFoundError(`Profile not found: ${profileId}`)
     }
 
     const revisionId = nanoid()

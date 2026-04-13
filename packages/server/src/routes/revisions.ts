@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { FileRevisionStore } from '@prism/core'
+import { NotFoundError } from '@prism/shared'
 
 export async function registerRevisionRoutes(
   app: FastifyInstance,
@@ -23,7 +24,7 @@ export async function registerRevisionRoutes(
         reply.code(404)
         return { error: 'Revision not found' }
       }
-      return revision
+      return { revision }
     },
   )
 
@@ -35,13 +36,11 @@ export async function registerRevisionRoutes(
         await revisionStore.rollback(request.params.id)
         return { ok: true }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
-        if (message.includes('not found')) {
-          reply.code(404)
-          return { error: message }
+        const message = error instanceof Error ? error.message : String(error)
+        if (error instanceof NotFoundError) {
+          return reply.code(404).send({ error: message })
         }
-        reply.code(500)
-        return { error: message }
+        return reply.code(500).send({ error: message })
       }
     },
   )

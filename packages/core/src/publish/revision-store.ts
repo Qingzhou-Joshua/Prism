@@ -2,6 +2,7 @@ import { copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promi
 import { dirname, join } from 'node:path'
 import { access } from 'node:fs/promises'
 import type { Revision } from '@prism/shared'
+import { NotFoundError } from '@prism/shared'
 
 export class FileRevisionStore {
   private writeQueue: Promise<void> = Promise.resolve()
@@ -48,7 +49,7 @@ export class FileRevisionStore {
   async rollback(id: string): Promise<void> {
     const revision = await this.get(id)
     if (!revision) {
-      throw new Error(`Revision not found: ${id}`)
+      throw new NotFoundError(`Revision not found: ${id}`)
     }
     for (const file of revision.files) {
       if (file.isNew) {
