@@ -6,6 +6,33 @@ import type { PlatformId } from '@prism/shared'
 
 const ALL_PLATFORM_IDS: PlatformId[] = ['openclaw', 'claude-code', 'cursor', 'codebuddy']
 
+const createRuleSchema = {
+  body: {
+    type: 'object' as const,
+    required: ['name', 'content', 'scope'],
+    properties: {
+      name:              { type: 'string', minLength: 1 },
+      content:           { type: 'string' },
+      scope:             { type: 'string', enum: ['global', 'project'] },
+      tags:              { type: 'array', items: { type: 'string' } },
+      platformOverrides: { type: 'object' },
+    },
+  },
+}
+
+const updateRuleSchema = {
+  body: {
+    type: 'object' as const,
+    properties: {
+      name:              { type: 'string', minLength: 1 },
+      content:           { type: 'string' },
+      scope:             { type: 'string', enum: ['global', 'project'] },
+      tags:              { type: 'array', items: { type: 'string' } },
+      platformOverrides: { type: 'object' },
+    },
+  },
+}
+
 export async function registerRulesRoutes(
   app: FastifyInstance,
   store: RuleStore,
@@ -17,7 +44,7 @@ export async function registerRulesRoutes(
   })
 
   // POST /rules
-  app.post<{ Body: CreateRuleDto }>('/rules', async (request, reply) => {
+  app.post<{ Body: CreateRuleDto }>('/rules', { schema: createRuleSchema }, async (request, reply) => {
     const rule = await store.create(request.body)
     reply.code(201)
     return rule
@@ -36,14 +63,14 @@ export async function registerRulesRoutes(
   // PUT /rules/:id
   app.put<{ Params: { id: string }; Body: UpdateRuleDto }>(
     '/rules/:id',
+    { schema: updateRuleSchema },
     async (request, reply) => {
-      try {
-        const rule = await store.update(request.params.id, request.body)
-        return rule
-      } catch {
+      const rule = await store.update(request.params.id, request.body)
+      if (!rule) {
         reply.code(404)
         return { error: 'Rule not found' }
       }
+      return rule
     },
   )
 

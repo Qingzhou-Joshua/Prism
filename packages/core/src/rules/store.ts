@@ -7,7 +7,7 @@ export interface RuleStore {
   list(): Promise<UnifiedRule[]>
   get(id: string): Promise<UnifiedRule | null>
   create(dto: CreateRuleDto): Promise<UnifiedRule>
-  update(id: string, dto: UpdateRuleDto): Promise<UnifiedRule>
+  update(id: string, dto: UpdateRuleDto): Promise<UnifiedRule | null>
   delete(id: string): Promise<boolean>
 }
 
@@ -73,11 +73,11 @@ export class FileRuleStore implements RuleStore {
     })
   }
 
-  async update(id: string, dto: UpdateRuleDto): Promise<UnifiedRule> {
+  async update(id: string, dto: UpdateRuleDto): Promise<UnifiedRule | null> {
     return this.enqueue(async () => {
       const rules = await this.load()
       const index = rules.findIndex((r) => r.id === id)
-      if (index === -1) throw new Error(`Rule not found: ${id}`)
+      if (index === -1) return null
       const updated: UnifiedRule = {
         ...rules[index],
         ...dto,

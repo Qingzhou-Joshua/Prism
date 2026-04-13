@@ -60,13 +60,15 @@ describe('FileRuleStore', () => {
     // 等待至少 1ms 确保 updatedAt 与 createdAt 不同
     await new Promise((resolve) => setTimeout(resolve, 1))
     const updated = await store.update(created.id, { name: 'New Name' })
-    expect(updated.name).toBe('New Name')
-    expect(updated.content).toBe('old')
-    expect(updated.updatedAt).not.toBe(created.updatedAt)
+    expect(updated).not.toBeNull()
+    expect(updated!.name).toBe('New Name')
+    expect(updated!.content).toBe('old')
+    expect(updated!.updatedAt).not.toBe(created.updatedAt)
   })
 
-  it('update throws for unknown id', async () => {
-    await expect(store.update('bad-id', { name: 'X' })).rejects.toThrow('Rule not found: bad-id')
+  it('update returns null for unknown id', async () => {
+    const result = await store.update('bad-id', { name: 'X' })
+    expect(result).toBeNull()
   })
 
   it('delete removes rule and returns true', async () => {

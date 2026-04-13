@@ -86,7 +86,20 @@ describe('Rules API', () => {
       payload: { name: 'New Name' },
     })
     expect(res.statusCode).toBe(200)
-    expect(res.json<UnifiedRule>().name).toBe('New Name')
+    const updated = res.json<UnifiedRule>()
+    expect(updated.name).toBe('New Name')
+    expect(updated.content).toBe('Old content')  // 未修改的字段应保持不变
+    expect(updated.scope).toBe('global')
+  })
+
+  it('PUT /rules/:id returns 404 for unknown id', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/rules/no-such-id',
+      payload: { name: 'X' },
+    })
+    expect(res.statusCode).toBe(404)
+    expect(res.json()).toMatchObject({ error: 'Rule not found' })
   })
 
   it('DELETE /rules/:id removes the rule', async () => {
@@ -100,6 +113,12 @@ describe('Rules API', () => {
     expect(del.statusCode).toBe(204)
     const get = await app.inject({ method: 'GET', url: `/rules/${id}` })
     expect(get.statusCode).toBe(404)
+  })
+
+  it('DELETE /rules/:id returns 404 for unknown id', async () => {
+    const res = await app.inject({ method: 'DELETE', url: '/rules/no-such-id' })
+    expect(res.statusCode).toBe(404)
+    expect(res.json()).toMatchObject({ error: 'Rule not found' })
   })
 
   it('GET /rules/:id/projections returns per-platform projections', async () => {
