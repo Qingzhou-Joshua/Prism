@@ -1,12 +1,13 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, FileRuleStore } from '@prism/core'
+import { createAdapterRegistry, FileRuleStore, FileProfileStore } from '@prism/core'
 import { openclawAdapter } from '@prism/adapter-openclaw'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { registerScanRoutes } from './routes/scan.js'
 import { registerRulesRoutes } from './routes/rules.js'
 import { registerPlatformRulesRoutes } from './routes/platforms.js'
+import { registerProfileRoutes } from './routes/profiles.js'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -34,6 +35,9 @@ await registerScanRoutes(app, registry)
 const rulesStore = new FileRuleStore(join(homedir(), '.prism', 'rules', 'rules.json'))
 await registerRulesRoutes(app, rulesStore)
 await registerPlatformRulesRoutes(app, registry)
+
+const profileStore = new FileProfileStore(join(homedir(), '.prism', 'profiles', 'profiles.json'))
+await registerProfileRoutes(app, profileStore, rulesStore)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
