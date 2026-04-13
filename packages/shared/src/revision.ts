@@ -5,8 +5,10 @@ export interface PublishedFile {
   filePath: string        // absolute path written to
   backupPath?: string     // defined when isNew=false; path of backup copy
   isNew: boolean          // true = file did not exist before publish; rollback deletes it
-  ruleId: string
-  ruleName: string
+  ruleId?: string
+  ruleName?: string
+  skillId?: string
+  skillName?: string
 }
 
 export interface Revision {

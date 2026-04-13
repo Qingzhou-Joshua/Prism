@@ -3,9 +3,10 @@ import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PublishEngine } from './engine.js'
-import type { UnifiedRule, PlatformId } from '@prism/shared'
+import type { UnifiedRule, UnifiedSkill, PlatformId } from '@prism/shared'
 import type { RuleStore } from '../rules/store.js'
 import type { ProfileStore } from '../profiles/store.js'
+import type { SkillStore } from '../skills/store.js'
 
 // ---- in-memory stubs ----
 
@@ -17,6 +18,16 @@ function makeRuleStore(rules: UnifiedRule[]): RuleStore {
     async update(_id: string, _dto: unknown) { throw new Error('not implemented') },
     async delete(_id: string) { throw new Error('not implemented') },
   } as unknown as RuleStore
+}
+
+function makeSkillStore(skills: UnifiedSkill[]): SkillStore {
+  return {
+    async list() { return skills },
+    async get(id: string) { return skills.find(s => s.id === id) ?? null },
+    async create(_dto: unknown) { throw new Error('not implemented') },
+    async update(_id: string, _dto: unknown) { throw new Error('not implemented') },
+    async delete(_id: string) { throw new Error('not implemented') },
+  } as unknown as SkillStore
 }
 
 function makeProfileStore(profiles: any[]): ProfileStore {
@@ -57,10 +68,21 @@ const RULE_1: UnifiedRule = {
   updatedAt: new Date().toISOString(),
 }
 
+const SKILL_1: UnifiedSkill = {
+  id: 'skill-1',
+  name: 'My Skill',
+  content: 'skill content here',
+  tags: [],
+  targetPlatforms: ['claude-code' as PlatformId],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+}
+
 const PROFILE_1 = {
   id: 'profile-1',
   name: 'My Profile',
   ruleIds: ['rule-1'],
+  skillIds: [] as string[],
   targetPlatforms: ['claude-code' as PlatformId],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -188,5 +210,152 @@ describe('PublishEngine', () => {
 
     const revision = await engine.publish('profile-1')
     expect(revision.files).toHaveLength(4)
+  })
+
+  // ---- Skill publishing tests ----
+
+  it('writes a skill file with skillId and skillName tracked', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+    const skillsDir = await makeTmp()
+
+    const profileWithSkill = { ...PROFILE_1, ruleIds: [], skillIds: ['skill-1'] }
+
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithSkill]),
+      prismDir,
+      () => platformDir,
+      makeSkillStore([SKILL_1]),
+      () => skillsDir,
+    )
+
+    const revision = await engine.publish('profile-1')
+
+    expect(revision.files).toHaveLength(1)
+    const pf = revision.files[0]
+    expect(pf.isNew).toBe(true)
+    expect(pf.backupPath).toBeUndefined()
+    expect(pf.skillId).toBe('skill-1')
+    expect(pf.skillName).toBe('My Skill')
+    expect(pf.ruleId).toBeUndefined()
+
+    const written = await readFile(pf.filePath, 'utf-8')
+    expect(written).toBe('skill content here')
+  })
+
+  it('backs up existing skill file before overwrite', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+    const skillsDir = await makeTmp()
+
+    // pre-create the target skill file
+    const targetPath = join(skillsDir, 'my-skill.md')
+    await writeFile(targetPath, 'old skill content')
+
+    const profileWithSkill = { ...PROFILE_1, ruleIds: [], skillIds: ['skill-1'] }
+
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithSkill]),
+      prismDir,
+      () => platformDir,
+      makeSkillStore([SKILL_1]),
+      () => skillsDir,
+    )
+
+    const revision = await engine.publish('profile-1')
+
+    const pf = revision.files[0]
+    expect(pf.isNew).toBe(false)
+    expect(pf.backupPath).toBeDefined()
+
+    const backup = await readFile(pf.backupPath!, 'utf-8')
+    expect(backup).toBe('old skill content')
+
+    const written = await readFile(pf.filePath, 'utf-8')
+    expect(written).toBe('skill content here')
+  })
+
+  it('skips missing skill IDs silently', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+    const skillsDir = await makeTmp()
+
+    const profileWithMissingSkill = { ...PROFILE_1, ruleIds: [], skillIds: ['nonexistent-skill'] }
+
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithMissingSkill]),
+      prismDir,
+      () => platformDir,
+      makeSkillStore([SKILL_1]),
+      () => skillsDir,
+    )
+
+    const revision = await engine.publish('profile-1')
+    expect(revision.files).toHaveLength(0)
+  })
+
+  it('skips platforms that do not support skills (getPlatformSkillsDir throws)', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+
+    const profileWithSkill = {
+      ...PROFILE_1,
+      ruleIds: [],
+      skillIds: ['skill-1'],
+      targetPlatforms: ['claude-code' as PlatformId, 'openclaw' as PlatformId],
+    }
+
+    // Only claude-code has a skills dir; openclaw throws
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithSkill]),
+      prismDir,
+      () => platformDir,
+      makeSkillStore([SKILL_1]),
+      (platformId) => {
+        if (platformId === 'claude-code') return platformDir
+        throw new Error(`Platform ${platformId} does not support skills`)
+      },
+    )
+
+    const revision = await engine.publish('profile-1')
+    // Only claude-code writes a skill file; openclaw is skipped
+    expect(revision.files).toHaveLength(1)
+    expect(revision.files[0].platformId).toBe('claude-code')
+    expect(revision.files[0].skillId).toBe('skill-1')
+  })
+
+  it('writes both rules and skills in one publish', async () => {
+    const prismDir = await makeTmp()
+    const rulesDir = await makeTmp()
+    const skillsDir = await makeTmp()
+
+    const profileWithBoth = {
+      ...PROFILE_1,
+      ruleIds: ['rule-1'],
+      skillIds: ['skill-1'],
+    }
+
+    const engine = new PublishEngine(
+      makeRuleStore([RULE_1]),
+      makeProfileStore([profileWithBoth]),
+      prismDir,
+      () => rulesDir,
+      makeSkillStore([SKILL_1]),
+      () => skillsDir,
+    )
+
+    const revision = await engine.publish('profile-1')
+    expect(revision.files).toHaveLength(2)
+
+    const ruleFile = revision.files.find(f => f.ruleId !== undefined)
+    const skillFile = revision.files.find(f => f.skillId !== undefined)
+    expect(ruleFile).toBeDefined()
+    expect(skillFile).toBeDefined()
+    expect(ruleFile!.ruleId).toBe('rule-1')
+    expect(skillFile!.skillId).toBe('skill-1')
   })
 })

@@ -6,7 +6,8 @@ import type { PlatformId, Revision, PublishedFile } from '@prism/shared'
 import { NotFoundError } from '@prism/shared'
 import type { RuleStore } from '../rules/store.js'
 import type { ProfileStore } from '../profiles/store.js'
-import { getPlatformRulesDir, ruleFileName } from './platform-paths.js'
+import type { SkillStore } from '../skills/store.js'
+import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName } from './platform-paths.js'
 import { projectRule } from '../rules/project.js'
 
 export class PublishEngine {
@@ -15,6 +16,8 @@ export class PublishEngine {
     private readonly profileStore: ProfileStore,
     private readonly prismDir: string = join(homedir(), '.prism'),
     private readonly getPlatformDir: (platformId: PlatformId) => string = getPlatformRulesDir,
+    private readonly skillStore: SkillStore | null = null,
+    private readonly getSkillsDir: (platformId: PlatformId) => string = getPlatformSkillsDir,
   ) {}
 
   async publish(profileId: string): Promise<Revision> {
@@ -27,6 +30,7 @@ export class PublishEngine {
     const publishedFiles: PublishedFile[] = []
 
     for (const platformId of (profile.targetPlatforms ?? [])) {
+      // Write rule files
       for (const ruleId of (profile.ruleIds ?? [])) {
         const rule = await this.ruleStore.get(ruleId)
         if (!rule) continue
@@ -62,6 +66,50 @@ export class PublishEngine {
           ruleId: rule.id,
           ruleName: rule.name,
         })
+      }
+
+      // Write skill files
+      if (this.skillStore) {
+        for (const skillId of (profile.skillIds ?? [])) {
+          const skill = await this.skillStore.get(skillId)
+          if (!skill) continue
+
+          let skillsDir: string
+          try {
+            skillsDir = this.getSkillsDir(platformId)
+          } catch {
+            // Platform does not support skills — skip
+            continue
+          }
+
+          const fileName = skillFileName(skill.name)
+          const targetPath = join(skillsDir, fileName)
+
+          let isNew = true
+          let backupPath: string | undefined
+          try {
+            await stat(targetPath)
+            isNew = false
+            const backupDir = join(this.prismDir, 'backups', revisionId, `${platformId}-skills`)
+            await mkdir(backupDir, { recursive: true })
+            backupPath = join(backupDir, fileName)
+            await copyFile(targetPath, backupPath)
+          } catch {
+            // File does not exist — isNew stays true
+          }
+
+          await mkdir(skillsDir, { recursive: true })
+          await writeFile(targetPath, skill.content, 'utf-8')
+
+          publishedFiles.push({
+            platformId,
+            filePath: targetPath,
+            backupPath,
+            isNew,
+            skillId: skill.id,
+            skillName: skill.name,
+          })
+        }
       }
     }
 
