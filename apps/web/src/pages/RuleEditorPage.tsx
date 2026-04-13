@@ -45,8 +45,8 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
 
   // 编辑模式下加载当前 projections
   useEffect(() => {
-    if (rule === null) return
     setProjections([])
+    if (rule === null) return
     setProjectionsLoading(true)
     rulesApi
       .projections(rule.id)
