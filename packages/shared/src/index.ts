@@ -17,3 +17,5 @@ export interface PlatformScanResult {
   capabilities: PlatformCapabilities
   rulesDetected?: boolean       // whether rules/ subdir was found
 }
+
+export * from './rule.js'
