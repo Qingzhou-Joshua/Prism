@@ -7,6 +7,7 @@ export default defineConfig({
       'packages/adapters/adapter-openclaw/vitest.config.ts',
       'packages/adapters/adapter-codebuddy/vitest.config.ts',
       'packages/adapters/adapter-claude-code/vitest.config.ts',
+      'packages/server/vitest.config.ts',
     ],
   },
 })

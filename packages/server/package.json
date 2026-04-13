@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "echo 'server lint placeholder'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo 'server test placeholder'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.0"
   }
 }
