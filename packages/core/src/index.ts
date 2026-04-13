@@ -1,6 +1,6 @@
 import type { PlatformAdapter } from './types.js'
 
-export type { PlatformAdapter } from './types.js'
+export type { PlatformAdapter, ImportedSkill } from './types.js'
 
 export async function scanPlatforms(adapters: PlatformAdapter[]) {
   return Promise.all(adapters.map((adapter) => adapter.scan()))
@@ -14,3 +14,7 @@ export * from './profiles/store.js'
 export * from './publish/platform-paths.js'
 export * from './publish/engine.js'
 export * from './publish/revision-store.js'
+export * from './skills/store.js'
+export * from './skills/parse.js'
+export * from './skills/store.js'
+export * from './skills/parse.js'

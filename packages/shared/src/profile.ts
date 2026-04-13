@@ -5,6 +5,7 @@ export interface Profile {
   name: string
   description?: string
   ruleIds: string[]
+  skillIds: string[]
   targetPlatforms: PlatformId[]
   createdAt: string
   updatedAt: string
@@ -14,6 +15,7 @@ export interface CreateProfileDto {
   name: string
   description?: string
   ruleIds: string[]
+  skillIds: string[]
   targetPlatforms: PlatformId[]
 }
 
@@ -21,6 +23,7 @@ export interface UpdateProfileDto {
   name?: string
   description?: string
   ruleIds?: string[]
+  skillIds?: string[]
   targetPlatforms?: PlatformId[]
 }
 

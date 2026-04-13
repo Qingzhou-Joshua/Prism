@@ -60,6 +60,7 @@ export class FileProfileStore implements ProfileStore {
         name: dto.name,
         description: dto.description ?? '',
         ruleIds: dto.ruleIds,
+        skillIds: dto.skillIds,
         targetPlatforms: dto.targetPlatforms,
         createdAt: now,
         updatedAt: now,
