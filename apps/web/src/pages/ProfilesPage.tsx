@@ -98,7 +98,7 @@ export function ProfilesPage({ onNew, onEdit }: ProfilesPageProps) {
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => onEdit(profile)} style={{ padding: '5px 12px', background: '#1e3a5f', color: '#93c5fd', border: '1px solid #1d4ed8', borderRadius: 5, cursor: 'pointer', fontSize: 12 }}>Edit</button>
-                <button onClick={() => handleDelete(profile)} disabled={deletingId === profile.id} style={{ padding: '5px 12px', background: '#3b1f1f', color: '#f87171', border: '1px solid #7f1d1d', borderRadius: 5, cursor: deletingId === profile.id ? 'not-allowed' : 'pointer', fontSize: 12, opacity: deletingId === profile.id ? 0.6 : 1 }}>
+                <button onClick={() => void handleDelete(profile)} disabled={deletingId === profile.id} style={{ padding: '5px 12px', background: '#3b1f1f', color: '#f87171', border: '1px solid #7f1d1d', borderRadius: 5, cursor: deletingId === profile.id ? 'not-allowed' : 'pointer', fontSize: 12, opacity: deletingId === profile.id ? 0.6 : 1 }}>
                   {deletingId === profile.id ? '…' : 'Delete'}
                 </button>
               </div>
