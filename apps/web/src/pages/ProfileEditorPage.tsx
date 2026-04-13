@@ -299,7 +299,7 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
               breakdownText = '（全部覆盖）'
             }
             return (
-              <div style={{ marginBottom: '16px', padding: '16px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '6px' }}>
+              <div style={{ marginBottom: '16px', padding: '16px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '6px', color: '#111827' }}>
                 <div style={{ marginBottom: '4px', fontWeight: 500 }}>
                   即将写入 {totalFiles} 个文件到 {platformNames}
                 </div>
@@ -353,13 +353,13 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
           )}
 
           {preview && (
-            <div style={{ border: '1px solid #e5e7eb', borderRadius: '4px' }}>
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: '4px', color: '#111827' }}>
               {previewByPlatform.length === 0 ? (
                 <div style={{ padding: '16px', color: '#6b7280' }}>No files to publish</div>
               ) : (
                 previewByPlatform.map(({ platformId, platformDisplayName, files }) => (
                   <div key={platformId}>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', fontWeight: 600, fontSize: '14px' }}>
+                    <div style={{ padding: '8px 12px', background: '#f9fafb', color: '#111827', borderBottom: '1px solid #e5e7eb', fontWeight: 600, fontSize: '14px' }}>
                       {platformDisplayName} ({files.length} file{files.length !== 1 ? 's' : ''})
                     </div>
                     {files.map((file) => {
@@ -385,7 +385,7 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
                             )}
                           </div>
                           {expanded && (
-                            <pre style={{ margin: 0, padding: '8px 12px 8px 32px', background: '#f9fafb', fontSize: '12px', overflowX: 'auto', borderTop: '1px solid #f3f4f6' }}>
+                            <pre style={{ margin: 0, padding: '8px 12px 8px 32px', background: '#f9fafb', color: '#111827', fontSize: '12px', overflowX: 'auto', borderTop: '1px solid #f3f4f6' }}>
                               {file.content}
                             </pre>
                           )}

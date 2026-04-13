@@ -1,8 +1,12 @@
 export const API_BASE = 'http://localhost:3001'
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
+  const headers: Record<string, string> = {}
+  if (init?.body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+  }
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...init,
   })
   if (res.status === 204) return null
