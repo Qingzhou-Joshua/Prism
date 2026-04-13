@@ -9,3 +9,4 @@ export async function scanPlatforms(adapters: PlatformAdapter[]) {
 export { createAdapterRegistry } from './registry.js'
 export type { AdapterRegistry } from './registry.js'
 export * from './rules/store.js'
+export * from './rules/project.js'
