@@ -22,10 +22,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
 
 export const rulesApi = {
   list(): Promise<UnifiedRule[]> {
-    return request<UnifiedRule[]>('/rules').then(r => r ?? [])
+    return request<{ items: UnifiedRule[] }>('/rules').then(r => r?.items ?? [])
   },
-  get(id: string): Promise<UnifiedRule | null> {
-    return request<UnifiedRule>(`/rules/${id}`)
+  async get(id: string): Promise<UnifiedRule | null> {
+    try {
+      return await request<UnifiedRule>(`/rules/${id}`)
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith('HTTP 404')) return null
+      throw e
+    }
   },
   create(dto: CreateRuleDto): Promise<UnifiedRule> {
     return request<UnifiedRule>('/rules', {
@@ -43,6 +48,6 @@ export const rulesApi = {
     return request<null>(`/rules/${id}`, { method: 'DELETE' }).then(() => undefined)
   },
   projections(id: string): Promise<RuleProjectionItem[]> {
-    return request<RuleProjectionItem[]>(`/rules/${id}/projections`).then(r => r ?? [])
+    return request<{ projections: RuleProjectionItem[] }>(`/rules/${id}/projections`).then(r => r?.projections ?? [])
   },
 }
