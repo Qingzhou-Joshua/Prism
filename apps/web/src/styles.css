@@ -908,17 +908,21 @@ p {
 }
 
 .platform-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
   flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
-.platform-dot-global     { background: var(--seafoam); }
-.platform-dot-claude-code { background: #e65c46; }
-.platform-dot-cursor      { background: #1a73e8; }
-.platform-dot-openclaw    { background: var(--seafoam); }
-.platform-dot-codebuddy   { background: #9c59d1; }
+.platform-dot-global      { background-color: var(--seafoam); border-radius: 50%; width: 8px; height: 8px; }
+.platform-dot-claude-code,
+.platform-dot-claude      { background-image: url('/icons/ic_claude.png'); }
+.platform-dot-cursor      { background-color: #1a73e8; border-radius: 50%; width: 8px; height: 8px; }
+.platform-dot-openclaw    { background-image: url('/icons/ic_openclaw.png'); }
+.platform-dot-codebuddy   { background-image: url('/icons/ic_codebuddy.png'); }
 
 .platform-warning {
   font-size: 11.5px;
