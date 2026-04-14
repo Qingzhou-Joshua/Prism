@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import type { UnifiedAgent, PlatformId } from '@prism/shared'
 import { agentsApi } from '../api/agents'
+import { PlatformIcon } from '../components/PlatformIcon'
 
 // Uses string (not PlatformId) to avoid coupling to @prism/shared union type;
 // callers must ensure values are valid PlatformIds.
@@ -197,9 +198,11 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
                       onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
                     />
                     <span
-                      className={`platform-dot platform-dot-${platform.id}`}
-                    />
-                    <span>{platform.displayName}</span>
+                      className="platform-checkbox-label"
+                    >
+                      <PlatformIcon platformId={platform.id} size={16} />
+                      {platform.displayName}
+                    </span>
                   </label>
                 ))
               )}

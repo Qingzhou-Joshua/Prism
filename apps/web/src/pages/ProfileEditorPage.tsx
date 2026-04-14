@@ -3,6 +3,7 @@ import type { Profile, UnifiedRule, PlatformId, PublishPreview } from '@prism/sh
 import { profilesApi } from '../api/profiles'
 import { rulesApi } from '../api/rules'
 import { ALL_PLATFORMS, PLATFORM_LABELS } from '../constants/platforms'
+import { PlatformIcon } from '../components/PlatformIcon'
 
 interface ProfileEditorPageProps {
   profile: Profile | undefined
@@ -200,7 +201,7 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
                     onChange={() => togglePlatform(platformId)}
                   />
                   <span className="platform-checkbox-label">
-                    <span className={`platform-dot platform-dot-${platformId}`} />
+                    <PlatformIcon platformId={platformId} size={16} />
                     {PLATFORM_LABELS[platformId]}
                   </span>
                 </label>
