@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import type { UnifiedSkill } from '@prism/shared'
+import type { PlatformId } from '@prism/shared'
 import { skillsApi } from '../api/skills'
-import type { SkillProjectionItem } from '../api/skills'
+
+interface DetectedPlatform {
+  id: string
+  displayName: string
+}
 
 interface SkillEditorPageProps {
   onBack: () => void
   initialSkill?: UnifiedSkill
+  detectedPlatforms: DetectedPlatform[]
 }
 
 interface DraftSkill {
@@ -14,13 +20,6 @@ interface DraftSkill {
   content: string
   trigger: string
   category: string
-}
-
-const PLATFORM_DOTS: Record<string, string> = {
-  'claude-code': '#e65c46',
-  'cursor':      '#6ea8fe',
-  'openclaw':    '#34c799',
-  'codebuddy':   '#c084fc',
 }
 
 function toDraft(skill?: UnifiedSkill): DraftSkill {
@@ -35,45 +34,54 @@ function toDraft(skill?: UnifiedSkill): DraftSkill {
   }
 }
 
-export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) {
+export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms }: SkillEditorPageProps) {
   const [draft, setDraft] = useState<DraftSkill>(() => toDraft(initialSkill))
-  const [tagsInput, setTagsInput] = useState(() => initialSkill?.tags?.join(', ') ?? '')
+  const [applyGlobally, setApplyGlobally] = useState(
+    () => (initialSkill?.targetPlatforms?.length ?? 0) === 0
+  )
+  const [targetPlatforms, setTargetPlatforms] = useState<string[]>(
+    () => initialSkill?.targetPlatforms ?? []
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [projections, setProjections] = useState<SkillProjectionItem[]>([])
-  const [projectionsLoading, setProjectionsLoading] = useState(false)
 
-  useEffect(() => {
-    setProjections([])
-    if (!initialSkill) return
-    let cancelled = false
-    setProjectionsLoading(true)
-    skillsApi
-      .projections(initialSkill.id)
-      .then(data  => { if (!cancelled) setProjections(data) })
-      .catch(()   => { if (!cancelled) setProjections([]) })
-      .finally(() => { if (!cancelled) setProjectionsLoading(false) })
-    return () => { cancelled = true }
-  }, [initialSkill?.id])
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Intentional: reset only when navigating to a different skill (id change),
+  // not when parent updates the same skill's content post-save.
   useEffect(() => {
     setDraft(toDraft(initialSkill))
-    setTagsInput(initialSkill?.tags?.join(', ') ?? '')
+    const saved = initialSkill?.targetPlatforms ?? []
+    setTargetPlatforms(saved)
+    setApplyGlobally(saved.length === 0)
   }, [initialSkill?.id])
+
+  function handleApplyGloballyToggle(checked: boolean) {
+    setApplyGlobally(checked)
+    if (!checked) {
+      setTargetPlatforms(detectedPlatforms.map(p => p.id))
+    } else {
+      setTargetPlatforms([])
+    }
+  }
+
+  function handlePlatformToggle(platformId: string, checked: boolean) {
+    setTargetPlatforms(prev =>
+      checked ? [...prev, platformId] : prev.filter(p => p !== platformId)
+    )
+  }
 
   async function handleSave() {
     if (!draft.name.trim()) return
     setSaving(true)
     setError(null)
     try {
-      const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
       const dto = {
         name: draft.name.trim(),
         content: draft.content,
         trigger: draft.trigger.trim() || undefined,
         category: draft.category.trim() || undefined,
-        tags,
-        targetPlatforms: initialSkill?.targetPlatforms ?? [],
+        tags: [],
+        targetPlatforms: (applyGlobally ? [] : targetPlatforms) as PlatformId[],
       }
       if (!initialSkill) {
         await skillsApi.create(dto)
@@ -88,6 +96,9 @@ export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) 
     }
   }
 
+  const isInvalidPlatformState =
+    !applyGlobally && targetPlatforms.length === 0 && detectedPlatforms.length > 0
+
   const title = !initialSkill ? 'New Skill' : `Edit: ${initialSkill.name}`
 
   return (
@@ -96,7 +107,9 @@ export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) 
         <div>
           <h1 className="page-title">{title}</h1>
           <p className="page-subtitle">
-            {initialSkill ? `Editing skill — ${initialSkill.name}` : 'Create a new skill'}
+            {applyGlobally
+              ? 'Applied globally across all platforms'
+              : `Targeted to ${targetPlatforms.length} platform${targetPlatforms.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <div className="editor-header-actions">
@@ -106,7 +119,7 @@ export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) 
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || !draft.name.trim()}
+            disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
             {saving ? 'Saving…' : 'Save Skill'}
           </button>
@@ -116,7 +129,7 @@ export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) 
       {error && <div className="error-state">{error}</div>}
 
       <div className="editor-layout">
-        {/* LEFT: Metadata */}
+        {/* LEFT: Metadata + Platform Targeting */}
         <div className="editor-left">
           <div className="editor-section">
             <label className="form-label">
@@ -151,17 +164,46 @@ export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) 
                 className="form-input"
               />
             </label>
+          </div>
 
-            <label className="form-label">
-              Tags (comma-separated)
+          <div className="editor-section">
+            <div className="section-title">Target Platforms</div>
+
+            <label className="platform-checkbox-row">
               <input
-                type="text"
-                value={tagsInput}
-                onChange={e => setTagsInput(e.target.value)}
-                placeholder="e.g. typescript, backend"
-                className="form-input"
+                type="checkbox"
+                checked={applyGlobally}
+                onChange={e => handleApplyGloballyToggle(e.target.checked)}
               />
+              <span className="platform-checkbox-label">
+                <span className="platform-dot platform-dot-global" />
+                Apply to all platforms
+              </span>
             </label>
+
+            <div className="platform-list">
+              {detectedPlatforms.length === 0 && (
+                <p className="platform-warning">No platforms detected.</p>
+              )}
+              {detectedPlatforms.map(platform => (
+                <label key={platform.id} className="platform-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={applyGlobally || targetPlatforms.includes(platform.id)}
+                    disabled={applyGlobally}
+                    onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
+                  />
+                  <span className="platform-checkbox-label">
+                    <span className={`platform-dot platform-dot-${platform.id}`} />
+                    {platform.displayName}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {isInvalidPlatformState && (
+              <p className="platform-warning">Select at least one platform, or enable global.</p>
+            )}
           </div>
         </div>
 
@@ -178,77 +220,6 @@ export function SkillEditorPage({ onBack, initialSkill }: SkillEditorPageProps) 
             />
           </div>
         </div>
-
-        {/* RIGHT: Projection Preview */}
-        <div className="editor-right">
-          <div className="projection-panel">
-            <div className="section-title">Platform Projections</div>
-            <SkillProjectionPreview projections={projections} loading={projectionsLoading} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Skill Projection Preview (tab-based) ───────────────────────────────────
-
-interface SkillProjectionPreviewProps {
-  projections: SkillProjectionItem[]
-  loading?: boolean
-}
-
-function SkillProjectionPreview({ projections, loading }: SkillProjectionPreviewProps) {
-  const [activeTab, setActiveTab] = useState(0)
-
-  if (loading) {
-    return (
-      <div className="proj-wrap">
-        <div className="proj-loading">Loading projections…</div>
-      </div>
-    )
-  }
-
-  if (projections.length === 0) {
-    return (
-      <div className="proj-wrap">
-        <div className="proj-empty">No projections available</div>
-      </div>
-    )
-  }
-
-  const clampedTab = Math.min(activeTab, projections.length - 1)
-  const current = projections[clampedTab]
-
-  return (
-    <div className="proj-wrap">
-      <div className="proj-tabs" role="tablist">
-        {projections.map((p, i) => (
-          <button
-            key={`${p.platformId}-${p.fileName}`}
-            role="tab"
-            aria-selected={i === clampedTab}
-            className={`proj-tab${i === clampedTab ? ' active' : ''}`}
-            onClick={() => setActiveTab(i)}
-          >
-            <span
-              className="proj-tab-dot"
-              style={{ background: PLATFORM_DOTS[p.platformId] ?? '#888' }}
-            />
-            {p.platformId}
-          </button>
-        ))}
-      </div>
-
-      <div className="proj-body">
-        {current.fileName && (
-          <div className="proj-filename">{current.fileName}</div>
-        )}
-        {current.content !== null ? (
-          <pre className="proj-content">{current.content}</pre>
-        ) : (
-          <div className="proj-empty-content">(uses global content)</div>
-        )}
       </div>
     </div>
   )
