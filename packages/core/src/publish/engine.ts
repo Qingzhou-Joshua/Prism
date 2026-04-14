@@ -7,7 +7,8 @@ import { NotFoundError } from '@prism/shared'
 import type { RuleStore } from '../rules/store.js'
 import type { ProfileStore } from '../profiles/store.js'
 import type { SkillStore } from '../skills/store.js'
-import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName } from './platform-paths.js'
+import type { AgentStore } from '../agents/store.js'
+import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName } from './platform-paths.js'
 import { projectRule } from '../rules/project.js'
 
 export class PublishEngine {
@@ -18,6 +19,8 @@ export class PublishEngine {
     private readonly getPlatformDir: (platformId: PlatformId) => string = getPlatformRulesDir,
     private readonly skillStore: SkillStore | null = null,
     private readonly getSkillsDir: (platformId: PlatformId) => string = getPlatformSkillsDir,
+    private readonly agentStore: AgentStore | null = null,
+    private readonly getAgentsDir: (platformId: PlatformId) => string | null = getPlatformAgentsDir,
   ) {}
 
   async publish(profileId: string): Promise<Revision> {
@@ -108,6 +111,45 @@ export class PublishEngine {
             isNew,
             skillId: skill.id,
             skillName: skill.name,
+          })
+        }
+      }
+
+      // Write agent files
+      if (this.agentStore) {
+        for (const agentId of (profile.agentIds ?? [])) {
+          const agent = await this.agentStore.get(agentId)
+          if (!agent) continue
+
+          const agentsDir = this.getAgentsDir(platformId)
+          if (!agentsDir) continue  // platform doesn't support agents
+
+          const fileName = agentFileName(agent.name)
+          const targetPath = join(agentsDir, fileName)
+
+          let isNew = true
+          let backupPath: string | undefined
+          try {
+            await stat(targetPath)
+            isNew = false
+            const backupDir = join(this.prismDir, 'backups', revisionId, `${platformId}-agents`)
+            await mkdir(backupDir, { recursive: true })
+            backupPath = join(backupDir, fileName)
+            await copyFile(targetPath, backupPath)
+          } catch {
+            // File does not exist — isNew stays true
+          }
+
+          await mkdir(agentsDir, { recursive: true })
+          await writeFile(targetPath, agent.content, 'utf-8')
+
+          publishedFiles.push({
+            platformId,
+            filePath: targetPath,
+            backupPath,
+            isNew,
+            agentId: agent.id,
+            agentName: agent.name,
           })
         }
       }

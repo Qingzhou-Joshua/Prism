@@ -9,6 +9,8 @@ export interface PublishedFile {
   ruleName?: string
   skillId?: string
   skillName?: string
+  agentId?: string
+  agentName?: string
 }
 
 export interface Revision {
