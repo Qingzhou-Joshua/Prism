@@ -417,6 +417,7 @@ export default function App() {
                 rule={page.rule}
                 onSave={() => setPage({ view: 'rules-list' })}
                 onCancel={() => setPage({ view: 'rules-list' })}
+                detectedPlatforms={detectedPlatforms}
               />
             )}
             {page.view === 'rules-new' && (
@@ -424,6 +425,7 @@ export default function App() {
                 rule={null}
                 onSave={() => setPage({ view: 'rules-list' })}
                 onCancel={() => setPage({ view: 'rules-list' })}
+                detectedPlatforms={detectedPlatforms}
               />
             )}
 
@@ -438,6 +440,7 @@ export default function App() {
               <SkillEditorPage
                 initialSkill={page.skill}
                 onBack={() => setPage({ view: 'skills-list' })}
+                detectedPlatforms={detectedPlatforms}
               />
             )}
 
@@ -452,6 +455,7 @@ export default function App() {
               <AgentEditorPage
                 initialAgent={page.agent}
                 onBack={() => setPage({ view: 'agents-list' })}
+                detectedPlatforms={detectedPlatforms}
               />
             )}
 
