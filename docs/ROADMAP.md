@@ -1,6 +1,6 @@
 # Prism 版本路线图
 
-更新时间：2026-04-14（v0.8 标记完成：Agents 资产管理全流程上线，包括 CRUD、importAgents()、PublishEngine 扩展、AgentsPage/AgentEditorPage 前端，E2E 验证通过）
+更新时间：2026-04-14（v0.9 标记完成：MCP Servers 资产管理全流程上线，包括 CRUD、importMcpServers()、PublishEngine MCP merge 扩展、McpPage/McpEditorPage 前端，E2E 验证通过）
 
 ---
 
@@ -35,7 +35,7 @@ Prism 负责 Harness Engineering 中的**环境资产治理**层：
 | v0.6 | Rule Import Flow | ✅ 已完成 |
 | v0.7 | Skills 资产管理 | ✅ 已完成 |
 | v0.8 | Agents 资产管理 | ✅ 已完成 |
-| v0.9 | MCP Servers 管理 | 🔭 规划中 |
+| v0.9 | MCP Servers 管理 | ✅ 已完成 |
 | v0.10 | CLI — 完整功能里程碑 | 🔭 规划中 |
 | v0.11 | Hooks 管理 | 🔭 规划中 |
 | v0.12 | Export / Git Sync（轻量版） | 🔭 规划中 |
@@ -283,9 +283,7 @@ model: sonnet
 
 ---
 
-## 规划版本（v0.9 → v1.x）
-
-### v0.9 — MCP Servers 管理 🔭
+### v0.9 — MCP Servers 管理 ✅
 
 **目标**：将 MCP Server 配置纳入 Prism 统一管理，覆盖 AI 开发环境中的工具集成层
 
@@ -307,7 +305,7 @@ Claude Code、Cursor 等工具支持 MCP（Model Context Protocol）服务器，
      createdAt: string
      updatedAt: string
    }
-   interface ImportableMcpServer {
+   interface ImportedMcpServer {
      name: string
      command: string
      args: string[]
@@ -315,29 +313,28 @@ Claude Code、Cursor 等工具支持 MCP（Model Context Protocol）服务器，
    }
    ```
 
-2. **FileMcpStore**（`packages/core/src/stores/FileMcpStore.ts`）
-   - 持久化路径：`~/.prism/mcp/mcp.json`
+2. **FileMcpStore**（`packages/core/src/mcp/FileMcpStore.ts`）
+   - 持久化路径：`~/.prism/mcp/servers.json`
+   - 遵循 FileRuleStore / FileSkillStore / FileAgentStore 相同的 `writeQueue` 序列化写入模式
 
-3. **PlatformAdapter MCP 读取**
-   ```typescript
-   interface PlatformAdapter {
-     importMcp?: () => Promise<ImportableMcpServer[]>
-   }
-   ```
-   - Claude Code adapter：解析 `~/.claude-internal/settings.json` 中的 `mcpServers` 字段
-   - Cursor adapter：解析 `.cursor/mcp.json`（如存在）
+3. **importMcpServers() 适配器扩展**
+   - Claude Code adapter：解析 `~/.claude-internal/settings.json` 中的 `mcpServers` 字段（回退 `~/.claude/settings.json`）
 
 4. **API 端点**（`packages/server/src/routes/mcp.ts`）
    - 完整 CRUD：`GET/POST /mcp`, `GET/PUT/DELETE /mcp/:id`
-   - `GET /platforms/:id/mcp` — 读取平台真实 MCP 配置
+   - `GET /mcp/:id/projections` — 多平台预览
+   - `POST /platforms/:platformId/mcp/import` — 从平台导入 MCP 配置
+   - `GET /platforms/:platformId/mcp/scan` — 扫描平台 MCP 配置
 
-5. **前端页面**（`apps/web/src/pages/McpPage.tsx`）
-   - App.tsx 新增 MCP 顶级 Tab
-   - MCP Server 列表：展示名称、命令、目标平台
-   - 表单编辑（命令、参数、环境变量）而非 Monaco 编辑器
-   - Scanner 导入流程（同 Rules 导入模式）
+5. **PublishEngine 扩展**（`packages/core/src/publish/PublishEngine.ts`）
+   - MCP：将 McpServer 写入目标平台 settings 的 `mcpServers` 字段（READ→BACKUP→MERGE→WRITE，保留其他所有 keys）
 
-6. **Profile 扩展**
+6. **前端页面**
+   - `McpPage.tsx` 列表（展示名称、命令、目标平台，带"Import from Claude Code"按钮）
+   - `McpEditorPage.tsx` 表单编辑器（command/args/env pairs），而非 Monaco 编辑器
+   - MCP 顶级 Tab（位于 Agents 和 Profiles 之间）
+
+7. **Profile 扩展**
    ```typescript
    interface Profile {
      // 现有字段...
@@ -346,12 +343,20 @@ Claude Code、Cursor 等工具支持 MCP（Model Context Protocol）服务器，
    }
    ```
 
-7. **PublishEngine 扩展**
-   - MCP：将 McpServer 写入目标平台 settings 的 `mcpServers` 字段（merge 而不是覆盖）
+**关键路径**：
+- `packages/shared/src/mcp.ts` — McpServer, ImportedMcpServer, CreateMcpServerDto, UpdateMcpServerDto
+- `packages/core/src/mcp/` — FileMcpStore
+- `packages/core/src/publish/platform-paths.ts` — getPlatformMcpSettingsPath
+- `packages/adapters/adapter-claude-code/` — importMcpServers (读取 ~/.claude-internal/settings.json)
+- `packages/server/src/routes/mcp.ts` — CRUD + projections + scan + import
+- `apps/web/src/api/mcp.ts` — mcpApi
+- `apps/web/src/pages/McpPage.tsx`, `McpEditorPage.tsx`
 
-**意义**：Prism 覆盖 Harness Engineering 的工具集成层，AI Agent 的外部工具接入纳入统一治理。
+**意义**：至 v0.9 完成后，Prism 覆盖 Harness Engineering 的工具集成层，AI Agent 的外部工具接入纳入统一治理。E2E smoke test 通过（GET /mcp 返回空列表，GET /platforms/claude-code/mcp/scan 正常响应）。
 
 ---
+
+## 规划版本（v0.10 → v1.x）
 
 ### v0.10 — Hooks 管理 🔭
 
