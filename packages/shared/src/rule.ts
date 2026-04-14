@@ -13,6 +13,8 @@ export interface UnifiedRule {
   content: string
   scope: RuleScope
   tags: string[]
+  /** Empty array = GLOBAL (applies to all platforms). Non-empty = TARGETED to listed platform IDs. */
+  targetPlatforms: string[]
   platformOverrides: Partial<Record<PlatformId, PlatformOverride>>
   /** ISO 8601 格式，e.g. "2025-01-01T00:00:00.000Z" */
   createdAt: string
@@ -25,6 +27,8 @@ export interface CreateRuleDto {
   content: string
   scope: RuleScope
   tags?: string[]
+  /** Empty array = GLOBAL (applies to all platforms). Non-empty = TARGETED to listed platform IDs. */
+  targetPlatforms?: string[]
   platformOverrides?: Partial<Record<PlatformId, PlatformOverride>>
 }
 
@@ -33,5 +37,7 @@ export interface UpdateRuleDto {
   content?: string
   scope?: RuleScope
   tags?: string[]
+  /** Empty array = GLOBAL (applies to all platforms). Non-empty = TARGETED to listed platform IDs. */
+  targetPlatforms?: string[]
   platformOverrides?: Partial<Record<PlatformId, PlatformOverride>>
 }

@@ -11,6 +11,7 @@ export interface UnifiedAgent {
   name: string
   description?: string
   content: string
+  agentType?: string
   tools?: string[]
   model?: string
   tags: string[]

@@ -63,6 +63,7 @@ export class FileRuleStore implements RuleStore {
         content: dto.content,
         scope: dto.scope,
         tags: dto.tags ?? [],
+        targetPlatforms: dto.targetPlatforms ?? [],
         platformOverrides: dto.platformOverrides ?? {},
         createdAt: now,
         updatedAt: now,

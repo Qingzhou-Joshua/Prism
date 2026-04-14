@@ -1,10 +1,10 @@
-import type { PlatformId } from '@prism/shared'
+export const ALL_PLATFORMS = ['claude-code', 'cursor', 'openclaw', 'codebuddy'] as const
 
-export const ALL_PLATFORMS: PlatformId[] = ['claude-code', 'openclaw', 'codebuddy', 'cursor']
+export type KnownPlatformId = (typeof ALL_PLATFORMS)[number]
 
-export const PLATFORM_LABELS: Record<PlatformId, string> = {
+export const PLATFORM_LABELS: Record<KnownPlatformId, string> = {
   'claude-code': 'Claude Code',
-  'openclaw': 'OpenClaw',
-  'codebuddy': 'CodeBuddy',
-  'cursor': 'Cursor',
+  cursor: 'Cursor',
+  openclaw: 'OpenClaw',
+  codebuddy: 'CodeBuddy',
 }

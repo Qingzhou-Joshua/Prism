@@ -8,7 +8,7 @@ import type { ImportedAgent, ImportedMcpServer, ImportedRule, PlatformScanResult
 const BASE_RESULT = {
   id: 'claude-code' as const,
   displayName: 'Claude Code',
-  capabilities: { rules: true, profiles: true },
+  capabilities: { rules: true, profiles: true, skills: true, agents: true, mcp: true },
 } satisfies Pick<PlatformScanResult, 'id' | 'displayName' | 'capabilities'>
 
 async function resolveConfigPath(): Promise<string | null> {

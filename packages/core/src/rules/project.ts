@@ -10,6 +10,17 @@ export type RuleProjection = {
 }
 
 export function projectRule(rule: UnifiedRule, platformId: PlatformId): RuleProjection {
+  // If rule is targeted to specific platforms and this platform is not in the list, hide it
+  if (rule.targetPlatforms && rule.targetPlatforms.length > 0 && !rule.targetPlatforms.includes(platformId)) {
+    return {
+      ruleId: rule.id,
+      name: rule.name,
+      platformId,
+      content: null,
+      hidden: true,
+      scope: rule.scope,
+    }
+  }
   const override = rule.platformOverrides[platformId]
   if (override !== undefined) {
     const content = override.content
