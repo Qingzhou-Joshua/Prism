@@ -109,6 +109,19 @@ describe('FileAgentStore', () => {
     expect(found!.name).toBe('Test Agent')
   })
 
+  it('serializes concurrent writes', async () => {
+    // Fire 5 concurrent creates and verify all are persisted
+    await Promise.all([
+      store.create({ name: 'Agent 1', content: 'c1', tags: [], targetPlatforms: [] }),
+      store.create({ name: 'Agent 2', content: 'c2', tags: [], targetPlatforms: [] }),
+      store.create({ name: 'Agent 3', content: 'c3', tags: [], targetPlatforms: [] }),
+      store.create({ name: 'Agent 4', content: 'c4', tags: [], targetPlatforms: [] }),
+      store.create({ name: 'Agent 5', content: 'c5', tags: [], targetPlatforms: [] }),
+    ])
+    const agents = await store.list()
+    expect(agents).toHaveLength(5)
+  })
+
   describe('importAgents', () => {
     it('imports new agents from ImportedAgent list', async () => {
       const imported: ImportedAgent[] = [
@@ -151,6 +164,20 @@ describe('FileAgentStore', () => {
       const result = await store.importAgents(imported)
       expect(result.imported).toBe(0)
       expect(result.skipped).toBe(1)
+    })
+
+    it('importAgents: preserves tools and model fields', async () => {
+      const imported: ImportedAgent[] = [
+        {
+          fileName: 'build-fixer.md',
+          content: '---\nname: Build Fixer\nmodel: opus\ntools:\n  - Bash\n  - Read\n---\nFix build errors.',
+        },
+      ]
+      const result = await store.importAgents(imported)
+      expect(result.imported).toBe(1)
+      const agents = await store.list()
+      expect(agents[0].tools).toEqual(['Bash', 'Read'])
+      expect(agents[0].model).toBe('opus')
     })
   })
 })

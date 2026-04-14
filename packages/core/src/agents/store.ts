@@ -22,8 +22,11 @@ export class FileAgentStore implements AgentStore {
     try {
       const raw = await readFile(this.filePath, 'utf-8')
       return JSON.parse(raw) as UnifiedAgent[]
-    } catch (err) {
+    } catch (err: unknown) {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+      if (err instanceof SyntaxError) {
+        throw new Error(`Agent store at ${this.filePath} is corrupted: ${err.message}`)
+      }
       throw err
     }
   }
@@ -130,7 +133,9 @@ export class FileAgentStore implements AgentStore {
         importedCount++
       }
 
-      await this.save(agents)
+      if (importedCount > 0) {
+        await this.save(agents)
+      }
       return { imported: importedCount, skipped }
     })
   }
