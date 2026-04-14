@@ -1,5 +1,11 @@
 import type { PlatformId } from './platform.js'
 
+/** An agent file imported from a platform's agents directory */
+export interface ImportedAgent {
+  fileName: string
+  content: string
+}
+
 export interface UnifiedAgent {
   id: string
   name: string
@@ -13,19 +19,8 @@ export interface UnifiedAgent {
   updatedAt: string
 }
 
-export interface CreateAgentDto {
-  name: string
-  description?: string
-  content: string
-  tools?: string[]
-  model?: string
+export type CreateAgentDto = Omit<UnifiedAgent, 'id' | 'createdAt' | 'updatedAt'> & {
   tags?: string[]
-  targetPlatforms: PlatformId[]
 }
 
 export type UpdateAgentDto = Partial<CreateAgentDto>
-
-export interface ImportedAgent {
-  fileName: string
-  content: string
-}
