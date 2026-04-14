@@ -59,3 +59,32 @@ export function skillFileName(name: string): string {
       .replace(/^-|-$/g, '') + '.md'
   )
 }
+
+/**
+ * Returns the absolute path to the agents directory for a given platform.
+ * Only claude-code and codebuddy support agents.
+ * Returns null for unsupported platforms.
+ */
+export function getPlatformAgentsDir(platformId: PlatformId): string | null {
+  switch (platformId) {
+    case 'claude-code':
+      return join(homedir(), '.claude-internal', 'agents')
+    case 'codebuddy':
+      return join(homedir(), '.codebuddy', 'agents')
+    default:
+      return null
+  }
+}
+
+/**
+ * Converts an agent name to a kebab-case filename with .md extension.
+ * e.g. "Code Reviewer" → "code-reviewer.md"
+ */
+export function agentFileName(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '.md'
+  )
+}
