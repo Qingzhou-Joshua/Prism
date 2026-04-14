@@ -19,7 +19,7 @@ export interface UnifiedAgent {
   updatedAt: string
 }
 
-export type CreateAgentDto = Omit<UnifiedAgent, 'id' | 'createdAt' | 'updatedAt'> & {
+export type CreateAgentDto = Omit<UnifiedAgent, 'id' | 'createdAt' | 'updatedAt' | 'tags'> & {
   tags?: string[]
 }
 

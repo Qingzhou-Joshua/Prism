@@ -29,6 +29,7 @@ describe('FileProfileStore', () => {
       name: 'My Profile',
       ruleIds: ['rule-1'],
       skillIds: [],
+      agentIds: [],
       targetPlatforms: ['claude-code'],
     })
     expect(profile.id).toBeTruthy()
@@ -44,14 +45,15 @@ describe('FileProfileStore', () => {
       name: 'Test',
       ruleIds: [],
       skillIds: [],
+      agentIds: [],
       targetPlatforms: [],
     })
     expect(profile.description).toBe('')
   })
 
   it('list returns all created profiles', async () => {
-    await store.create({ name: 'A', ruleIds: [], skillIds: [], targetPlatforms: [] })
-    await store.create({ name: 'B', ruleIds: [], skillIds: [], targetPlatforms: [] })
+    await store.create({ name: 'A', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] })
+    await store.create({ name: 'B', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] })
     const all = await store.list()
     expect(all).toHaveLength(2)
     expect(all.map((p) => p.name)).toContain('A')
@@ -59,7 +61,7 @@ describe('FileProfileStore', () => {
   })
 
   it('get returns profile by id', async () => {
-    const created = await store.create({ name: 'Solo', ruleIds: [], skillIds: [], targetPlatforms: [] })
+    const created = await store.create({ name: 'Solo', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] })
     const found = await store.get(created.id)
     expect(found).not.toBeNull()
     expect(found!.id).toBe(created.id)
@@ -71,7 +73,7 @@ describe('FileProfileStore', () => {
   })
 
   it('update modifies fields and bumps updatedAt', async () => {
-    const created = await store.create({ name: 'Before', ruleIds: [], skillIds: [], targetPlatforms: [] })
+    const created = await store.create({ name: 'Before', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] })
     await new Promise((r) => setTimeout(r, 5))
     const updated = await store.update(created.id, { name: 'After', ruleIds: ['r1'] })
     expect(updated).not.toBeNull()
@@ -87,7 +89,7 @@ describe('FileProfileStore', () => {
   })
 
   it('delete removes profile and returns true', async () => {
-    const created = await store.create({ name: 'Doomed', ruleIds: [], skillIds: [], targetPlatforms: [] })
+    const created = await store.create({ name: 'Doomed', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] })
     const result = await store.delete(created.id)
     expect(result).toBe(true)
     const all = await store.list()
@@ -101,9 +103,9 @@ describe('FileProfileStore', () => {
 
   it('concurrent creates do not lose writes', async () => {
     await Promise.all([
-      store.create({ name: 'C1', ruleIds: [], skillIds: [], targetPlatforms: [] }),
-      store.create({ name: 'C2', ruleIds: [], skillIds: [], targetPlatforms: [] }),
-      store.create({ name: 'C3', ruleIds: [], skillIds: [], targetPlatforms: [] }),
+      store.create({ name: 'C1', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] }),
+      store.create({ name: 'C2', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] }),
+      store.create({ name: 'C3', ruleIds: [], skillIds: [], agentIds: [], targetPlatforms: [] }),
     ])
     const all = await store.list()
     expect(all).toHaveLength(3)
