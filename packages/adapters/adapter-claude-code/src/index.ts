@@ -129,13 +129,22 @@ export const claudeCodeAdapter: PlatformAdapter = {
   },
 
   async importAgents(): Promise<ImportedAgent[]> {
-    const agentsDir = path.join(homedir(), '.claude-internal', 'agents')
-    let files: string[]
-    try {
-      files = await readdir(agentsDir)
-    } catch {
-      return []
+    const primaryDir = path.join(homedir(), '.claude-internal', 'agents')
+    const fallbackDir = path.join(homedir(), '.claude', 'agents')
+
+    let agentsDir: string | undefined
+    for (const dir of [primaryDir, fallbackDir]) {
+      try {
+        await access(dir)
+        agentsDir = dir
+        break
+      } catch {
+        // try next
+      }
     }
+    if (!agentsDir) return []
+
+    const files = await readdir(agentsDir)
     const mdFiles = files.filter(f => f.endsWith('.md'))
     const results: ImportedAgent[] = []
     for (const fileName of mdFiles) {
