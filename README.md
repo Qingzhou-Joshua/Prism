@@ -25,6 +25,8 @@ English · [简体中文](README.zh.md)
 
 ---
 
+> The project is currently on hold; updates will resume once the requirements have been fully clarified.
+
 ## The Problem
 
 You use Claude Code, Cursor, OpenClaw, and CodeBuddy. Each one has its own:
