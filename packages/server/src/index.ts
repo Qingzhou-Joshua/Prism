@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, FileRuleStore, FileProfileStore, FileSkillStore, FileAgentStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir } from '@prism/core'
+import { createAdapterRegistry, FileRuleStore, FileProfileStore, FileSkillStore, FileAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir } from '@prism/core'
 import { openclawAdapter } from '@prism/adapter-openclaw'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
@@ -12,6 +12,7 @@ import { registerPublishRoutes } from './routes/publish.js'
 import { registerRevisionRoutes } from './routes/revisions.js'
 import { registerSkillsRoutes } from './routes/skills.js'
 import { registerAgentsRoutes } from './routes/agents.js'
+import { registerMcpRoutes } from './routes/mcp.js'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -24,7 +25,14 @@ const registry = createAdapterRegistry([
 ])
 
 await app.register(cors, {
-  origin: ['http://localhost:5173', 'http://localhost:4173'],
+  origin: (origin, cb) => {
+    // Allow any localhost origin (any port) and no-origin requests (curl, server-to-server)
+    if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Not allowed by CORS'), false)
+    }
+  },
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 })
 
@@ -50,12 +58,14 @@ const revisionStore = new FileRevisionStore(
 )
 const skillStore = new FileSkillStore(join(homedir(), '.prism', 'skills', 'skills.json'))
 const agentStore = new FileAgentStore(join(homedir(), '.prism', 'agents', 'agents.json'))
+const mcpStore = new FileMcpStore(join(homedir(), '.prism', 'mcp', 'servers.json'))
 
 const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillStore, getPlatformSkillsDir, agentStore, getPlatformAgentsDir)
 await registerPublishRoutes(app, publishEngine, revisionStore)
 await registerRevisionRoutes(app, revisionStore)
 await registerSkillsRoutes(app, skillStore)
 await registerAgentsRoutes(app, agentStore)
+await registerMcpRoutes(app, mcpStore, registry)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
