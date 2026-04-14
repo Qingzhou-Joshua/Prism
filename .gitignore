@@ -16,3 +16,7 @@ docs/
 # Playwright artifacts
 artifacts/
 test-results/
+
+# Compiled JS artifacts (TypeScript sources are authoritative)
+apps/web/src/**/*.js
+packages/shared/src/**/*.js

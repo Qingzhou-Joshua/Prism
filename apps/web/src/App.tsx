@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import type { UnifiedRule, Profile, ImportableRule, UnifiedSkill } from '@prism/shared'
+import type { UnifiedRule, Profile, ImportableRule, UnifiedSkill, UnifiedAgent } from '@prism/shared'
 import { fetchPlatformRules } from './api/platformRules.js'
 import { rulesApi } from './api/rules.js'
 import { detectConflicts, type ConflictResult, type RuleStatus } from './utils/conflictDetection.js'
@@ -11,6 +11,8 @@ import { ProfileEditorPage } from './pages/ProfileEditorPage'
 import { RevisionsPage } from './pages/RevisionsPage.js'
 import { SkillsPage } from './pages/SkillsPage'
 import { SkillEditorPage } from './pages/SkillEditorPage'
+import { AgentsPage } from './pages/AgentsPage'
+import { AgentEditorPage } from './pages/AgentEditorPage'
 
 // ── Navigation state ────────────────────────────────────────────────────────
 type Page =
@@ -24,6 +26,8 @@ type Page =
   | { view: 'revisions' }
   | { view: 'skills-list' }
   | { view: 'skills-editor'; skill?: UnifiedSkill }
+  | { view: 'agents-list' }
+  | { view: 'agents-editor'; agent?: UnifiedAgent }
 
 interface PlatformCapabilities {
   rules: boolean
@@ -491,6 +495,7 @@ export default function App() {
 
   const isRulesTab = page.view === 'rules-list' || page.view === 'rules-edit' || page.view === 'rules-new'
   const isSkillsTab = page.view === 'skills-list' || page.view === 'skills-editor'
+  const isAgentsTab = page.view === 'agents-list' || page.view === 'agents-editor'
   const isProfilesTab = page.view === 'profiles-list' || page.view === 'profiles-new' || page.view === 'profiles-edit'
   const isRevisionsTab = page.view === 'revisions'
 
@@ -540,6 +545,12 @@ export default function App() {
             onClick={() => setPage({ view: 'skills-list' })}
           >
             Skills
+          </button>
+          <button
+            style={tabStyle(isAgentsTab)}
+            onClick={() => setPage({ view: 'agents-list' })}
+          >
+            Agents
           </button>
           <button
             style={tabStyle(isProfilesTab)}
@@ -724,6 +735,22 @@ export default function App() {
           <SkillEditorPage
             initialSkill={page.skill}
             onBack={() => setPage({ view: 'skills-list' })}
+          />
+        )}
+
+        {/* ── Agents list tab ──────────────────────────────────────────────── */}
+        {page.view === 'agents-list' && (
+          <AgentsPage
+            onEdit={(agent) => setPage({ view: 'agents-editor', agent })}
+            onNew={() => setPage({ view: 'agents-editor' })}
+          />
+        )}
+
+        {/* ── Agent editor ─────────────────────────────────────────────────── */}
+        {page.view === 'agents-editor' && (
+          <AgentEditorPage
+            initialAgent={page.agent}
+            onBack={() => setPage({ view: 'agents-list' })}
           />
         )}
 

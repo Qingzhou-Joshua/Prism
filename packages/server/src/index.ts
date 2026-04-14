@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, FileRuleStore, FileProfileStore, FileSkillStore, PublishEngine, FileRevisionStore, getPlatformRulesDir } from '@prism/core'
+import { createAdapterRegistry, FileRuleStore, FileProfileStore, FileSkillStore, FileAgentStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir } from '@prism/core'
 import { openclawAdapter } from '@prism/adapter-openclaw'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
@@ -11,6 +11,7 @@ import { registerProfileRoutes } from './routes/profiles.js'
 import { registerPublishRoutes } from './routes/publish.js'
 import { registerRevisionRoutes } from './routes/revisions.js'
 import { registerSkillsRoutes } from './routes/skills.js'
+import { registerAgentsRoutes } from './routes/agents.js'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -48,11 +49,13 @@ const revisionStore = new FileRevisionStore(
   join(homedir(), '.prism', 'backups'),
 )
 const skillStore = new FileSkillStore(join(homedir(), '.prism', 'skills', 'skills.json'))
+const agentStore = new FileAgentStore(join(homedir(), '.prism', 'agents', 'agents.json'))
 
-const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillStore)
+const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillStore, getPlatformSkillsDir, agentStore, getPlatformAgentsDir)
 await registerPublishRoutes(app, publishEngine, revisionStore)
 await registerRevisionRoutes(app, revisionStore)
 await registerSkillsRoutes(app, skillStore)
+await registerAgentsRoutes(app, agentStore)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
