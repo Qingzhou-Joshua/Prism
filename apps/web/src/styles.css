@@ -841,7 +841,7 @@ p {
 
 .editor-layout {
   display: grid;
-  grid-template-columns: 270px 1fr 320px;
+  grid-template-columns: 270px 1fr;
   gap: 12px;
   flex: 1;
   min-height: 0;
@@ -1440,7 +1440,7 @@ code {
    ============================================================ */
 @media (max-width: 1024px) {
   .editor-layout {
-    grid-template-columns: 240px 1fr 280px;
+    grid-template-columns: 220px 1fr;
   }
 }
 
