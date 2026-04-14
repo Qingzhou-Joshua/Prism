@@ -88,3 +88,17 @@ export function agentFileName(name: string): string {
       .replace(/^-|-$/g, '') + '.md'
   )
 }
+
+/**
+ * Returns the absolute path to the MCP settings file for a given platform.
+ * Only claude-code supports MCP settings via settings.json.
+ * Returns null for unsupported platforms.
+ */
+export function getPlatformMcpSettingsPath(platformId: PlatformId): string | null {
+  switch (platformId) {
+    case 'claude-code':
+      return join(homedir(), '.claude-internal', 'settings.json')
+    default:
+      return null
+  }
+}

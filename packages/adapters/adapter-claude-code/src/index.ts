@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import path, { relative } from 'node:path'
 import { glob } from 'glob'
 import type { ImportedSkill, PlatformAdapter } from '@prism/core'
-import type { ImportedAgent, ImportedRule, PlatformScanResult } from '@prism/shared'
+import type { ImportedAgent, ImportedMcpServer, ImportedRule, PlatformScanResult } from '@prism/shared'
 
 const BASE_RESULT = {
   id: 'claude-code' as const,
@@ -157,5 +157,32 @@ export const claudeCodeAdapter: PlatformAdapter = {
       }
     }
     return results
+  },
+
+  async importMcpServers(): Promise<ImportedMcpServer[]> {
+    const settingsPaths = [
+      path.join(homedir(), '.claude-internal', 'settings.json'),
+      path.join(homedir(), '.claude', 'settings.json'),
+    ]
+    for (const settingsPath of settingsPaths) {
+      try {
+        const raw = await readFile(settingsPath, 'utf8')
+        const settings = JSON.parse(raw) as Record<string, unknown>
+        const mcpServers = (settings.mcpServers ?? {}) as Record<string, {
+          command: string
+          args?: string[]
+          env?: Record<string, string>
+        }>
+        return Object.entries(mcpServers).map(([name, config]) => ({
+          name,
+          command: config.command,
+          args: config.args ?? [],
+          env: config.env,
+        }))
+      } catch {
+        continue
+      }
+    }
+    return []
   },
 }

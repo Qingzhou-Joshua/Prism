@@ -1,4 +1,4 @@
-import type { ImportedAgent, ImportedRule, ImportedSkill, PlatformCapabilities, PlatformId, PlatformScanResult } from '@prism/shared'
+import type { ImportedAgent, ImportedMcpServer, ImportedRule, ImportedSkill, PlatformCapabilities, PlatformId, PlatformScanResult } from '@prism/shared'
 
 export interface PlatformAdapter {
   id: PlatformId
@@ -8,4 +8,5 @@ export interface PlatformAdapter {
   importRules?: () => Promise<ImportedRule[]>
   importSkills?: () => Promise<ImportedSkill[]>
   importAgents?: () => Promise<ImportedAgent[]>
+  importMcpServers?: () => Promise<ImportedMcpServer[]>
 }
