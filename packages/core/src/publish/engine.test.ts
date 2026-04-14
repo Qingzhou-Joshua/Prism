@@ -3,10 +3,11 @@ import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PublishEngine } from './engine.js'
-import type { UnifiedRule, UnifiedSkill, PlatformId } from '@prism/shared'
+import type { UnifiedRule, UnifiedSkill, UnifiedAgent, PlatformId } from '@prism/shared'
 import type { RuleStore } from '../rules/store.js'
 import type { ProfileStore } from '../profiles/store.js'
 import type { SkillStore } from '../skills/store.js'
+import type { AgentStore } from '../agents/store.js'
 
 // ---- in-memory stubs ----
 
@@ -28,6 +29,17 @@ function makeSkillStore(skills: UnifiedSkill[]): SkillStore {
     async update(_id: string, _dto: unknown) { throw new Error('not implemented') },
     async delete(_id: string) { throw new Error('not implemented') },
   } as unknown as SkillStore
+}
+
+function makeAgentStore(agents: UnifiedAgent[]): AgentStore {
+  return {
+    async list() { return agents },
+    async get(id: string) { return agents.find(a => a.id === id) ?? null },
+    async create(_dto: unknown) { throw new Error('not implemented') },
+    async update(_id: string, _dto: unknown) { throw new Error('not implemented') },
+    async delete(_id: string) { throw new Error('not implemented') },
+    async importAgents(_imported: unknown) { throw new Error('not implemented') },
+  } as unknown as AgentStore
 }
 
 function makeProfileStore(profiles: any[]): ProfileStore {
@@ -78,11 +90,22 @@ const SKILL_1: UnifiedSkill = {
   updatedAt: new Date().toISOString(),
 }
 
+const AGENT_1: UnifiedAgent = {
+  id: 'agent-1',
+  name: 'Code Reviewer',
+  content: 'agent content here',
+  tags: [],
+  targetPlatforms: ['claude-code' as PlatformId],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+}
+
 const PROFILE_1 = {
   id: 'profile-1',
   name: 'My Profile',
   ruleIds: ['rule-1'],
   skillIds: [] as string[],
+  agentIds: [] as string[],
   targetPlatforms: ['claude-code' as PlatformId],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -357,5 +380,128 @@ describe('PublishEngine', () => {
     expect(skillFile).toBeDefined()
     expect(ruleFile!.ruleId).toBe('rule-1')
     expect(skillFile!.skillId).toBe('skill-1')
+  })
+
+  // ---- Agent publishing tests ----
+
+  it('writes an agent file with agentId and agentName tracked', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+    const agentsDir = await makeTmp()
+
+    const profileWithAgent = { ...PROFILE_1, ruleIds: [], agentIds: ['agent-1'] }
+
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithAgent]),
+      prismDir,
+      () => platformDir,
+      null,
+      () => { throw new Error('no skills') },
+      makeAgentStore([AGENT_1]),
+      () => agentsDir,
+    )
+
+    const revision = await engine.publish('profile-1')
+
+    expect(revision.files).toHaveLength(1)
+    const pf = revision.files[0]
+    expect(pf.isNew).toBe(true)
+    expect(pf.backupPath).toBeUndefined()
+    expect(pf.agentId).toBe('agent-1')
+    expect(pf.agentName).toBe('Code Reviewer')
+    expect(pf.ruleId).toBeUndefined()
+    expect(pf.skillId).toBeUndefined()
+
+    const written = await readFile(pf.filePath, 'utf-8')
+    expect(written).toBe('agent content here')
+  })
+
+  it('backs up existing agent file before overwrite', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+    const agentsDir = await makeTmp()
+
+    // pre-create the target agent file
+    const targetPath = join(agentsDir, 'code-reviewer.md')
+    await writeFile(targetPath, 'old agent content')
+
+    const profileWithAgent = { ...PROFILE_1, ruleIds: [], agentIds: ['agent-1'] }
+
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithAgent]),
+      prismDir,
+      () => platformDir,
+      null,
+      () => { throw new Error('no skills') },
+      makeAgentStore([AGENT_1]),
+      () => agentsDir,
+    )
+
+    const revision = await engine.publish('profile-1')
+
+    const pf = revision.files[0]
+    expect(pf.isNew).toBe(false)
+    expect(pf.backupPath).toBeDefined()
+
+    const backup = await readFile(pf.backupPath!, 'utf-8')
+    expect(backup).toBe('old agent content')
+
+    const written = await readFile(pf.filePath, 'utf-8')
+    expect(written).toBe('agent content here')
+  })
+
+  it('skips missing agent IDs silently', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+    const agentsDir = await makeTmp()
+
+    const profileWithMissingAgent = { ...PROFILE_1, ruleIds: [], agentIds: ['nonexistent-agent'] }
+
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithMissingAgent]),
+      prismDir,
+      () => platformDir,
+      null,
+      () => { throw new Error('no skills') },
+      makeAgentStore([AGENT_1]),
+      () => agentsDir,
+    )
+
+    const revision = await engine.publish('profile-1')
+    expect(revision.files).toHaveLength(0)
+  })
+
+  it('skips platforms that do not support agents (getAgentsDir returns null)', async () => {
+    const prismDir = await makeTmp()
+    const platformDir = await makeTmp()
+    const agentsDir = await makeTmp()
+
+    const profileWithAgent = {
+      ...PROFILE_1,
+      ruleIds: [],
+      agentIds: ['agent-1'],
+      targetPlatforms: ['claude-code' as PlatformId, 'cursor' as PlatformId],
+    }
+
+    // claude-code returns a dir; cursor returns null
+    const engine = new PublishEngine(
+      makeRuleStore([]),
+      makeProfileStore([profileWithAgent]),
+      prismDir,
+      () => platformDir,
+      null,
+      () => { throw new Error('no skills') },
+      makeAgentStore([AGENT_1]),
+      (platformId) => platformId === 'claude-code' ? agentsDir : null,
+    )
+
+    const revision = await engine.publish('profile-1')
+    // Only claude-code writes an agent file; cursor is skipped
+    expect(revision.files).toHaveLength(1)
+    expect(revision.files[0].platformId).toBe('claude-code')
+    expect(revision.files[0].agentId).toBe('agent-1')
   })
 })

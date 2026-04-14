@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import path, { relative } from 'node:path'
 import { glob } from 'glob'
 import type { ImportedSkill, PlatformAdapter } from '@prism/core'
-import type { ImportedRule, PlatformScanResult } from '@prism/shared'
+import type { ImportedAgent, ImportedRule, PlatformScanResult } from '@prism/shared'
 
 const BASE_RESULT = {
   id: 'claude-code' as const,
@@ -126,5 +126,36 @@ export const claudeCodeAdapter: PlatformAdapter = {
       }
     }
     return skills
+  },
+
+  async importAgents(): Promise<ImportedAgent[]> {
+    const primaryDir = path.join(homedir(), '.claude-internal', 'agents')
+    const fallbackDir = path.join(homedir(), '.claude', 'agents')
+
+    let agentsDir: string | undefined
+    for (const dir of [primaryDir, fallbackDir]) {
+      try {
+        await access(dir)
+        agentsDir = dir
+        break
+      } catch {
+        // try next
+      }
+    }
+    if (!agentsDir) return []
+
+    const files = await readdir(agentsDir)
+    const mdFiles = files.filter(f => f.endsWith('.md'))
+    const results: ImportedAgent[] = []
+    for (const fileName of mdFiles) {
+      const filePath = path.join(agentsDir, fileName)
+      try {
+        const content = await readFile(filePath, 'utf-8')
+        results.push({ fileName, content })
+      } catch {
+        // skip unreadable files
+      }
+    }
+    return results
   },
 }

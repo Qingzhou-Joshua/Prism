@@ -63,6 +63,7 @@ export function skillFileName(name: string): string {
 /**
  * Returns the absolute path to the agents directory for a given platform.
  * Only claude-code and codebuddy support agents.
+ * Returns null for unsupported platforms.
  */
 export function getPlatformAgentsDir(platformId: PlatformId): string | null {
   switch (platformId) {
