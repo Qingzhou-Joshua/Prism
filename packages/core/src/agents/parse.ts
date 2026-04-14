@@ -44,7 +44,8 @@ export function parseAgentFile(raw: string, fileName?: string): ParsedAgent {
 
 function deriveNameFromFileName(fileName?: string): string {
   if (!fileName) return ''
-  return fileName.replace(/\.md$/i, '')
+  const basename = fileName.split(/[\\/]/).pop() ?? ''
+  return basename.replace(/\.md$/i, '')
 }
 
 function parseYamlBlock(block: string): Record<string, unknown> {

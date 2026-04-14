@@ -69,4 +69,31 @@ Content.
     const result = parseAgentFile(raw)
     expect(result.name).toBe('Trimmed Name')
   })
+
+  it('strips path prefix from fileName when deriving name', () => {
+    const raw = `# Agent without front-matter\nDo something.`
+    const result = parseAgentFile(raw, 'planner/code-reviewer.md')
+    expect(result.name).toBe('code-reviewer')
+  })
+
+  it('handles CRLF line endings in front-matter', () => {
+    const raw = `---\r\nname: CRLF Agent\r\ndescription: Windows style\r\n---\r\nContent here.\r\n`
+    const result = parseAgentFile(raw)
+    expect(result.name).toBe('CRLF Agent')
+    expect(result.description).toBe('Windows style')
+    expect(result.content).toContain('Content here.')
+  })
+
+  it('returns empty name when no front-matter and no fileName', () => {
+    const raw = `No front-matter, no fileName.`
+    const result = parseAgentFile(raw)
+    expect(result.name).toBe('')
+  })
+
+  it('returns content as-is when front-matter is malformed (no closing delimiter)', () => {
+    const raw = `---\nname: Broken\nNo closing delimiter here.\n`
+    const result = parseAgentFile(raw, 'broken.md')
+    expect(result.name).toBe('broken')
+    expect(result.content).toContain('---')
+  })
 })
