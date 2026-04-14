@@ -45,9 +45,9 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms }: Ski
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   // Intentional: reset only when navigating to a different skill (id change),
   // not when parent updates the same skill's content post-save.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setDraft(toDraft(initialSkill))
     const saved = initialSkill?.targetPlatforms ?? []
