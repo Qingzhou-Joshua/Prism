@@ -54,13 +54,11 @@ export const mcpApi = {
 
   importFromPlatform(
     platformId: string,
-    servers: McpScanResult[],
   ): Promise<{ imported: number; items: McpServer[] }> {
     return request<{ imported: number; items: McpServer[] }>(
       `/platforms/${platformId}/mcp/import`,
       {
         method: 'POST',
-        body: JSON.stringify({ servers }),
       },
     ).then(r => r ?? { imported: 0, items: [] })
   },

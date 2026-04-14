@@ -214,10 +214,8 @@ export class PublishEngine {
             filePath: settingsPath,
             backupPath,
             isNew,
-            // Reuse agentId/agentName fields as there are no dedicated mcp fields on PublishedFile
-            // We tag it with the server name for traceability
-            agentId: server.id,
-            agentName: `mcp:${server.name}`,
+            mcpServerId: server.id,
+            mcpServerName: server.name,
           })
         }
       }

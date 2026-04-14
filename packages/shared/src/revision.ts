@@ -11,6 +11,8 @@ export interface PublishedFile {
   skillName?: string
   agentId?: string
   agentName?: string
+  mcpServerId?: string
+  mcpServerName?: string
 }
 
 export interface Revision {

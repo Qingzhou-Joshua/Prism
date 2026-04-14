@@ -51,7 +51,7 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
         alert('No MCP servers found in Claude Code settings')
         return
       }
-      await mcpApi.importFromPlatform('claude-code', scanned)
+      await mcpApi.importFromPlatform('claude-code')
       await load()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed')
