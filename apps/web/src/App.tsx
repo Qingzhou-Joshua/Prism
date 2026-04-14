@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import type { UnifiedRule, Profile, ImportableRule, UnifiedSkill, UnifiedAgent } from '@prism/shared'
+import type { UnifiedRule, Profile, ImportableRule, UnifiedSkill, UnifiedAgent, McpServer } from '@prism/shared'
 import { fetchPlatformRules } from './api/platformRules.js'
 import { rulesApi } from './api/rules.js'
 import { detectConflicts, type ConflictResult, type RuleStatus } from './utils/conflictDetection.js'
@@ -13,6 +13,8 @@ import { SkillsPage } from './pages/SkillsPage'
 import { SkillEditorPage } from './pages/SkillEditorPage'
 import { AgentsPage } from './pages/AgentsPage'
 import { AgentEditorPage } from './pages/AgentEditorPage'
+import { McpPage } from './pages/McpPage.js'
+import { McpEditorPage } from './pages/McpEditorPage.js'
 
 // ── Navigation state ────────────────────────────────────────────────────────
 type Page =
@@ -28,6 +30,8 @@ type Page =
   | { view: 'skills-editor'; skill?: UnifiedSkill }
   | { view: 'agents-list' }
   | { view: 'agents-editor'; agent?: UnifiedAgent }
+  | { view: 'mcp-list' }
+  | { view: 'mcp-editor'; server?: McpServer }
 
 interface PlatformCapabilities {
   rules: boolean
@@ -496,6 +500,7 @@ export default function App() {
   const isRulesTab = page.view === 'rules-list' || page.view === 'rules-edit' || page.view === 'rules-new'
   const isSkillsTab = page.view === 'skills-list' || page.view === 'skills-editor'
   const isAgentsTab = page.view === 'agents-list' || page.view === 'agents-editor'
+  const isMcpTab = page.view === 'mcp-list' || page.view === 'mcp-editor'
   const isProfilesTab = page.view === 'profiles-list' || page.view === 'profiles-new' || page.view === 'profiles-edit'
   const isRevisionsTab = page.view === 'revisions'
 
@@ -551,6 +556,12 @@ export default function App() {
             onClick={() => setPage({ view: 'agents-list' })}
           >
             Agents
+          </button>
+          <button
+            style={tabStyle(isMcpTab)}
+            onClick={() => setPage({ view: 'mcp-list' })}
+          >
+            MCP
           </button>
           <button
             style={tabStyle(isProfilesTab)}
@@ -751,6 +762,22 @@ export default function App() {
           <AgentEditorPage
             initialAgent={page.agent}
             onBack={() => setPage({ view: 'agents-list' })}
+          />
+        )}
+
+        {/* ── MCP list tab ─────────────────────────────────────────────────── */}
+        {page.view === 'mcp-list' && (
+          <McpPage
+            onEdit={(server) => setPage({ view: 'mcp-editor', server })}
+            onNew={() => setPage({ view: 'mcp-editor' })}
+          />
+        )}
+
+        {/* ── MCP editor ───────────────────────────────────────────────────── */}
+        {page.view === 'mcp-editor' && (
+          <McpEditorPage
+            initialServer={page.server}
+            onBack={() => setPage({ view: 'mcp-list' })}
           />
         )}
 
