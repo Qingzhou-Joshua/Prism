@@ -13,6 +13,7 @@ function makeRule(id: string, name: string): UnifiedRule {
     updatedAt: '',
     scope: 'global',
     platformOverrides: {},
+    targetPlatforms: [],
   }
 }
 

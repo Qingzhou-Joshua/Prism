@@ -9,6 +9,7 @@ function makeRule(overrides: Partial<UnifiedRule> = {}): UnifiedRule {
     content: 'default content',
     scope: 'global',
     tags: [],
+    targetPlatforms: [],
     platformOverrides: {},
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',

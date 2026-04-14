@@ -76,6 +76,7 @@ const RULE_1: UnifiedRule = {
   platformOverrides: {},
   tags: [],
   scope: 'global',
+  targetPlatforms: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 }
