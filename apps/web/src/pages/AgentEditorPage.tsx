@@ -58,10 +58,10 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
 
   function handleApplyGloballyToggle(checked: boolean) {
     setApplyGlobally(checked)
-    if (checked) {
-      setTargetPlatforms([])
-    } else {
+    if (!checked) {
       setTargetPlatforms(detectedPlatforms.map(p => p.id))
+    } else {
+      setTargetPlatforms([])
     }
   }
 
@@ -108,7 +108,9 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
         <div>
           <h1 className="page-title">{title}</h1>
           <p className="page-subtitle">
-            {initialAgent ? `Editing agent — ${initialAgent.name}` : 'Create a new agent'}
+            {applyGlobally
+              ? 'Applied globally across all platforms'
+              : `Targeted to ${targetPlatforms.length} platform${targetPlatforms.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <div className="editor-header-actions">
@@ -180,7 +182,7 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
 
             <div className="platform-list">
               {detectedPlatforms.length === 0 ? (
-                <p className="platform-none">No platforms detected</p>
+                <p className="platform-warning">No platforms detected.</p>
               ) : (
                 detectedPlatforms.map(platform => (
                   <label
@@ -202,6 +204,9 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
                 ))
               )}
             </div>
+            {isInvalidPlatformState && (
+              <p className="platform-warning">Select at least one platform, or enable global.</p>
+            )}
           </div>
         </div>
 
