@@ -40,9 +40,9 @@ curl -X POST http://localhost:3001/scan
 Prism is a **Harness Engineering environment management tool** — it manages the infrastructure that AI agents depend on: Rules, Skills, Agents, MCP Servers, and Hooks, across multiple platforms (Claude Code, CodeBuddy, Cursor, OpenClaw). It is NOT a chat interface or agent runtime.
 
 **Harness Engineering** = the 3-layer framework that makes agents work reliably:
-1. 环境设计 (CLAUDE.md / Rules / Skills / Agents)
-2. 工具集成 (MCP Servers)
-3. 反馈机制 (Hooks / evaluators)
+1. Environment Design (CLAUDE.md / Rules / Skills / Agents)
+2. Tool Integration (MCP Servers)
+3. Feedback Mechanisms (Hooks / evaluators)
 
 ### Package Responsibilities
 
@@ -112,18 +112,9 @@ CORS: `@fastify/cors` is imported in server but may not be installed. If browser
 
 ## Development Workflow
 
-### Documentation Update Requirement
-
-**每次完成一个版本开发后，必须更新 `docs/ROADMAP.md` 和相关进度文档。**
-
-- 在版本状态表中将已完成版本标记为 ✅ 已完成
-- 将该版本的详细章节从"规划版本"移入"已完成版本"
-- 更新 `各版本核心变化对照表`
-- 更新本文件（CLAUDE.md）底部的 `Current State` 章节，写明新完成的版本及关键路径
-
 ### Version Completion E2E Requirement
 
-**每个版本开发完成后，必须运行 E2E 测试再标记版本完成。**
+**After completing each feature or version, run E2E tests before marking it done.**
 
 Use the `e2e-runner` agent (Playwright) to exercise the affected user flows in a real browser after completing each version's development. Minimum checklist:
 - [ ] Run full Playwright E2E suite against the completed features
@@ -140,70 +131,3 @@ Minimum E2E checklist per bug fix:
 - [ ] Reproduce the original failure path in the browser
 - [ ] Confirm the fix resolves it
 - [ ] Verify no adjacent flows are broken (e.g., create/edit still work after fixing delete)
-
-## Current State (v0.9 — MCP Servers Management ✅)
-
-v0.1 complete: monorepo scaffolding, three platform adapters scan real filesystem, `/platforms` API returns live data, frontend renders scan result cards with capability badges and rescan button.
-
-v0.2 complete: UnifiedRule type system, FileRuleStore JSON persistence (`~/.prism/rules/rules.json`), `projectRule()` per-platform projection, `/rules` CRUD API (GET list, GET by id, POST create, PUT update, DELETE), Monaco editor frontend with projection preview panel, tab navigation between Scanner and Rules views.
-
-v0.3 complete: Platform rule scanning — optional `importRules()` on each adapter reads real `.md` files from platform directories.
-
-v0.4 complete: Profile system — `Profile` type (name, description, platformBindings, ruleIds), FileProfileStore JSON persistence (`~/.prism/profiles/profiles.json`), `/profiles` CRUD API, ProfilesPage list + ProfileEditorPage.
-
-v0.5 complete: Publish Pipeline — `PublishEngine` writes rule files to platform config dirs with automatic backup; `FileRevisionStore` persists revision records to `~/.prism/revisions/`; `POST /profiles/:id/publish` API; `GET /revisions` + `GET /revisions/:id` + `POST /revisions/:id/rollback` API; ProfileEditorPage publish flow with dry-run preview and inline confirm; RevisionsPage with inline rollback confirm; Revisions top-level tab in the app shell.
-
-v0.7 complete: Skills Management — `UnifiedSkill` type (id, name, trigger, category, tags, content, createdAt, updatedAt), `FileSkillStore` JSON persistence (`~/.prism/skills/skills.json`), `projectSkill()` per-platform projection; `importSkills()` on Claude Code adapter (recursive `~/.claude-internal/skills/**/*.md`) and CodeBuddy adapter (flat `~/.codebuddy/skills/`); PublishEngine extended to write skill files; `Profile.skillIds: string[]` added; `/skills` CRUD + projections API; SkillsPage list + SkillEditorPage with Monaco + projection preview; Skills tab in app shell (between Rules and Profiles).
-
-v0.8 complete: Agents Management — `UnifiedAgent` type (id, name, agentType, description, tags, content, targetPlatforms, createdAt, updatedAt), `FileAgentStore` JSON persistence (`~/.prism/agents/agents.json`), `projectAgent()` per-platform projection; `importAgents()` on Claude Code adapter (recursive `~/.claude-internal/agents/**/*.md`) and CodeBuddy adapter (flat `~/.codebuddy/agents/`); PublishEngine extended to write agent files; `Profile.agentIds: string[]` added; `/agents` CRUD + projections API; AgentsPage list + AgentEditorPage with Monaco + projection preview; Agents tab in app shell (between Skills and Profiles).
-
-v0.9 complete: MCP Servers Management — `McpServer` type (id, name, command, args, env?, description?, targetPlatforms, createdAt, updatedAt), `FileMcpStore` JSON persistence (`~/.prism/mcp/servers.json`), `getPlatformMcpSettingsPath()` returns settings.json path; Claude Code adapter `importMcpServers()` reads `mcpServers` key from `~/.claude-internal/settings.json`; PublishEngine extended to merge MCP entries into platform settings.json (READ→BACKUP→MERGE→WRITE preserving all other keys); `Profile.mcpServerIds: string[]` added; `/mcp` CRUD + projections API + `/platforms/:platformId/mcp/scan` + `/platforms/:platformId/mcp/import`; McpPage list + McpEditorPage form editor (command/args/env); MCP tab in app shell (between Agents and Profiles).
-
-### Key paths added in v0.5
-- `packages/core/src/publish/` — PublishEngine, FileRevisionStore, platform-paths
-- `packages/server/src/routes/publish.ts` — POST /profiles/:id/publish
-- `packages/server/src/routes/revisions.ts` — GET/POST revision routes
-- `apps/web/src/api/client.ts` — shared fetch client (request<T>())
-- `apps/web/src/api/revisions.ts` — revisionsApi
-- `apps/web/src/pages/RevisionsPage.tsx` — revision list + rollback UI
-
-### Key paths added in v0.7
-- `packages/shared/src/index.ts` — UnifiedSkill, CreateSkillDto, UpdateSkillDto, ImportedSkill types
-- `packages/core/src/skills/` — FileSkillStore, projectSkill
-- `packages/core/src/publish/platform-paths.ts` — getPlatformSkillsDir, skillFileName
-- `packages/adapters/adapter-claude-code/` — importSkills (recursive ~/.claude-internal/skills/**/*.md)
-- `packages/adapters/adapter-codebuddy/` — importSkills (flat ~/.codebuddy/skills/)
-- `packages/server/src/routes/skills.ts` — /skills CRUD + projections routes
-- `apps/web/src/api/skills.ts` — skillsApi
-- `apps/web/src/pages/SkillsPage.tsx` — skill list with import button
-- `apps/web/src/pages/SkillEditorPage.tsx` — Monaco editor + projection preview
-
-### Key paths added in v0.8
-- `packages/shared/src/index.ts` — UnifiedAgent, CreateAgentDto, UpdateAgentDto types
-- `packages/core/src/agents/` — FileAgentStore, projectAgent
-- `packages/core/src/publish/platform-paths.ts` — getPlatformAgentsDir, agentFileName
-- `packages/adapters/adapter-claude-code/` — importAgents (recursive ~/.claude-internal/agents/**/*.md)
-- `packages/adapters/adapter-codebuddy/` — importAgents (flat ~/.codebuddy/agents/)
-- `packages/server/src/routes/agents.ts` — /agents CRUD + projections routes
-- `apps/web/src/api/agents.ts` — agentsApi
-- `apps/web/src/pages/AgentsPage.tsx` — agent list
-- `apps/web/src/pages/AgentEditorPage.tsx` — Monaco editor + projection preview
-
-### Key paths added in v0.9
-- `packages/shared/src/mcp.ts` — McpServer, ImportedMcpServer, CreateMcpServerDto, UpdateMcpServerDto types
-- `packages/core/src/mcp/` — FileMcpStore
-- `packages/core/src/publish/platform-paths.ts` — getPlatformMcpSettingsPath
-- `packages/adapters/adapter-claude-code/` — importMcpServers (reads ~/.claude-internal/settings.json)
-- `packages/server/src/routes/mcp.ts` — /mcp CRUD + projections + scan + import routes
-- `apps/web/src/api/mcp.ts` — mcpApi
-- `apps/web/src/pages/McpPage.tsx` — MCP server list with import button
-- `apps/web/src/pages/McpEditorPage.tsx` — form editor (command/args/env)
-
-### Server routes (complete list)
-GET /health, GET /platforms, POST /scan,
-GET /rules, POST /rules, GET /rules/:id, PUT /rules/:id, DELETE /rules/:id, GET /rules/:id/projections,
-GET /skills, POST /skills, GET /skills/:id, PUT /skills/:id, DELETE /skills/:id, GET /skills/:id/projections,
-GET /agents, POST /agents, GET /agents/:id, PUT /agents/:id, DELETE /agents/:id, GET /agents/:id/projections,
-GET /mcp, POST /mcp, GET /mcp/:id, PUT /mcp/:id, DELETE /mcp/:id, GET /mcp/:id/projections, POST /platforms/:platformId/mcp/import, GET /platforms/:platformId/mcp/scan,
-GET /profiles, POST /profiles, GET /profiles/:id, PUT /profiles/:id, DELETE /profiles/:id, POST /profiles/:id/publish,
-GET /revisions, GET /revisions/:id, POST /revisions/:id/rollback

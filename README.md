@@ -49,7 +49,7 @@ It sits above your AI tools and gives you:
 | Capability | What it means |
 |-----------|---------------|
 | **Scan** | Detect which AI tools are installed and where their configs live |
-| **Manage** | Edit rules and profiles in one place |
+| **Manage** | Edit rules, skills, agents, MCP servers, and profiles in one place |
 | **Preview** | See exactly what each platform will receive before you publish |
 | **Publish** | Write to disk with dry-run, diff, backup, and revision history |
 
@@ -57,35 +57,19 @@ Think of it like a reverse proxy for your AI configuration: one source of truth,
 
 ---
 
-## Current Status: v0.1 Scanner PoC ✅
+## Current Status: v0.9 — MCP Servers Management
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  ▲ Prism                                                 │
-│  Local-first AI config control plane                     │
-│                                                          │
-│  Platform Scanner               3/3 detected  ↺ Rescan  │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  ┌─────────────────┐  ┌─────────────────┐               │
-│  │ OpenClaw  ✓     │  │ Claude Code ✓   │               │
-│  │ ID: openclaw    │  │ ID: claude-code │               │
-│  │ ~/.openclaw     │  │ ~/.claude-intl  │               │
-│  │                 │  │                 │               │
-│  │ Rules  Profiles │  │ Rules  Profiles │               │
-│  └─────────────────┘  └─────────────────┘               │
-│                                                          │
-│  ┌─────────────────┐                                     │
-│  │ CodeBuddy ✓     │                                     │
-│  │ ID: codebuddy   │                                     │
-│  │ ~/.codebuddy    │                                     │
-│  │                 │                                     │
-│  │ Rules  Profiles │                                     │
-│  └─────────────────┘                                     │
-└─────────────────────────────────────────────────────────┘
-```
+Prism currently manages five entity types across supported platforms:
 
-The scanner is live. It detects real config directories on your machine, checks for rules subdirectories, and reports platform capabilities — all via a local API with a React frontend.
+| Entity | Features |
+|--------|---------|
+| **Rules** | CRUD, Monaco editor, per-platform projection preview, import from platform dirs |
+| **Skills** | CRUD, Monaco editor, per-platform projection preview, import from platform dirs |
+| **Agents** | CRUD, Monaco editor, per-platform projection preview, import from platform dirs |
+| **MCP Servers** | CRUD, form editor, scan + import from Claude Code settings.json |
+| **Profiles** | Compose rules/skills/agents/MCP servers, publish with backup + revision history |
+
+The publish pipeline writes to platform config directories with dry-run preview, automatic backup, and full rollback support via the Revisions tab.
 
 ---
 
@@ -138,10 +122,10 @@ packages/
 │   └── adapter-claude-code/ # Scans ~/.claude-internal, falls back to ~/.claude
 │
 ├── server/              # Fastify API. Wires adapters → HTTP.
-│                          GET /health  GET /platforms  POST /scan
+│                          Full CRUD for rules, skills, agents, MCP, profiles, revisions
 │
 apps/
-└── web/                 # React + Vite frontend. Renders scan results.
+└── web/                 # React + Vite frontend. Monaco editor + projection preview.
 ```
 
 **Data flow:**
@@ -158,29 +142,10 @@ Adding a new platform adapter takes ~50 lines and one file.
 
 ---
 
-## Roadmap
-
-### ✅ v0.1 — Scanner PoC
-Platform detection, path discovery, capability overview, live API + frontend.
-
-### 🔜 v0.2 — Rule Editor
-Unified rule model, rule editor (Monaco), projection preview per platform.
-
-### 🔜 v0.3 — Profile PoC
-Profile composition, dry-run publish plan, affected file preview.
-
-### 🔜 v0.4 — MVP
-Real publish flow with backup + revision history. Full OpenClaw / Claude Code / Cursor support.
-
-### 🔮 v0.5+
-Diagnostics, project binding, skills management, agent config, governance + rollback.
-
----
-
 ## Development
 
 ```bash
-# Run tests (23 tests, 5 packages)
+# Run tests
 pnpm test
 
 # Type check all packages
