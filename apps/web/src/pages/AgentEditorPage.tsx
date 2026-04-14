@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
-import type { UnifiedAgent } from '@prism/shared'
+import type { UnifiedAgent, PlatformId } from '@prism/shared'
 import { agentsApi } from '../api/agents'
-import type { AgentProjectionItem } from '../api/agents'
+
+// Uses string (not PlatformId) to avoid coupling to @prism/shared union type;
+// callers must ensure values are valid PlatformIds.
+interface DetectedPlatform {
+  id: string
+  displayName: string
+}
 
 interface AgentEditorPageProps {
   onBack: () => void
   initialAgent?: UnifiedAgent
+  detectedPlatforms: DetectedPlatform[]
 }
 
 interface DraftAgent {
@@ -14,13 +21,6 @@ interface DraftAgent {
   content: string
   agentType: string
   description: string
-}
-
-const PLATFORM_DOTS: Record<string, string> = {
-  'claude-code': '#e65c46',
-  'cursor':      '#6ea8fe',
-  'openclaw':    '#34c799',
-  'codebuddy':   '#c084fc',
 }
 
 function toDraft(agent?: UnifiedAgent): DraftAgent {
@@ -35,45 +35,54 @@ function toDraft(agent?: UnifiedAgent): DraftAgent {
   }
 }
 
-export function AgentEditorPage({ onBack, initialAgent }: AgentEditorPageProps) {
+export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: AgentEditorPageProps) {
   const [draft, setDraft] = useState<DraftAgent>(() => toDraft(initialAgent))
-  const [tagsInput, setTagsInput] = useState(() => initialAgent?.tags?.join(', ') ?? '')
+  const [applyGlobally, setApplyGlobally] = useState(
+    () => (initialAgent?.targetPlatforms?.length ?? 0) === 0
+  )
+  const [targetPlatforms, setTargetPlatforms] = useState<string[]>(
+    () => initialAgent?.targetPlatforms ?? []
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [projections, setProjections] = useState<AgentProjectionItem[]>([])
-  const [projectionsLoading, setProjectionsLoading] = useState(false)
 
-  useEffect(() => {
-    setProjections([])
-    if (!initialAgent) return
-    let cancelled = false
-    setProjectionsLoading(true)
-    agentsApi
-      .projections(initialAgent.id)
-      .then(data  => { if (!cancelled) setProjections(data) })
-      .catch(()   => { if (!cancelled) setProjections([]) })
-      .finally(() => { if (!cancelled) setProjectionsLoading(false) })
-    return () => { cancelled = true }
-  }, [initialAgent?.id])
-
+  // Intentional: reset only when navigating to a different agent (id change),
+  // not when parent updates the same agent's content post-save.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setDraft(toDraft(initialAgent))
-    setTagsInput(initialAgent?.tags?.join(', ') ?? '')
+    const saved = initialAgent?.targetPlatforms ?? []
+    setTargetPlatforms(saved)
+    setApplyGlobally(saved.length === 0)
   }, [initialAgent?.id])
+
+  function handleApplyGloballyToggle(checked: boolean) {
+    setApplyGlobally(checked)
+    if (checked) {
+      setTargetPlatforms([])
+    } else {
+      setTargetPlatforms(detectedPlatforms.map(p => p.id))
+    }
+  }
+
+  function handlePlatformToggle(id: string, checked: boolean) {
+    setTargetPlatforms(prev =>
+      checked ? [...prev, id] : prev.filter(pid => pid !== id)
+    )
+  }
 
   async function handleSave() {
     if (!draft.name.trim()) return
     setSaving(true)
     setError(null)
     try {
-      const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
       const dto = {
         name: draft.name.trim(),
         content: draft.content,
         description: draft.description.trim() || undefined,
         agentType: draft.agentType.trim() || undefined,
-        tags,
-        targetPlatforms: initialAgent?.targetPlatforms ?? [],
+        tags: [] as string[],
+        targetPlatforms: (applyGlobally ? [] : targetPlatforms) as PlatformId[],
       }
       if (!initialAgent) {
         await agentsApi.create(dto)
@@ -87,6 +96,9 @@ export function AgentEditorPage({ onBack, initialAgent }: AgentEditorPageProps) 
       setSaving(false)
     }
   }
+
+  const isInvalidPlatformState =
+    !applyGlobally && targetPlatforms.length === 0 && detectedPlatforms.length > 0
 
   const title = !initialAgent ? 'New Agent' : `Edit: ${initialAgent.name}`
 
@@ -106,7 +118,7 @@ export function AgentEditorPage({ onBack, initialAgent }: AgentEditorPageProps) 
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || !draft.name.trim()}
+            disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
             {saving ? 'Saving…' : 'Save Agent'}
           </button>
@@ -151,17 +163,45 @@ export function AgentEditorPage({ onBack, initialAgent }: AgentEditorPageProps) 
                 className="form-input"
               />
             </label>
+          </div>
 
-            <label className="form-label">
-              Tags (comma-separated)
+          {/* Platform Targeting */}
+          <div className="editor-section">
+            <div className="section-title">Target Platforms</div>
+
+            <label className="platform-checkbox-row" style={{ marginBottom: '8px' }}>
               <input
-                type="text"
-                value={tagsInput}
-                onChange={e => setTagsInput(e.target.value)}
-                placeholder="e.g. typescript, backend"
-                className="form-input"
+                type="checkbox"
+                checked={applyGlobally}
+                onChange={e => handleApplyGloballyToggle(e.target.checked)}
               />
+              <span>Apply to all platforms</span>
             </label>
+
+            <div className="platform-list">
+              {detectedPlatforms.length === 0 ? (
+                <p className="platform-none">No platforms detected</p>
+              ) : (
+                detectedPlatforms.map(platform => (
+                  <label
+                    key={platform.id}
+                    className="platform-checkbox-row"
+                    style={{ opacity: applyGlobally ? 0.5 : 1 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={applyGlobally || targetPlatforms.includes(platform.id)}
+                      disabled={applyGlobally}
+                      onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
+                    />
+                    <span
+                      className={`platform-dot platform-dot-${platform.id}`}
+                    />
+                    <span>{platform.displayName}</span>
+                  </label>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
@@ -178,77 +218,6 @@ export function AgentEditorPage({ onBack, initialAgent }: AgentEditorPageProps) 
             />
           </div>
         </div>
-
-        {/* RIGHT: Projection Preview */}
-        <div className="editor-right">
-          <div className="projection-panel">
-            <div className="section-title">Platform Projections</div>
-            <AgentProjectionPreview projections={projections} loading={projectionsLoading} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Agent Projection Preview (tab-based) ───────────────────────────────────
-
-interface AgentProjectionPreviewProps {
-  projections: AgentProjectionItem[]
-  loading?: boolean
-}
-
-function AgentProjectionPreview({ projections, loading }: AgentProjectionPreviewProps) {
-  const [activeTab, setActiveTab] = useState(0)
-
-  if (loading) {
-    return (
-      <div className="proj-wrap">
-        <div className="proj-loading">Loading projections…</div>
-      </div>
-    )
-  }
-
-  if (projections.length === 0) {
-    return (
-      <div className="proj-wrap">
-        <div className="proj-empty">No projections available</div>
-      </div>
-    )
-  }
-
-  const clampedTab = Math.min(activeTab, projections.length - 1)
-  const current = projections[clampedTab]
-
-  return (
-    <div className="proj-wrap">
-      <div className="proj-tabs" role="tablist">
-        {projections.map((p, i) => (
-          <button
-            key={`${p.platformId}-${p.fileName}`}
-            role="tab"
-            aria-selected={i === clampedTab}
-            className={`proj-tab${i === clampedTab ? ' active' : ''}`}
-            onClick={() => setActiveTab(i)}
-          >
-            <span
-              className="proj-tab-dot"
-              style={{ background: PLATFORM_DOTS[p.platformId] ?? '#888' }}
-            />
-            {p.platformId}
-          </button>
-        ))}
-      </div>
-
-      <div className="proj-body">
-        {current.fileName && (
-          <div className="proj-filename">{current.fileName}</div>
-        )}
-        {current.content !== null ? (
-          <pre className="proj-content">{current.content}</pre>
-        ) : (
-          <div className="proj-empty-content">(uses global content)</div>
-        )}
       </div>
     </div>
   )
