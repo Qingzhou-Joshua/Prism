@@ -44,7 +44,9 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
 
 export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: RuleEditorPageProps) {
   const [draft, setDraft] = useState<DraftRule>(() => toDraft(rule))
-  const [applyGlobally, setApplyGlobally] = useState(true)
+  const [applyGlobally, setApplyGlobally] = useState(
+    () => (rule?.targetPlatforms?.length ?? 0) === 0
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,6 +55,9 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: Ru
     const d = toDraft(rule)
     setDraft(d)
     setApplyGlobally(d.targetPlatforms.length === 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentional: reset only when navigating to a different rule (id change),
+    // not when parent updates the same rule's content post-save.
   }, [rule?.id])
 
   // When switching off "apply globally", default-select all detected platforms
@@ -102,6 +107,8 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: Ru
   }
 
   const title = rule === null ? 'New Rule' : `Edit: ${rule.name}`
+  const isInvalidPlatformState =
+    !applyGlobally && draft.targetPlatforms.length === 0 && detectedPlatforms.length > 0
 
   return (
     <div className="editor-page">
@@ -121,7 +128,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: Ru
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || !draft.name.trim()}
+            disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
             {saving ? 'Saving…' : 'Save Rule'}
           </button>
