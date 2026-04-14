@@ -44,31 +44,24 @@ export function RevisionsPage() {
   }
 
   if (loading) {
-    return <div style={{ padding: '1.5rem', color: '#6b7280' }}>加载中...</div>
+    return <div className="empty-state" style={{ margin: '1.5rem' }}>加载中...</div>
   }
 
   if (error) {
-    return (
-      <div style={{ padding: '1.5rem', color: '#dc2626' }}>
-        加载失败: {error}
-      </div>
-    )
+    return <div className="error-state" style={{ margin: '1.5rem' }}>加载失败: {error}</div>
   }
 
   if (revisions.length === 0) {
-    return (
-      <div style={{ padding: '1.5rem', color: '#6b7280' }}>
-        暂无发布记录。
-      </div>
-    )
+    return <div className="empty-state" style={{ margin: '1.5rem' }}>暂无发布记录。</div>
   }
 
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '720px' }}>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>
-        Revisions
-      </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div className="editor-page">
+      <div className="page-header">
+        <h2 className="page-title">Revisions</h2>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {revisions.map(rev => {
           const result = rollbackResults[rev.id]
           const isConfirming = confirmingRollback === rev.id
@@ -76,47 +69,33 @@ export function RevisionsPage() {
           const publishedDate = new Date(rev.publishedAt).toLocaleString()
 
           return (
-            <div
-              key={rev.id}
-              style={{
-                border: '1px solid #e5e7eb',
-                borderRadius: '0.5rem',
-                padding: '1rem',
-                background: '#fff',
-              }}
-            >
+            <div key={rev.id} className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontWeight: 500, color: '#111827' }}>{rev.profileName}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                  <div style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-primary)' }}>
+                    {rev.profileName}
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
                     {publishedDate} · {rev.files.length} files · revision {rev.id.slice(0, 8)}
                   </div>
                 </div>
                 <div>
                   {!isConfirming && !isRollingBack && !result && (
                     <button
+                      className="btn btn-ghost"
                       onClick={() => setConfirmingRollback(rev.id)}
-                      style={{
-                        padding: '0.375rem 0.875rem',
-                        background: '#fff',
-                        color: '#374151',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '0.375rem',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                      }}
                     >
                       Rollback
                     </button>
                   )}
                   {isRollingBack && (
-                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>回滚中...</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>回滚中...</span>
                   )}
                   {result && result.ok && (
-                    <span style={{ fontSize: '0.875rem', color: '#16a34a' }}>✅ 已回滚</span>
+                    <span style={{ fontSize: '13px', color: '#4ade80' }}>✅ 已回滚</span>
                   )}
                   {result && !result.ok && (
-                    <span style={{ fontSize: '0.875rem', color: '#dc2626' }}>
+                    <span style={{ fontSize: '13px', color: '#f87171' }}>
                       ❌ 回滚失败: {(result as { ok: false; error: string }).error}
                     </span>
                   )}
@@ -124,43 +103,20 @@ export function RevisionsPage() {
               </div>
 
               {isConfirming && (
-                <div style={{
-                  marginTop: '0.75rem',
-                  padding: '0.75rem',
-                  background: '#fef3c7',
-                  border: '1px solid #fcd34d',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                }}>
-                  <p style={{ margin: '0 0 0.5rem', color: '#92400e' }}>
+                <div className="confirm-inline" style={{ marginTop: '12px' }}>
+                  <div className="confirm-inline-title">
                     即将恢复 {rev.files.length} 个文件，确认回滚？
-                  </p>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  </div>
+                  <div className="confirm-inline-actions">
                     <button
-                      onClick={() => handleRollback(rev.id)}
-                      style={{
-                        padding: '0.3rem 0.75rem',
-                        background: '#d97706',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                      }}
+                      className="btn btn-primary"
+                      onClick={() => void handleRollback(rev.id)}
                     >
                       确认
                     </button>
                     <button
+                      className="btn btn-ghost"
                       onClick={() => setConfirmingRollback(null)}
-                      style={{
-                        padding: '0.3rem 0.75rem',
-                        background: '#fff',
-                        color: '#374151',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '0.375rem',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                      }}
                     >
                       取消
                     </button>
