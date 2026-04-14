@@ -2,7 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import type { ImportedSkill, PlatformAdapter } from '@prism/core'
-import type { ImportedRule, PlatformScanResult } from '@prism/shared'
+import type { ImportedAgent, ImportedRule, PlatformScanResult } from '@prism/shared'
 
 const BASE_RESULT = {
   id: 'codebuddy' as const,
@@ -94,5 +94,27 @@ export const codebuddyAdapter: PlatformAdapter = {
       }
     }
     return skills
+  },
+
+  async importAgents(): Promise<ImportedAgent[]> {
+    const agentsDir = path.join(homedir(), '.codebuddy', 'agents')
+    let files: string[]
+    try {
+      files = await readdir(agentsDir)
+    } catch {
+      return []
+    }
+    const mdFiles = files.filter(f => f.endsWith('.md'))
+    const results: ImportedAgent[] = []
+    for (const fileName of mdFiles) {
+      const filePath = path.join(agentsDir, fileName)
+      try {
+        const content = await readFile(filePath, 'utf-8')
+        results.push({ fileName, content })
+      } catch {
+        // skip unreadable files
+      }
+    }
+    return results
   },
 }
