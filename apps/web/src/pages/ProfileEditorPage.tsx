@@ -89,6 +89,7 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
         description: description.trim(),
         ruleIds: Array.from(selectedRuleIds),
         skillIds: [],
+        agentIds: [],
         targetPlatforms: Array.from(selectedPlatforms),
       }
       if (profile) {
@@ -154,70 +155,72 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
   )
 
   return (
-    <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>
-          ←
-        </button>
-        <h2 style={{ margin: 0 }}>{profile ? 'Edit Profile' : 'New Profile'}</h2>
+    <div className="editor-page">
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button className="btn btn-ghost" onClick={onCancel}>←</button>
+          <h1 className="page-title">{profile ? 'Edit Profile' : 'New Profile'}</h1>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="profile-grid">
         {/* Left column: metadata + platforms + actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Name *</label>
+        <div className="profile-form-col">
+          <label className="form-label">
+            Name *
             <input
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My Profile"
-              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' }}
+              className="form-input"
             />
-          </div>
+          </label>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Description</label>
+          <label className="form-label">
+            Description
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description"
               rows={3}
-              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box', resize: 'vertical' }}
+              className="form-input"
+              style={{ resize: 'vertical' }}
             />
-          </div>
+          </label>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Target Platforms</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="editor-section">
+            <div className="section-title">Target Platforms</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
               {ALL_PLATFORMS.map((platformId) => (
-                <label key={platformId} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <label key={platformId} className="platform-checkbox-row">
                   <input
                     type="checkbox"
                     checked={selectedPlatforms.has(platformId)}
                     onChange={() => togglePlatform(platformId)}
                   />
-                  {PLATFORM_LABELS[platformId]}
+                  <span className="platform-checkbox-label">
+                    <span className={`platform-dot platform-dot-${platformId}`} />
+                    {PLATFORM_LABELS[platformId]}
+                  </span>
                 </label>
               ))}
             </div>
           </div>
 
           {saveError && (
-            <div style={{ color: '#dc2626', fontSize: '14px' }}>{saveError}</div>
+            <div className="error-state">{saveError}</div>
           )}
 
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
+              className="btn btn-primary"
               onClick={() => void handleSave()}
-              disabled={saving}
-              style={{ padding: '8px 16px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
+              disabled={saving || !name.trim()}
             >
               {saving ? 'Saving…' : 'Save'}
             </button>
-            <button
-              onClick={onCancel}
-              style={{ padding: '8px 16px', background: 'none', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
-            >
+            <button className="btn btn-ghost" onClick={onCancel}>
               Cancel
             </button>
           </div>
@@ -225,19 +228,20 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
 
         {/* Right column: rules checklist */}
         <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Rules</label>
+          <div className="section-title" style={{ marginBottom: '10px' }}>Rules</div>
           {rulesLoading ? (
-            <div style={{ color: '#6b7280' }}>Loading rules…</div>
+            <div className="empty-state">Loading rules…</div>
           ) : rulesError ? (
-            <div style={{ color: '#dc2626', fontSize: '14px' }}>{rulesError}</div>
+            <div className="error-state">{rulesError}</div>
           ) : availableRules.length === 0 ? (
-            <div style={{ color: '#6b7280' }}>No rules available</div>
+            <div className="empty-state">No rules available</div>
           ) : (
-            <div style={{ border: '1px solid #e5e7eb', borderRadius: '4px', maxHeight: '320px', overflowY: 'auto' }}>
+            <div className="card" style={{ maxHeight: '320px', overflowY: 'auto', padding: 0 }}>
               {availableRules.map((rule) => (
                 <label
                   key={rule.id}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '8px 12px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}
+                  className="platform-checkbox-row"
+                  style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)' }}
                 >
                   <input
                     type="checkbox"
@@ -246,9 +250,9 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
                     style={{ marginTop: '2px', flexShrink: 0 }}
                   />
                   <div>
-                    <div style={{ fontWeight: 500, fontSize: '14px' }}>{rule.name}</div>
+                    <div style={{ fontWeight: 500, fontSize: '13.5px' }}>{rule.name}</div>
                     {rule.tags.length > 0 && (
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{rule.tags.join(', ')}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{rule.tags.join(', ')}</div>
                     )}
                   </div>
                 </label>
@@ -261,31 +265,33 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
       {/* Preview section — only shown when editing an existing profile */}
       {profile && (
         <div style={{ marginTop: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            <h3 style={{ margin: 0 }}>Publish Preview</h3>
-            <button
-              onClick={() => void handlePreview()}
-              disabled={previewLoading}
-              style={{ padding: '6px 14px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '4px', cursor: previewLoading ? 'not-allowed' : 'pointer', opacity: previewLoading ? 0.7 : 1 }}
-            >
-              {previewLoading ? 'Loading…' : 'Preview Publish'}
-            </button>
-            {preview !== null && (
+          <div className="page-header" style={{ marginBottom: '12px' }}>
+            <h2 className="page-title" style={{ fontSize: '16px' }}>Publish Preview</h2>
+            <div style={{ display: 'flex', gap: '8px' }}>
               <button
-                onClick={() => { setConfirming(true); setPublishResult(null) }}
-                disabled={publishing}
-                style={{ padding: '6px 14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: publishing ? 'not-allowed' : 'pointer', opacity: publishing ? 0.7 : 1 }}
+                className="btn btn-ghost"
+                onClick={() => void handlePreview()}
+                disabled={previewLoading}
               >
-                发布
+                {previewLoading ? 'Loading…' : 'Preview Publish'}
               </button>
-            )}
+              {preview !== null && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => { setConfirming(true); setPublishResult(null) }}
+                  disabled={publishing}
+                >
+                  发布
+                </button>
+              )}
+            </div>
           </div>
 
           {previewError && (
-            <div style={{ color: '#dc2626', fontSize: '14px', marginBottom: '8px' }}>{previewError}</div>
+            <div className="error-state" style={{ marginBottom: '8px' }}>{previewError}</div>
           )}
 
-          {/* Confirming dialog */}
+          {/* Confirming inline box */}
           {confirming && preview !== null && (() => {
             const totalFiles = preview.files.length
             const overwriteCount = preview.files.filter((f) => f.fileExists).length
@@ -300,26 +306,23 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
               breakdownText = '（全部覆盖）'
             }
             return (
-              <div style={{ marginBottom: '16px', padding: '16px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '6px', color: '#111827' }}>
-                <div style={{ marginBottom: '4px', fontWeight: 500 }}>
+              <div className="confirm-inline">
+                <div className="confirm-inline-title">
                   即将写入 {totalFiles} 个文件到 {platformNames}
                 </div>
-                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                  {breakdownText}
+                <div className="confirm-inline-sub">
+                  {breakdownText}<br />此操作会自动备份现有文件
                 </div>
-                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                  此操作会自动备份现有文件
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="confirm-inline-actions">
                   <button
+                    className="btn btn-primary"
                     onClick={() => void handleConfirmPublish()}
-                    style={{ padding: '6px 14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                   >
                     确认发布
                   </button>
                   <button
+                    className="btn btn-ghost"
                     onClick={() => setConfirming(false)}
-                    style={{ padding: '6px 14px', background: 'none', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
                   >
                     取消
                   </button>
@@ -330,22 +333,14 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
 
           {/* Publishing indicator */}
           {publishing && (
-            <div style={{ marginBottom: '16px', fontSize: '14px', color: '#6b7280' }}>
+            <div style={{ marginBottom: '16px', fontSize: '13.5px', color: 'var(--text-muted)' }}>
               发布中…
             </div>
           )}
 
           {/* Publish result */}
           {publishResult !== null && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '12px 16px',
-              background: publishResult.ok ? '#f0fdf4' : '#fef2f2',
-              border: `1px solid ${publishResult.ok ? '#86efac' : '#fca5a5'}`,
-              borderRadius: '6px',
-              fontSize: '14px',
-              color: publishResult.ok ? '#166534' : '#991b1b',
-            }}>
+            <div className={`publish-result ${publishResult.ok ? 'publish-result-ok' : 'publish-result-error'}`}>
               {publishResult.ok
                 ? `✅ 发布成功 — 已写入 ${publishResult.fileCount} 个文件 (revision: ${publishResult.revisionId})`
                 : `❌ 发布失败: ${publishResult.error}`
@@ -353,40 +348,36 @@ export function ProfileEditorPage({ profile, onSave, onCancel }: ProfileEditorPa
             </div>
           )}
 
+          {/* File tree preview */}
           {preview && (
-            <div style={{ border: '1px solid #e5e7eb', borderRadius: '4px', color: '#111827' }}>
+            <div className="file-tree">
               {previewByPlatform.length === 0 ? (
-                <div style={{ padding: '16px', color: '#6b7280' }}>No files to publish</div>
+                <div className="empty-state">No files to publish</div>
               ) : (
                 previewByPlatform.map(({ platformId, platformDisplayName, files }) => (
                   <div key={platformId}>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', color: '#111827', borderBottom: '1px solid #e5e7eb', fontWeight: 600, fontSize: '14px' }}>
+                    <div className="file-tree-platform-header">
                       {platformDisplayName} ({files.length} file{files.length !== 1 ? 's' : ''})
                     </div>
                     {files.map((file) => {
                       const key = `${platformId}:${file.filePath}`
                       const expanded = expandedFiles.has(key)
                       return (
-                        <div key={file.filePath} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                        <div key={file.filePath} className="file-tree-row">
                           <div
+                            className="file-tree-row-header"
                             onClick={() => toggleFileExpand(key)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', cursor: 'pointer' }}
                           >
-                            <span style={{ fontSize: '12px' }}>{expanded ? '▼' : '▶'}</span>
-                            <span style={{ fontFamily: 'monospace', fontSize: '13px', flex: 1 }}>{file.filePath}</span>
-                            {file.fileExists && (
-                              <span style={{ fontSize: '11px', padding: '2px 6px', background: '#fef3c7', color: '#92400e', borderRadius: '4px' }}>
-                                will overwrite
-                              </span>
-                            )}
-                            {!file.fileExists && (
-                              <span style={{ fontSize: '11px', padding: '2px 6px', background: '#d1fae5', color: '#065f46', borderRadius: '4px' }}>
-                                new file
-                              </span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{expanded ? '▼' : '▶'}</span>
+                            <span style={{ fontFamily: 'monospace', fontSize: '12.5px', flex: 1, color: 'var(--text-primary)' }}>{file.filePath}</span>
+                            {file.fileExists ? (
+                              <span className="badge badge-overwrite">will overwrite</span>
+                            ) : (
+                              <span className="badge badge-new">new file</span>
                             )}
                           </div>
                           {expanded && (
-                            <pre style={{ margin: 0, padding: '8px 12px 8px 32px', background: '#f9fafb', color: '#111827', fontSize: '12px', overflowX: 'auto', borderTop: '1px solid #f3f4f6' }}>
+                            <pre className="file-tree-row-content">
                               {file.content}
                             </pre>
                           )}
