@@ -2,21 +2,23 @@ import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import type { UnifiedRule, RuleScope, PlatformId, PlatformOverride } from '@prism/shared'
 import { rulesApi } from '../api/rules'
-import type { RuleProjectionItem } from '../api/rules'
-import { ProjectionPreview } from '../components/ProjectionPreview'
-import { ALL_PLATFORMS, PLATFORM_LABELS } from '../constants/platforms.js'
+
+interface DetectedPlatform {
+  id: string
+  displayName: string
+}
 
 interface RuleEditorPageProps {
-  rule: UnifiedRule | null // null = new rule
+  rule: UnifiedRule | null
   onSave: (rule: UnifiedRule) => void
   onCancel: () => void
+  detectedPlatforms: DetectedPlatform[]
 }
 
 interface DraftRule {
   name: string
   content: string
   scope: RuleScope
-  tags: string
   targetPlatforms: string[]
   platformOverrides: Partial<Record<PlatformId, PlatformOverride>>
 }
@@ -27,7 +29,6 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
       name: '',
       content: '',
       scope: 'global',
-      tags: '',
       targetPlatforms: [],
       platformOverrides: {},
     }
@@ -36,41 +37,33 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
     name: rule.name,
     content: rule.content,
     scope: rule.scope,
-    tags: rule.tags?.join(', ') ?? '',
     targetPlatforms: rule.targetPlatforms ?? [],
     platformOverrides: rule.platformOverrides ?? {},
   }
 }
 
-export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) {
+export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: RuleEditorPageProps) {
   const [draft, setDraft] = useState<DraftRule>(() => toDraft(rule))
+  const [applyGlobally, setApplyGlobally] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [projections, setProjections] = useState<RuleProjectionItem[]>([])
-  const [projectionsLoading, setProjectionsLoading] = useState(false)
-
-  // Load projections in edit mode
-  useEffect(() => {
-    setProjections([])
-    if (rule === null) return
-    setProjectionsLoading(true)
-    rulesApi
-      .projections(rule.id)
-      .then(setProjections)
-      .catch(() => setProjections([]))
-      .finally(() => setProjectionsLoading(false))
-  }, [rule?.id])
 
   // Reset draft when rule changes
   useEffect(() => {
-    setDraft(toDraft(rule))
+    const d = toDraft(rule)
+    setDraft(d)
+    setApplyGlobally(d.targetPlatforms.length === 0)
   }, [rule?.id])
 
-  const applyGlobally = draft.targetPlatforms.length === 0
-
+  // When switching off "apply globally", default-select all detected platforms
   function handleApplyGloballyToggle(checked: boolean) {
-    setDraft(prev => ({ ...prev, targetPlatforms: checked ? [] : [] }))
-    if (checked) {
+    setApplyGlobally(checked)
+    if (!checked) {
+      setDraft(prev => ({
+        ...prev,
+        targetPlatforms: detectedPlatforms.map(p => p.id),
+      }))
+    } else {
       setDraft(prev => ({ ...prev, targetPlatforms: [] }))
     }
   }
@@ -93,8 +86,7 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
         name: draft.name.trim(),
         content: draft.content,
         scope: draft.scope,
-        tags: draft.tags.split(',').map(t => t.trim()).filter(Boolean),
-        targetPlatforms: draft.targetPlatforms,
+        targetPlatforms: applyGlobally ? [] : draft.targetPlatforms,
         platformOverrides: draft.platformOverrides,
       }
       const saved =
@@ -117,7 +109,9 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
         <div>
           <h1 className="page-title">{title}</h1>
           <p className="page-subtitle">
-            {applyGlobally ? 'Applied globally across all platforms' : `Targeted to ${draft.targetPlatforms.length} platform${draft.targetPlatforms.length !== 1 ? 's' : ''}`}
+            {applyGlobally
+              ? 'Applied globally across all platforms'
+              : `Targeted to ${draft.targetPlatforms.length} platform${draft.targetPlatforms.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <div className="editor-header-actions">
@@ -164,21 +158,10 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
                 <option value="project">project</option>
               </select>
             </label>
-
-            <label className="form-label">
-              Tags
-              <input
-                type="text"
-                value={draft.tags}
-                onChange={e => setDraft(prev => ({ ...prev, tags: e.target.value }))}
-                placeholder="typescript, backend"
-                className="form-input"
-              />
-            </label>
           </div>
 
           <div className="editor-section">
-            <div className="section-title">Platform Targeting</div>
+            <div className="section-title">Target Platforms</div>
 
             <label className="platform-checkbox-row">
               <input
@@ -188,29 +171,31 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
               />
               <span className="platform-checkbox-label">
                 <span className="platform-dot platform-dot-global" />
-                Apply globally
+                Apply to all platforms
               </span>
             </label>
 
-            {!applyGlobally && (
-              <div className="platform-list">
-                {ALL_PLATFORMS.map(platformId => (
-                  <label key={platformId} className="platform-checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={draft.targetPlatforms.includes(platformId)}
-                      onChange={e => handlePlatformToggle(platformId, e.target.checked)}
-                    />
-                    <span className="platform-checkbox-label">
-                      <span className={`platform-dot platform-dot-${platformId}`} />
-                      {PLATFORM_LABELS[platformId]}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
+            <div className="platform-list">
+              {detectedPlatforms.length === 0 && (
+                <p className="platform-warning">No platforms detected.</p>
+              )}
+              {detectedPlatforms.map(platform => (
+                <label key={platform.id} className="platform-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={applyGlobally || draft.targetPlatforms.includes(platform.id)}
+                    disabled={applyGlobally}
+                    onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
+                  />
+                  <span className="platform-checkbox-label">
+                    <span className={`platform-dot platform-dot-${platform.id}`} />
+                    {platform.displayName}
+                  </span>
+                </label>
+              ))}
+            </div>
 
-            {!applyGlobally && draft.targetPlatforms.length === 0 && (
+            {!applyGlobally && draft.targetPlatforms.length === 0 && detectedPlatforms.length > 0 && (
               <p className="platform-warning">Select at least one platform, or enable global.</p>
             )}
           </div>
@@ -227,14 +212,6 @@ export function RuleEditorPage({ rule, onSave, onCancel }: RuleEditorPageProps) 
               onChange={val => setDraft(prev => ({ ...prev, content: val ?? '' }))}
               options={{ minimap: { enabled: false }, wordWrap: 'on', fontSize: 14 }}
             />
-          </div>
-        </div>
-
-        {/* RIGHT: Projection Preview */}
-        <div className="editor-right">
-          <div className="projection-panel">
-            <div className="section-title">Platform Projections</div>
-            <ProjectionPreview projections={projections} loading={projectionsLoading} />
           </div>
         </div>
       </div>
