@@ -1,4 +1,4 @@
-import { copyFile, mkdir, writeFile, stat } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, writeFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { nanoid } from 'nanoid'
@@ -8,7 +8,8 @@ import type { RuleStore } from '../rules/store.js'
 import type { ProfileStore } from '../profiles/store.js'
 import type { SkillStore } from '../skills/store.js'
 import type { AgentStore } from '../agents/store.js'
-import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName } from './platform-paths.js'
+import type { McpStore } from '../mcp/store.js'
+import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName, getPlatformMcpSettingsPath } from './platform-paths.js'
 import { projectRule } from '../rules/project.js'
 
 export class PublishEngine {
@@ -21,6 +22,8 @@ export class PublishEngine {
     private readonly getSkillsDir: (platformId: PlatformId) => string = getPlatformSkillsDir,
     private readonly agentStore: AgentStore | null = null,
     private readonly getAgentsDir: (platformId: PlatformId) => string | null = getPlatformAgentsDir,
+    private readonly mcpStore: McpStore | null = null,
+    private readonly getMcpSettingsPath: (platformId: PlatformId) => string | null = getPlatformMcpSettingsPath,
   ) {}
 
   async publish(profileId: string): Promise<Revision> {
@@ -150,6 +153,71 @@ export class PublishEngine {
             isNew,
             agentId: agent.id,
             agentName: agent.name,
+          })
+        }
+      }
+
+      // Merge MCP server entries into platform settings.json
+      if (this.mcpStore) {
+        for (const mcpServerId of (profile.mcpServerIds ?? [])) {
+          const server = await this.mcpStore.findById(mcpServerId)
+          if (!server) continue
+
+          // Only publish to platforms this server targets
+          if (!server.targetPlatforms.includes(platformId)) continue
+
+          const settingsPath = this.getMcpSettingsPath(platformId)
+          if (!settingsPath) continue
+
+          // Read existing settings.json (or empty object if missing/invalid)
+          let settingsObj: Record<string, unknown> = {}
+          let isNew = true
+          let backupPath: string | undefined
+
+          try {
+            await stat(settingsPath)
+            isNew = false
+            // Backup existing file
+            const backupDir = join(this.prismDir, 'backups', revisionId, `${platformId}-mcp`)
+            await mkdir(backupDir, { recursive: true })
+            backupPath = join(backupDir, 'settings.json')
+            await copyFile(settingsPath, backupPath)
+            // Read contents
+            const raw = await readFile(settingsPath, 'utf-8')
+            try {
+              settingsObj = JSON.parse(raw) as Record<string, unknown>
+            } catch {
+              // Corrupted JSON — start fresh but keep backup
+              settingsObj = {}
+            }
+          } catch {
+            // File does not exist — isNew stays true, settingsObj stays {}
+          }
+
+          // Merge mcpServers key
+          if (!settingsObj.mcpServers || typeof settingsObj.mcpServers !== 'object') {
+            settingsObj.mcpServers = {}
+          }
+          const mcpServers = settingsObj.mcpServers as Record<string, unknown>
+          mcpServers[server.name] = {
+            command: server.command,
+            args: server.args,
+            ...(server.env ? { env: server.env } : {}),
+          }
+
+          // Ensure parent directory exists and write back
+          await mkdir(join(settingsPath, '..'), { recursive: true })
+          await writeFile(settingsPath, JSON.stringify(settingsObj, null, 2), 'utf-8')
+
+          publishedFiles.push({
+            platformId,
+            filePath: settingsPath,
+            backupPath,
+            isNew,
+            // Reuse agentId/agentName fields as there are no dedicated mcp fields on PublishedFile
+            // We tag it with the server name for traceability
+            agentId: server.id,
+            agentName: `mcp:${server.name}`,
           })
         }
       }
