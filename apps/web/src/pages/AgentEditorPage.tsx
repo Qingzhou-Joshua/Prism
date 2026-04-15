@@ -172,13 +172,16 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
           <div className="editor-section">
             <div className="section-title">Target Platforms</div>
 
-            <label className="platform-checkbox-row" style={{ marginBottom: '8px' }}>
+            <label className="platform-checkbox-row">
               <input
                 type="checkbox"
                 checked={applyGlobally}
                 onChange={e => handleApplyGloballyToggle(e.target.checked)}
               />
-              <span>Apply to all platforms</span>
+              <span className="platform-checkbox-label">
+                <PlatformIcon platformId="global" size={8} />
+                Apply to all platforms
+              </span>
             </label>
 
             <div className="platform-list">
@@ -189,7 +192,6 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
                   <label
                     key={platform.id}
                     className="platform-checkbox-row"
-                    style={{ opacity: applyGlobally ? 0.5 : 1 }}
                   >
                     <input
                       type="checkbox"
