@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import type { UnifiedRule, RuleScope, PlatformId, PlatformOverride } from '@prism/shared'
 import { rulesApi } from '../api/rules'
+import { PlatformIcon } from '../components/PlatformIcon'
 
 interface DetectedPlatform {
   id: string
@@ -177,7 +178,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: Ru
                 onChange={e => handleApplyGloballyToggle(e.target.checked)}
               />
               <span className="platform-checkbox-label">
-                <span className="platform-dot platform-dot-global" />
+                <PlatformIcon platformId="global" size={8} />
                 Apply to all platforms
               </span>
             </label>
@@ -195,7 +196,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: Ru
                     onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
                   />
                   <span className="platform-checkbox-label">
-                    <span className={`platform-dot platform-dot-${platform.id}`} />
+                    <PlatformIcon platformId={platform.id} size={16} />
                     {platform.displayName}
                   </span>
                 </label>

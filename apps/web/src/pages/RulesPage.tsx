@@ -2,17 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import type { UnifiedRule } from '@prism/shared'
 import { rulesApi } from '../api/rules.js'
 import { PLATFORM_LABELS } from '../constants/platforms.js'
+import { PlatformIcon } from '../components/PlatformIcon'
 
 interface RulesPageProps {
   onEdit: (rule: UnifiedRule) => void
   onNew: () => void
-}
-
-const PLATFORM_DOT_CLASS: Record<string, string> = {
-  'claude-code': 'platform-dot platform-dot-claude',
-  'cursor': 'platform-dot platform-dot-cursor',
-  'openclaw': 'platform-dot platform-dot-openclaw',
-  'codebuddy': 'platform-dot platform-dot-codebuddy',
 }
 
 export function RulesPage({ onEdit, onNew }: RulesPageProps) {
@@ -119,7 +113,7 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
                             title={PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
                             style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)' }}
                           >
-                            <span className={PLATFORM_DOT_CLASS[pid] ?? 'platform-dot'} />
+                            <PlatformIcon platformId={pid} size={14} />
                             {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
                           </span>
                         ))

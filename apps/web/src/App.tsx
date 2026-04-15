@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { UnifiedRule, Profile, UnifiedSkill, UnifiedAgent, McpServer } from '@prism/shared'
+import { PlatformIcon } from './components/PlatformIcon'
 import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
 import { ProfilesPage } from './pages/ProfilesPage'
@@ -129,16 +130,6 @@ function getActiveCapability(page: Page): Capability {
 }
 
 // ── Platform icon map ─────────────────────────────────────────────────────────
-const PLATFORM_ICONS: Record<string, string> = {
-  'claude-code': '◈',
-  cursor: '⬡',
-  openclaw: '✦',
-  codebuddy: '◎',
-}
-
-function getPlatformIcon(id: string): string {
-  return PLATFORM_ICONS[id] ?? '○'
-}
 
 // ── Theme helpers ─────────────────────────────────────────────────────────────
 
@@ -304,7 +295,7 @@ export default function App() {
                 onClick={() => handlePlatformSelect(p.id)}
                 title={p.message ?? p.displayName}
               >
-                <span style={{ fontSize: 13, opacity: 0.85 }}>{getPlatformIcon(p.id)}</span>
+                <PlatformIcon platformId={p.id} size={18} />
                 {p.displayName}
                 <span className={`tab-dot${p.detected ? '' : ' offline'}`} />
               </button>
