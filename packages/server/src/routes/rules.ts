@@ -9,12 +9,13 @@ const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
 const createRuleSchema = {
   body: {
     type: 'object' as const,
-    required: ['name', 'content', 'scope'],
+    required: ['name', 'content'],
     properties: {
       name:              { type: 'string', minLength: 1 },
       content:           { type: 'string' },
       scope:             { type: 'string', enum: ['global', 'project'] },
       tags:              { type: 'array', items: { type: 'string' } },
+      targetPlatforms:   { type: 'array', items: { type: 'string' } },
       platformOverrides: { type: 'object' },
     },
   },
@@ -28,6 +29,7 @@ const updateRuleSchema = {
       content:           { type: 'string' },
       scope:             { type: 'string', enum: ['global', 'project'] },
       tags:              { type: 'array', items: { type: 'string' } },
+      targetPlatforms:   { type: 'array', items: { type: 'string' } },
       platformOverrides: { type: 'object' },
     },
   },

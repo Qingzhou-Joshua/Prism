@@ -11,11 +11,7 @@ interface SkillsPageProps {
   platformId?: string
 }
 
-function isGlobal(skill: UnifiedSkill): boolean {
-  return !skill.targetPlatforms || skill.targetPlatforms.length === 0
-}
-
-export function SkillsPage({ onEdit, onNew, skillsDir, platformId }: SkillsPageProps) {
+export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }: SkillsPageProps) {
   const [skills, setSkills] = useState<UnifiedSkill[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -67,13 +63,6 @@ export function SkillsPage({ onEdit, onNew, skillsDir, platformId }: SkillsPageP
         <button className="btn btn-primary" onClick={onNew}>+ New Skill</button>
       </div>
 
-      {skillsDir && (
-        <div className="path-info-card">
-          <span className="path-info-label">📁 Directory</span>
-          <code className="path-info-value">{skillsDir}</code>
-        </div>
-      )}
-
       {skills.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🛠</div>
@@ -86,19 +75,13 @@ export function SkillsPage({ onEdit, onNew, skillsDir, platformId }: SkillsPageP
       {skills.length > 0 && (
         <div className="item-card-grid">
           {skills.map(skill => (
-            <div key={skill.id} className="item-card">
+            <div key={skill.id} className="item-card" onClick={() => onEdit(skill)} style={{ cursor: 'pointer' }}>
               <div className="item-card-name">{skill.name}</div>
               {skill.filePath && (
                 <div className="item-card-filepath">{skill.filePath}</div>
               )}
               <div className="item-card-meta">
-                {isGlobal(skill)
-                  ? <span className="badge badge-global">◉ Global</span>
-                  : <span className="badge badge-targeted">◎ Targeted</span>
-                }
-                {isGlobal(skill) ? (
-                  <span className="text-muted text-sm">All platforms</span>
-                ) : (
+                {skill.targetPlatforms && skill.targetPlatforms.length > 0 ? (
                   skill.targetPlatforms.map(pid => (
                     <span
                       key={pid}
@@ -109,7 +92,7 @@ export function SkillsPage({ onEdit, onNew, skillsDir, platformId }: SkillsPageP
                       {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
                     </span>
                   ))
-                )}
+                ) : null}
                 {skill.trigger && (
                   <span className="badge badge-muted">{skill.trigger}</span>
                 )}
@@ -120,10 +103,9 @@ export function SkillsPage({ onEdit, onNew, skillsDir, platformId }: SkillsPageP
               <div className="item-card-footer">
                 <span className="item-card-date">{new Date(skill.updatedAt).toLocaleDateString()}</span>
                 <div className="item-card-actions">
-                  <button className="btn btn-ghost btn-sm" onClick={() => onEdit(skill)}>Edit</button>
                   <button
                     className="btn btn-danger btn-sm"
-                    onClick={() => void handleDelete(skill)}
+                    onClick={(e) => { e.stopPropagation(); void handleDelete(skill) }}
                     disabled={deletingId === skill.id}
                   >
                     {deletingId === skill.id ? '…' : 'Delete'}

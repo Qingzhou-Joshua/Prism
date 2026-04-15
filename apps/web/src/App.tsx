@@ -1,11 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
-import type { UnifiedRule, Profile, UnifiedSkill, UnifiedAgent, McpServer } from '@prism/shared'
+import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer } from '@prism/shared'
 import { PlatformIcon } from './components/PlatformIcon'
 import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
-import { ProfilesPage } from './pages/ProfilesPage'
-import { ProfileEditorPage } from './pages/ProfileEditorPage'
-import { RevisionsPage } from './pages/RevisionsPage.js'
 import { SkillsPage } from './pages/SkillsPage'
 import { SkillEditorPage } from './pages/SkillEditorPage'
 import { AgentsPage } from './pages/AgentsPage'
@@ -19,10 +16,6 @@ type Page =
   | { view: 'rules-list' }
   | { view: 'rules-edit'; rule: UnifiedRule }
   | { view: 'rules-new' }
-  | { view: 'profiles-list' }
-  | { view: 'profiles-new' }
-  | { view: 'profiles-edit'; profile: Profile }
-  | { view: 'revisions' }
   | { view: 'skills-list' }
   | { view: 'skills-editor'; skill?: UnifiedSkill }
   | { view: 'agents-list' }
@@ -30,13 +23,12 @@ type Page =
   | { view: 'mcp-list' }
   | { view: 'mcp-editor'; server?: McpServer }
 
-type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'profiles' | 'revisions'
+type Capability = 'rules' | 'skills' | 'agents' | 'mcp'
 
 type Theme = 'dark' | 'light'
 
 interface PlatformCapabilities {
   rules: boolean
-  profiles: boolean
   skills?: boolean
   agents?: boolean
   mcp?: boolean
@@ -83,26 +75,14 @@ const CAPABILITY_CONFIG: Record<
     icon: '🔌',
     defaultPage: { view: 'mcp-list' },
   },
-  profiles: {
-    label: 'Profiles',
-    icon: '📦',
-    defaultPage: { view: 'profiles-list' },
-  },
-  revisions: {
-    label: 'Revisions',
-    icon: '🕒',
-    defaultPage: { view: 'revisions' },
-  },
 }
 
-function getCapabilitiesForPlatform(platform: PlatformScanResult): Capability[] {
+function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   const caps: Capability[] = []
   if (platform.capabilities.rules) caps.push('rules')
   if (platform.capabilities.skills) caps.push('skills')
   if (platform.capabilities.agents) caps.push('agents')
   if (platform.capabilities.mcp) caps.push('mcp')
-  if (platform.capabilities.profiles) caps.push('profiles')
-  caps.push('revisions') // always show revisions
   return caps
 }
 
@@ -121,12 +101,6 @@ function getActiveCapability(page: Page): Capability {
     case 'mcp-list':
     case 'mcp-editor':
       return 'mcp'
-    case 'profiles-list':
-    case 'profiles-new':
-    case 'profiles-edit':
-      return 'profiles'
-    case 'revisions':
-      return 'revisions'
     default:
       return 'rules'
   }
@@ -264,7 +238,7 @@ export default function App() {
     setPage({ view: 'rules-list' })
   }, [])
 
-  const capabilities = selectedPlatform ? getCapabilitiesForPlatform(selectedPlatform) : []
+  const capabilities = selectedPlatform ? getPlatformCapabilities(selectedPlatform) : []
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -332,7 +306,7 @@ export default function App() {
       <div className="app-body">
         {/* Sidebar */}
         <aside className="app-sidebar">
-          {selectedPlatform && (
+          {selectedPlatform && capabilities.length > 0 && (
             <>
               <div className="sidebar-section-label">
                 {selectedPlatform.displayName}
@@ -475,33 +449,6 @@ export default function App() {
                 initialServer={page.server}
                 onBack={() => setPage({ view: 'mcp-list' })}
               />
-            )}
-
-            {/* Profiles */}
-            {page.view === 'profiles-list' && (
-              <ProfilesPage
-                onNew={() => setPage({ view: 'profiles-new' })}
-                onEdit={(profile) => setPage({ view: 'profiles-edit', profile })}
-              />
-            )}
-            {page.view === 'profiles-edit' && (
-              <ProfileEditorPage
-                profile={page.profile}
-                onSave={() => setPage({ view: 'profiles-list' })}
-                onCancel={() => setPage({ view: 'profiles-list' })}
-              />
-            )}
-            {page.view === 'profiles-new' && (
-              <ProfileEditorPage
-                profile={undefined}
-                onSave={() => setPage({ view: 'profiles-list' })}
-                onCancel={() => setPage({ view: 'profiles-list' })}
-              />
-            )}
-
-            {/* Revisions */}
-            {page.view === 'revisions' && (
-              <RevisionsPage />
             )}
           </div>
         </main>

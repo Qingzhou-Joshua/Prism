@@ -998,14 +998,15 @@ p { margin: 0; }
 }
 
 /* ============================================================
-   EDITOR LAYOUT (2-panel)
+   EDITOR LAYOUT (toolbar + full-width Monaco)
    ============================================================ */
 .editor-page {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 52px);
   overflow: hidden;
-  padding: 20px 24px 0;
+  padding: 16px 24px 0;
+  gap: 10px;
 }
 
 .editor-page .page-header {
@@ -1020,6 +1021,159 @@ p { margin: 0; }
   gap: 8px;
 }
 
+/* ── Compact toolbar ─────────────────────────────────────── */
+.editor-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: 8px 12px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.editor-toolbar-name {
+  flex: 0 0 220px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 5px 10px;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.editor-toolbar-name::placeholder {
+  color: var(--text-muted);
+}
+
+.editor-toolbar-name:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(245, 78, 0, 0.15);
+}
+
+.editor-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-default);
+  flex-shrink: 0;
+}
+
+.editor-toolbar-platforms {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.toolbar-platform-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.toolbar-platform-item:hover {
+  background: rgba(245, 78, 0, 0.07);
+  color: var(--text-primary);
+  border-color: rgba(245, 78, 0, 0.15);
+}
+
+.toolbar-platform-item input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
+.toolbar-platform-item:has(input:checked) {
+  color: var(--text-primary);
+  background: rgba(245, 78, 0, 0.08);
+  border-color: rgba(245, 78, 0, 0.2);
+}
+
+.toolbar-platform-item:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.toolbar-platform-warning {
+  font-size: 11px;
+  color: var(--warning-text);
+  padding: 0 6px;
+}
+
+.editor-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Full-width Monaco container ─────────────────────────── */
+.editor-full {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-full .monaco-wrapper {
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* ── Metadata strip (Skill/Agent extra fields) ───────────── */
+.editor-meta-strip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-meta-input {
+  flex: 1;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.editor-meta-input::placeholder {
+  color: var(--text-muted);
+}
+
+.editor-meta-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(245, 78, 0, 0.15);
+}
+
+/* Legacy layout (kept for any page still using .editor-layout) */
 .editor-layout {
   display: grid;
   grid-template-columns: 200px 1fr;

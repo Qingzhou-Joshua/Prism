@@ -45,9 +45,6 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
     }
   }
 
-  const isGlobal = (rule: UnifiedRule) =>
-    !rule.targetPlatforms || rule.targetPlatforms.length === 0
-
   if (loading) return <div className="loading-state">Loading rules…</div>
   if (error) return (
     <div className="error-state">
@@ -67,14 +64,6 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
         <button className="btn btn-primary" onClick={onNew}>+ New Rule</button>
       </div>
 
-      {/* Path info card */}
-      {rulesDir && (
-        <div className="path-info-card">
-          <span className="path-info-label">📁 Directory</span>
-          <code className="path-info-value">{rulesDir}</code>
-        </div>
-      )}
-
       {/* Empty state */}
       {rules.length === 0 && (
         <div className="empty-state">
@@ -91,20 +80,13 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
       {rules.length > 0 && (
         <div className="item-card-grid">
           {rules.map(rule => (
-            <div key={rule.id} className="item-card">
+            <div key={rule.id} className="item-card" onClick={() => onEdit(rule)} style={{ cursor: 'pointer' }}>
               <div className="item-card-name">{rule.name}</div>
               {rule.filePath && (
                 <div className="item-card-filepath">{rule.filePath}</div>
               )}
               <div className="item-card-meta">
-                {isGlobal(rule) ? (
-                  <span className="badge badge-global">◉ Global</span>
-                ) : (
-                  <span className="badge badge-targeted">◎ Targeted</span>
-                )}
-                {isGlobal(rule) ? (
-                  <span className="text-muted text-sm">All platforms</span>
-                ) : (
+                {rule.targetPlatforms && rule.targetPlatforms.length > 0 ? (
                   rule.targetPlatforms.map(pid => (
                     <span
                       key={pid}
@@ -115,7 +97,7 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
                       {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
                     </span>
                   ))
-                )}
+                ) : null}
                 {rule.tags.map(t => (
                   <span key={t} className="badge badge-muted">{t}</span>
                 ))}
@@ -123,10 +105,9 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
               <div className="item-card-footer">
                 <span className="item-card-date">{new Date(rule.updatedAt).toLocaleDateString()}</span>
                 <div className="item-card-actions">
-                  <button className="btn btn-ghost btn-sm" onClick={() => onEdit(rule)}>Edit</button>
                   <button
                     className="btn btn-danger btn-sm"
-                    onClick={() => void handleDelete(rule)}
+                    onClick={(e) => { e.stopPropagation(); void handleDelete(rule) }}
                     disabled={deletingId === rule.id}
                   >
                     {deletingId === rule.id ? '…' : 'Delete'}

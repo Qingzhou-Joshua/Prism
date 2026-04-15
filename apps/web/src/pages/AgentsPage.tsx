@@ -11,11 +11,7 @@ interface AgentsPageProps {
   platformId?: string
 }
 
-function isGlobal(agent: UnifiedAgent): boolean {
-  return !agent.targetPlatforms || agent.targetPlatforms.length === 0
-}
-
-export function AgentsPage({ onEdit, onNew, agentsDir, platformId }: AgentsPageProps) {
+export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }: AgentsPageProps) {
   const [agents, setAgents] = useState<UnifiedAgent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -67,13 +63,6 @@ export function AgentsPage({ onEdit, onNew, agentsDir, platformId }: AgentsPageP
         <button className="btn btn-primary" onClick={onNew}>+ New Agent</button>
       </div>
 
-      {agentsDir && (
-        <div className="path-info-card">
-          <span className="path-info-label">📁 Directory</span>
-          <code className="path-info-value">{agentsDir}</code>
-        </div>
-      )}
-
       {agents.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🤖</div>
@@ -86,19 +75,13 @@ export function AgentsPage({ onEdit, onNew, agentsDir, platformId }: AgentsPageP
       {agents.length > 0 && (
         <div className="item-card-grid">
           {agents.map(agent => (
-            <div key={agent.id} className="item-card">
+            <div key={agent.id} className="item-card" onClick={() => onEdit(agent)} style={{ cursor: 'pointer' }}>
               <div className="item-card-name">{agent.name}</div>
               {agent.filePath && (
                 <div className="item-card-filepath">{agent.filePath}</div>
               )}
               <div className="item-card-meta">
-                {isGlobal(agent)
-                  ? <span className="badge badge-global">◉ Global</span>
-                  : <span className="badge badge-targeted">◎ Targeted</span>
-                }
-                {isGlobal(agent) ? (
-                  <span className="text-muted text-sm">All platforms</span>
-                ) : (
+                {agent.targetPlatforms && agent.targetPlatforms.length > 0 ? (
                   agent.targetPlatforms.map(pid => (
                     <span
                       key={pid}
@@ -109,7 +92,7 @@ export function AgentsPage({ onEdit, onNew, agentsDir, platformId }: AgentsPageP
                       {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
                     </span>
                   ))
-                )}
+                ) : null}
                 {agent.agentType && (
                   <span className="badge badge-muted">{agent.agentType}</span>
                 )}
@@ -120,10 +103,9 @@ export function AgentsPage({ onEdit, onNew, agentsDir, platformId }: AgentsPageP
               <div className="item-card-footer">
                 <span className="item-card-date">{new Date(agent.updatedAt).toLocaleDateString()}</span>
                 <div className="item-card-actions">
-                  <button className="btn btn-ghost btn-sm" onClick={() => onEdit(agent)}>Edit</button>
                   <button
                     className="btn btn-danger btn-sm"
-                    onClick={() => void handleDelete(agent)}
+                    onClick={(e) => { e.stopPropagation(); void handleDelete(agent) }}
                     disabled={deletingId === agent.id}
                   >
                     {deletingId === agent.id ? '…' : 'Delete'}

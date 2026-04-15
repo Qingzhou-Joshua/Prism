@@ -47,8 +47,7 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Intentional: reset only when navigating to a different skill (id change),
-  // not when parent updates the same skill's content post-save.
+  // Intentional: reset only when navigating to a different skill (id change).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setDraft(toDraft(initialSkill))
@@ -66,9 +65,9 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
     }
   }
 
-  function handlePlatformToggle(platformId: string, checked: boolean) {
+  function handlePlatformToggle(pid: string, checked: boolean) {
     setTargetPlatforms(prev =>
-      checked ? [...prev, platformId] : prev.filter(p => p !== platformId)
+      checked ? [...prev, pid] : prev.filter(p => p !== pid)
     )
   }
 
@@ -101,25 +100,58 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
   const isInvalidPlatformState =
     !applyGlobally && targetPlatforms.length === 0 && detectedPlatforms.length > 0
 
-  const title = !initialSkill ? 'New Skill' : `Edit: ${initialSkill.name}`
-
   return (
     <div className="editor-page">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{title}</h1>
-          <p className="page-subtitle">
-            {applyGlobally
-              ? 'Applied globally across all platforms'
-              : `Targeted to ${targetPlatforms.length} platform${targetPlatforms.length !== 1 ? 's' : ''}`}
-          </p>
+      {/* ── Compact toolbar: name + platform targeting + actions ── */}
+      <div className="editor-toolbar">
+        <input
+          type="text"
+          value={draft.name}
+          onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Skill name…"
+          className="editor-toolbar-name"
+        />
+
+        <div className="editor-toolbar-divider" />
+
+        {/* Platform targeting */}
+        <div className="editor-toolbar-platforms">
+          <label className="toolbar-platform-item">
+            <input
+              type="checkbox"
+              checked={applyGlobally}
+              onChange={e => handleApplyGloballyToggle(e.target.checked)}
+            />
+            <PlatformIcon platformId="global" size={14} />
+            <span>All platforms</span>
+          </label>
+
+          {detectedPlatforms.map(platform => (
+            <label key={platform.id} className="toolbar-platform-item">
+              <input
+                type="checkbox"
+                checked={applyGlobally || targetPlatforms.includes(platform.id)}
+                disabled={applyGlobally}
+                onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
+              />
+              <PlatformIcon platformId={platform.id} size={14} />
+              <span>{platform.displayName}</span>
+            </label>
+          ))}
+
+          {isInvalidPlatformState && (
+            <span className="toolbar-platform-warning">Select at least one</span>
+          )}
         </div>
-        <div className="editor-header-actions">
-          <button className="btn btn-ghost" onClick={onBack} disabled={saving}>
+
+        <div className="editor-toolbar-divider" />
+
+        <div className="editor-toolbar-actions">
+          <button className="btn btn-ghost btn-sm" onClick={onBack} disabled={saving}>
             Cancel
           </button>
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
@@ -128,99 +160,37 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
         </div>
       </div>
 
-      {error && <div className="error-state">{error}</div>}
+      {/* ── Metadata strip: trigger + category ── */}
+      <div className="editor-meta-strip">
+        <input
+          type="text"
+          value={draft.trigger}
+          onChange={e => setDraft(prev => ({ ...prev, trigger: e.target.value }))}
+          placeholder="Trigger (e.g. /myskill)"
+          className="editor-meta-input"
+        />
+        <input
+          type="text"
+          value={draft.category}
+          onChange={e => setDraft(prev => ({ ...prev, category: e.target.value }))}
+          placeholder="Category (e.g. development)"
+          className="editor-meta-input"
+        />
+      </div>
 
-      <div className="editor-layout">
-        {/* LEFT: Metadata + Platform Targeting */}
-        <div className="editor-left">
-          <div className="editor-section">
-            <label className="form-label">
-              Name
-              <input
-                type="text"
-                value={draft.name}
-                onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Skill name"
-                className="form-input"
-              />
-            </label>
+      {error && <div className="error-state" style={{ margin: '0 0 8px' }}>{error}</div>}
 
-            <label className="form-label">
-              Trigger (optional)
-              <input
-                type="text"
-                value={draft.trigger}
-                onChange={e => setDraft(prev => ({ ...prev, trigger: e.target.value }))}
-                placeholder="e.g. /myskill"
-                className="form-input"
-              />
-            </label>
-
-            <label className="form-label">
-              Category (optional)
-              <input
-                type="text"
-                value={draft.category}
-                onChange={e => setDraft(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="e.g. development, testing"
-                className="form-input"
-              />
-            </label>
-          </div>
-
-          <div className="editor-section">
-            <div className="section-title">Target Platforms</div>
-
-            <label className="platform-checkbox-row">
-              <input
-                type="checkbox"
-                checked={applyGlobally}
-                onChange={e => handleApplyGloballyToggle(e.target.checked)}
-              />
-              <span className="platform-checkbox-label">
-                <PlatformIcon platformId="global" size={8} />
-                Apply to all platforms
-              </span>
-            </label>
-
-            <div className="platform-list">
-              {detectedPlatforms.length === 0 && (
-                <p className="platform-warning">No platforms detected.</p>
-              )}
-              {detectedPlatforms.map(platform => (
-                <label key={platform.id} className="platform-checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={applyGlobally || targetPlatforms.includes(platform.id)}
-                    disabled={applyGlobally}
-                    onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
-                  />
-                  <span className="platform-checkbox-label">
-                    <PlatformIcon platformId={platform.id} size={16} />
-                    {platform.displayName}
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {isInvalidPlatformState && (
-              <p className="platform-warning">Select at least one platform, or enable global.</p>
-            )}
-          </div>
-        </div>
-
-        {/* CENTER: Monaco Editor */}
-        <div className="editor-center">
-          <div className="monaco-wrapper">
-            <Editor
-              height="100%"
-              defaultLanguage="markdown"
-              theme="vs-dark"
-              value={draft.content}
-              onChange={val => setDraft(prev => ({ ...prev, content: val ?? '' }))}
-              options={{ minimap: { enabled: false }, wordWrap: 'on', fontSize: 14 }}
-            />
-          </div>
+      {/* ── Full-width Monaco editor ── */}
+      <div className="editor-full">
+        <div className="monaco-wrapper">
+          <Editor
+            height="100%"
+            defaultLanguage="markdown"
+            theme="vs-dark"
+            value={draft.content}
+            onChange={val => setDraft(prev => ({ ...prev, content: val ?? '' }))}
+            options={{ minimap: { enabled: false }, wordWrap: 'on', fontSize: 14 }}
+          />
         </div>
       </div>
     </div>

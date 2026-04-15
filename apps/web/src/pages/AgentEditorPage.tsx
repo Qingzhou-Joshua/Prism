@@ -48,8 +48,7 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Intentional: reset only when navigating to a different agent (id change),
-  // not when parent updates the same agent's content post-save.
+  // Intentional: reset only when navigating to a different agent (id change).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setDraft(toDraft(initialAgent))
@@ -102,25 +101,58 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
   const isInvalidPlatformState =
     !applyGlobally && targetPlatforms.length === 0 && detectedPlatforms.length > 0
 
-  const title = !initialAgent ? 'New Agent' : `Edit: ${initialAgent.name}`
-
   return (
     <div className="editor-page">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{title}</h1>
-          <p className="page-subtitle">
-            {applyGlobally
-              ? 'Applied globally across all platforms'
-              : `Targeted to ${targetPlatforms.length} platform${targetPlatforms.length !== 1 ? 's' : ''}`}
-          </p>
+      {/* ── Compact toolbar: name + platform targeting + actions ── */}
+      <div className="editor-toolbar">
+        <input
+          type="text"
+          value={draft.name}
+          onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Agent name…"
+          className="editor-toolbar-name"
+        />
+
+        <div className="editor-toolbar-divider" />
+
+        {/* Platform targeting */}
+        <div className="editor-toolbar-platforms">
+          <label className="toolbar-platform-item">
+            <input
+              type="checkbox"
+              checked={applyGlobally}
+              onChange={e => handleApplyGloballyToggle(e.target.checked)}
+            />
+            <PlatformIcon platformId="global" size={14} />
+            <span>All platforms</span>
+          </label>
+
+          {detectedPlatforms.map(platform => (
+            <label key={platform.id} className="toolbar-platform-item">
+              <input
+                type="checkbox"
+                checked={applyGlobally || targetPlatforms.includes(platform.id)}
+                disabled={applyGlobally}
+                onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
+              />
+              <PlatformIcon platformId={platform.id} size={14} />
+              <span>{platform.displayName}</span>
+            </label>
+          ))}
+
+          {isInvalidPlatformState && (
+            <span className="toolbar-platform-warning">Select at least one</span>
+          )}
         </div>
-        <div className="editor-header-actions">
-          <button className="btn btn-ghost" onClick={onBack} disabled={saving}>
+
+        <div className="editor-toolbar-divider" />
+
+        <div className="editor-toolbar-actions">
+          <button className="btn btn-ghost btn-sm" onClick={onBack} disabled={saving}>
             Cancel
           </button>
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
@@ -129,105 +161,37 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
         </div>
       </div>
 
-      {error && <div className="error-state">{error}</div>}
+      {/* ── Metadata strip: agentType + description ── */}
+      <div className="editor-meta-strip">
+        <input
+          type="text"
+          value={draft.agentType}
+          onChange={e => setDraft(prev => ({ ...prev, agentType: e.target.value }))}
+          placeholder="Agent type (e.g. general-purpose)"
+          className="editor-meta-input"
+        />
+        <input
+          type="text"
+          value={draft.description}
+          onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Description (optional)"
+          className="editor-meta-input"
+        />
+      </div>
 
-      <div className="editor-layout">
-        {/* LEFT: Metadata */}
-        <div className="editor-left">
-          <div className="editor-section">
-            <label className="form-label">
-              Name
-              <input
-                type="text"
-                value={draft.name}
-                onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Agent name"
-                className="form-input"
-              />
-            </label>
+      {error && <div className="error-state" style={{ margin: '0 0 8px' }}>{error}</div>}
 
-            <label className="form-label">
-              Agent Type (optional)
-              <input
-                type="text"
-                value={draft.agentType}
-                onChange={e => setDraft(prev => ({ ...prev, agentType: e.target.value }))}
-                placeholder="e.g. general-purpose, code-reviewer"
-                className="form-input"
-              />
-            </label>
-
-            <label className="form-label">
-              Description (optional)
-              <input
-                type="text"
-                value={draft.description}
-                onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Brief description of what this agent does"
-                className="form-input"
-              />
-            </label>
-          </div>
-
-          {/* Platform Targeting */}
-          <div className="editor-section">
-            <div className="section-title">Target Platforms</div>
-
-            <label className="platform-checkbox-row">
-              <input
-                type="checkbox"
-                checked={applyGlobally}
-                onChange={e => handleApplyGloballyToggle(e.target.checked)}
-              />
-              <span className="platform-checkbox-label">
-                <PlatformIcon platformId="global" size={8} />
-                Apply to all platforms
-              </span>
-            </label>
-
-            <div className="platform-list">
-              {detectedPlatforms.length === 0 ? (
-                <p className="platform-warning">No platforms detected.</p>
-              ) : (
-                detectedPlatforms.map(platform => (
-                  <label
-                    key={platform.id}
-                    className="platform-checkbox-row"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={applyGlobally || targetPlatforms.includes(platform.id)}
-                      disabled={applyGlobally}
-                      onChange={e => handlePlatformToggle(platform.id, e.target.checked)}
-                    />
-                    <span
-                      className="platform-checkbox-label"
-                    >
-                      <PlatformIcon platformId={platform.id} size={16} />
-                      {platform.displayName}
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
-            {isInvalidPlatformState && (
-              <p className="platform-warning">Select at least one platform, or enable global.</p>
-            )}
-          </div>
-        </div>
-
-        {/* CENTER: Monaco Editor */}
-        <div className="editor-center">
-          <div className="monaco-wrapper">
-            <Editor
-              height="100%"
-              defaultLanguage="markdown"
-              theme="vs-dark"
-              value={draft.content}
-              onChange={val => setDraft(prev => ({ ...prev, content: val ?? '' }))}
-              options={{ minimap: { enabled: false }, wordWrap: 'on', fontSize: 14 }}
-            />
-          </div>
+      {/* ── Full-width Monaco editor ── */}
+      <div className="editor-full">
+        <div className="monaco-wrapper">
+          <Editor
+            height="100%"
+            defaultLanguage="markdown"
+            theme="vs-dark"
+            value={draft.content}
+            onChange={val => setDraft(prev => ({ ...prev, content: val ?? '' }))}
+            options={{ minimap: { enabled: false }, wordWrap: 'on', fontSize: 14 }}
+          />
         </div>
       </div>
     </div>
