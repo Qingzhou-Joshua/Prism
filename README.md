@@ -10,9 +10,11 @@
  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝     ╚═╝
 </pre>
 
-**Local-first control plane for AI tool configuration**
+**Local-first manager for AI coding environments.**
 
 Scan · Manage · Preview · Publish — across every AI coding tool you use
+
+
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)](https://www.typescriptlang.org/)
