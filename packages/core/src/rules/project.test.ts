@@ -20,32 +20,32 @@ function makeRule(overrides: Partial<UnifiedRule> = {}): UnifiedRule {
 describe('projectRule', () => {
   it('returns default content when no override exists', () => {
     const rule = makeRule()
-    const projection = projectRule(rule, 'cursor')
+    const projection = projectRule(rule, 'codebuddy')
     expect(projection.content).toBe('default content')
     expect(projection.hidden).toBe(false)
   })
 
   it('returns override content when override exists', () => {
     const rule = makeRule({
-      platformOverrides: { cursor: { content: 'cursor-specific content' } },
+      platformOverrides: { codebuddy: { content: 'codebuddy-specific content' } },
     })
-    const projection = projectRule(rule, 'cursor')
-    expect(projection.content).toBe('cursor-specific content')
+    const projection = projectRule(rule, 'codebuddy')
+    expect(projection.content).toBe('codebuddy-specific content')
     expect(projection.hidden).toBe(false)
   })
 
   it('marks projection hidden when override content is null', () => {
     const rule = makeRule({
-      platformOverrides: { cursor: { content: null } },
+      platformOverrides: { codebuddy: { content: null } },
     })
-    const projection = projectRule(rule, 'cursor')
+    const projection = projectRule(rule, 'codebuddy')
     expect(projection.content).toBeNull()
     expect(projection.hidden).toBe(true)
   })
 
   it('does not apply other platform overrides', () => {
     const rule = makeRule({
-      platformOverrides: { cursor: { content: 'cursor override' } },
+      platformOverrides: { codebuddy: { content: 'codebuddy override' } },
     })
     const projection = projectRule(rule, 'claude-code')
     expect(projection.content).toBe('default content')
@@ -54,10 +54,10 @@ describe('projectRule', () => {
 
   it('includes rule metadata in projection', () => {
     const rule = makeRule({ id: 'abc', name: 'My Rule', scope: 'project' })
-    const projection = projectRule(rule, 'cursor')
+    const projection = projectRule(rule, 'codebuddy')
     expect(projection.ruleId).toBe('abc')
     expect(projection.name).toBe('My Rule')
-    expect(projection.platformId).toBe('cursor')
+    expect(projection.platformId).toBe('codebuddy')
     expect(projection.scope).toBe('project')
   })
 })

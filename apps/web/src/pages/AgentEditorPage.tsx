@@ -15,6 +15,7 @@ interface AgentEditorPageProps {
   onBack: () => void
   initialAgent?: UnifiedAgent
   detectedPlatforms: DetectedPlatform[]
+  platformId?: string
 }
 
 interface DraftAgent {
@@ -36,7 +37,7 @@ function toDraft(agent?: UnifiedAgent): DraftAgent {
   }
 }
 
-export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: AgentEditorPageProps) {
+export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platformId }: AgentEditorPageProps) {
   const [draft, setDraft] = useState<DraftAgent>(() => toDraft(initialAgent))
   const [applyGlobally, setApplyGlobally] = useState(
     () => (initialAgent?.targetPlatforms?.length ?? 0) === 0
@@ -86,9 +87,9 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms }: Age
         targetPlatforms: (applyGlobally ? [] : targetPlatforms) as PlatformId[],
       }
       if (!initialAgent) {
-        await agentsApi.create(dto)
+        await agentsApi.create(dto, platformId)
       } else {
-        await agentsApi.update(initialAgent.id, dto)
+        await agentsApi.update(initialAgent.id, dto, platformId)
       }
       onBack()
     } catch (e) {

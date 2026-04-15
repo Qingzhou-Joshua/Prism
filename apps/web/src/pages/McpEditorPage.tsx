@@ -46,8 +46,6 @@ function toDraft(server?: McpServer): DraftServer {
 
 const PLATFORM_COLORS: Record<string, string> = {
   'claude-code': '#cc785c',
-  'cursor': '#1a73e8',
-  'openclaw': '#2e7d32',
   'codebuddy': '#7b1fa2',
 }
 

@@ -3,13 +3,13 @@ import Fastify from 'fastify'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { FileSkillStore } from '@prism/core'
+import { DirSkillStore } from '@prism/core'
 import { registerSkillsRoutes } from './skills.js'
 import type { UnifiedSkill } from '@prism/shared'
 
 async function buildApp(storeDir: string) {
   const app = Fastify()
-  const store = new FileSkillStore(join(storeDir, 'skills.json'))
+  const store = new DirSkillStore(storeDir)
   await registerSkillsRoutes(app, store)
   return app
 }
@@ -150,12 +150,9 @@ describe('Skills API', () => {
     // claude-code and codebuddy support skills
     const claudeProj = body.projections.find(p => p.platformId === 'claude-code')
     expect(claudeProj).toBeDefined()
-    expect(claudeProj!.fileName).toBe('my-skill.md')
+    expect(claudeProj!.fileName).toBe('my-skill')
     expect(claudeProj!.content).toBe('# My Skill\n\nThis is my skill content.')
     expect(body.projections.find(p => p.platformId === 'codebuddy')).toBeDefined()
-    // openclaw and cursor do NOT support skills
-    expect(body.projections.find(p => p.platformId === 'openclaw')).toBeUndefined()
-    expect(body.projections.find(p => p.platformId === 'cursor')).toBeUndefined()
   })
 
   it('GET /skills/:id/projections returns 404 for unknown id', async () => {

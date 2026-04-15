@@ -1,12 +1,10 @@
 const PLATFORM_ICON_SRC: Record<string, string> = {
   'claude-code': '/icons/ic_claude.png',
   'claude':      '/icons/ic_claude.png',
-  'openclaw':    '/icons/ic_openclaw.png',
   'codebuddy':   '/icons/ic_codebuddy.png',
 }
 
 const PLATFORM_DOT_COLOR: Record<string, string> = {
-  'cursor': '#1a73e8',
   'global': '#4ecdc4',
 }
 

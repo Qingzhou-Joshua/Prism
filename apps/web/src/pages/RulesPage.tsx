@@ -7,9 +7,11 @@ import { PlatformIcon } from '../components/PlatformIcon'
 interface RulesPageProps {
   onEdit: (rule: UnifiedRule) => void
   onNew: () => void
+  rulesDir?: string
+  platformId?: string
 }
 
-export function RulesPage({ onEdit, onNew }: RulesPageProps) {
+export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProps) {
   const [rules, setRules] = useState<UnifiedRule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,14 +21,14 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
     setLoading(true)
     setError(null)
     try {
-      const items = await rulesApi.list()
+      const items = await rulesApi.list(platformId)
       setRules(items)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load rules')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [platformId])
 
   useEffect(() => { void load() }, [load])
 
@@ -34,7 +36,7 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
     if (!confirm(`Delete rule "${rule.name}"?`)) return
     setDeletingId(rule.id)
     try {
-      await rulesApi.delete(rule.id)
+      await rulesApi.delete(rule.id, platformId)
       setRules(prev => prev.filter(r => r.id !== rule.id))
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Delete failed')
@@ -65,6 +67,14 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
         <button className="btn btn-primary" onClick={onNew}>+ New Rule</button>
       </div>
 
+      {/* Path info card */}
+      {rulesDir && (
+        <div className="path-info-card">
+          <span className="path-info-label">📁 Directory</span>
+          <code className="path-info-value">{rulesDir}</code>
+        </div>
+      )}
+
       {/* Empty state */}
       {rules.length === 0 && (
         <div className="empty-state">
@@ -77,81 +87,54 @@ export function RulesPage({ onEdit, onNew }: RulesPageProps) {
         </div>
       )}
 
-      {/* Rules table */}
+      {/* Rules card grid */}
       {rules.length > 0 && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Scope</th>
-                <th>Platforms</th>
-                <th>Tags</th>
-                <th>Updated</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rules.map(rule => (
-                <tr key={rule.id}>
-                  <td style={{ fontWeight: 500 }}>{rule.name}</td>
-                  <td>
-                    {isGlobal(rule) ? (
-                      <span className="badge badge-global">◉ Global</span>
-                    ) : (
-                      <span className="badge badge-targeted">◎ Targeted</span>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {isGlobal(rule) ? (
-                        <span className="text-muted text-sm">All platforms</span>
-                      ) : (
-                        rule.targetPlatforms.map(pid => (
-                          <span
-                            key={pid}
-                            title={PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)' }}
-                          >
-                            <PlatformIcon platformId={pid} size={14} />
-                            {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                      {rule.tags.length > 0
-                        ? rule.tags.map(t => (
-                            <span key={t} className="badge badge-muted">{t}</span>
-                          ))
-                        : <span className="text-muted text-sm">—</span>
-                      }
-                    </div>
-                  </td>
-                  <td className="muted">{new Date(rule.updatedAt).toLocaleDateString()}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => onEdit(rule)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => void handleDelete(rule)}
-                        disabled={deletingId === rule.id}
-                      >
-                        {deletingId === rule.id ? '…' : 'Delete'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="item-card-grid">
+          {rules.map(rule => (
+            <div key={rule.id} className="item-card">
+              <div className="item-card-name">{rule.name}</div>
+              {rule.filePath && (
+                <div className="item-card-filepath">{rule.filePath}</div>
+              )}
+              <div className="item-card-meta">
+                {isGlobal(rule) ? (
+                  <span className="badge badge-global">◉ Global</span>
+                ) : (
+                  <span className="badge badge-targeted">◎ Targeted</span>
+                )}
+                {isGlobal(rule) ? (
+                  <span className="text-muted text-sm">All platforms</span>
+                ) : (
+                  rule.targetPlatforms.map(pid => (
+                    <span
+                      key={pid}
+                      title={PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
+                      style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-secondary)' }}
+                    >
+                      <PlatformIcon platformId={pid} size={13} />
+                      {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
+                    </span>
+                  ))
+                )}
+                {rule.tags.map(t => (
+                  <span key={t} className="badge badge-muted">{t}</span>
+                ))}
+              </div>
+              <div className="item-card-footer">
+                <span className="item-card-date">{new Date(rule.updatedAt).toLocaleDateString()}</span>
+                <div className="item-card-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={() => onEdit(rule)}>Edit</button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => void handleDelete(rule)}
+                    disabled={deletingId === rule.id}
+                  >
+                    {deletingId === rule.id ? '…' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -20,6 +20,8 @@ export interface UnifiedRule {
   createdAt: string
   /** ISO 8601 格式，e.g. "2025-01-01T00:00:00.000Z" */
   updatedAt: string
+  /** Absolute path to the backing file on disk, if known */
+  filePath?: string
 }
 
 export interface CreateRuleDto {

@@ -65,6 +65,6 @@ describe('codebuddyAdapter', () => {
   it('has correct adapter id, displayName, and capabilities', () => {
     expect(codebuddyAdapter.id).toBe('codebuddy')
     expect(codebuddyAdapter.displayName).toBe('CodeBuddy')
-    expect(codebuddyAdapter.capabilities).toEqual({ rules: true, profiles: true })
+    expect(codebuddyAdapter.capabilities).toEqual({ rules: true, profiles: true, skills: true, agents: true })
   })
 })

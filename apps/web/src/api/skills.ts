@@ -7,34 +7,38 @@ export interface SkillProjectionItem {
   content: string
 }
 
+function platformQuery(platform?: string): string {
+  return platform ? `?platform=${encodeURIComponent(platform)}` : ''
+}
+
 export const skillsApi = {
-  list(): Promise<UnifiedSkill[]> {
-    return request<{ items: UnifiedSkill[] }>('/skills').then(r => r?.items ?? [])
+  list(platform?: string): Promise<UnifiedSkill[]> {
+    return request<{ items: UnifiedSkill[] }>(`/skills${platformQuery(platform)}`).then(r => r?.items ?? [])
   },
-  async get(id: string): Promise<UnifiedSkill | null> {
+  async get(id: string, platform?: string): Promise<UnifiedSkill | null> {
     try {
-      return await request<UnifiedSkill>(`/skills/${id}`)
+      return await request<UnifiedSkill>(`/skills/${id}${platformQuery(platform)}`)
     } catch (e) {
       if (e instanceof Error && e.message.startsWith('HTTP 404')) return null
       throw e
     }
   },
-  create(dto: CreateSkillDto): Promise<UnifiedSkill> {
-    return request<UnifiedSkill>('/skills', {
+  create(dto: CreateSkillDto, platform?: string): Promise<UnifiedSkill> {
+    return request<UnifiedSkill>(`/skills${platformQuery(platform)}`, {
       method: 'POST',
       body: JSON.stringify(dto),
     }).then(r => r!)
   },
-  update(id: string, dto: UpdateSkillDto): Promise<UnifiedSkill> {
-    return request<UnifiedSkill>(`/skills/${id}`, {
+  update(id: string, dto: UpdateSkillDto, platform?: string): Promise<UnifiedSkill> {
+    return request<UnifiedSkill>(`/skills/${id}${platformQuery(platform)}`, {
       method: 'PUT',
       body: JSON.stringify(dto),
     }).then(r => r!)
   },
-  delete(id: string): Promise<void> {
-    return request<null>(`/skills/${id}`, { method: 'DELETE' }).then(() => undefined)
+  delete(id: string, platform?: string): Promise<void> {
+    return request<null>(`/skills/${id}${platformQuery(platform)}`, { method: 'DELETE' }).then(() => undefined)
   },
-  projections(id: string): Promise<SkillProjectionItem[]> {
-    return request<{ projections: SkillProjectionItem[] }>(`/skills/${id}/projections`).then(r => r?.projections ?? [])
+  projections(id: string, platform?: string): Promise<SkillProjectionItem[]> {
+    return request<{ projections: SkillProjectionItem[] }>(`/skills/${id}/projections${platformQuery(platform)}`).then(r => r?.projections ?? [])
   },
 }

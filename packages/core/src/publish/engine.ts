@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile, stat } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, writeFile, stat, cp } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { nanoid } from 'nanoid'
@@ -88,28 +88,30 @@ export class PublishEngine {
             continue
           }
 
-          const fileName = skillFileName(skill.name)
-          const targetPath = join(skillsDir, fileName)
+          const dirName = skillFileName(skill.name)
+          const skillDir = join(skillsDir, dirName)
+          const targetPath = join(skillDir, 'SKILL.md')
 
           let isNew = true
           let backupPath: string | undefined
           try {
-            await stat(targetPath)
+            await stat(skillDir)
             isNew = false
             const backupDir = join(this.prismDir, 'backups', revisionId, `${platformId}-skills`)
             await mkdir(backupDir, { recursive: true })
-            backupPath = join(backupDir, fileName)
-            await copyFile(targetPath, backupPath)
+            const backupSkillDir = join(backupDir, dirName)
+            await cp(skillDir, backupSkillDir, { recursive: true })
+            backupPath = join(backupSkillDir, 'SKILL.md')
           } catch {
-            // File does not exist — isNew stays true
+            // Directory does not exist — isNew stays true
           }
 
-          await mkdir(skillsDir, { recursive: true })
+          await mkdir(skillDir, { recursive: true })
           await writeFile(targetPath, skill.content, 'utf-8')
 
           publishedFiles.push({
             platformId,
-            filePath: targetPath,
+            filePath: skillDir,
             backupPath,
             isNew,
             skillId: skill.id,

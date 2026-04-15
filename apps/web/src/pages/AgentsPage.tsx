@@ -7,13 +7,15 @@ import { PLATFORM_LABELS } from '../constants/platforms'
 interface AgentsPageProps {
   onEdit: (agent: UnifiedAgent) => void
   onNew: () => void
+  agentsDir?: string
+  platformId?: string
 }
 
 function isGlobal(agent: UnifiedAgent): boolean {
   return !agent.targetPlatforms || agent.targetPlatforms.length === 0
 }
 
-export function AgentsPage({ onEdit, onNew }: AgentsPageProps) {
+export function AgentsPage({ onEdit, onNew, agentsDir, platformId }: AgentsPageProps) {
   const [agents, setAgents] = useState<UnifiedAgent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,14 +25,14 @@ export function AgentsPage({ onEdit, onNew }: AgentsPageProps) {
     setLoading(true)
     setError(null)
     try {
-      const items = await agentsApi.list()
+      const items = await agentsApi.list(platformId)
       setAgents(items)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load agents')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [platformId])
 
   useEffect(() => { void load() }, [load])
 
@@ -38,7 +40,7 @@ export function AgentsPage({ onEdit, onNew }: AgentsPageProps) {
     if (!confirm(`Delete agent "${agent.name}"?`)) return
     setDeletingId(agent.id)
     try {
-      await agentsApi.delete(agent.id)
+      await agentsApi.delete(agent.id, platformId)
       setAgents(prev => prev.filter(a => a.id !== agent.id))
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Delete failed')
@@ -65,6 +67,13 @@ export function AgentsPage({ onEdit, onNew }: AgentsPageProps) {
         <button className="btn btn-primary" onClick={onNew}>+ New Agent</button>
       </div>
 
+      {agentsDir && (
+        <div className="path-info-card">
+          <span className="path-info-label">📁 Directory</span>
+          <code className="path-info-value">{agentsDir}</code>
+        </div>
+      )}
+
       {agents.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🤖</div>
@@ -75,78 +84,54 @@ export function AgentsPage({ onEdit, onNew }: AgentsPageProps) {
       )}
 
       {agents.length > 0 && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Scope</th>
-                <th>Platforms</th>
-                <th>Agent Type</th>
-                <th>Tags</th>
-                <th>Updated</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {agents.map(agent => (
-                <tr key={agent.id}>
-                  <td style={{ fontWeight: 500 }}>{agent.name}</td>
-                  <td>
-                    {isGlobal(agent)
-                      ? <span className="badge badge-global">◉ Global</span>
-                      : <span className="badge badge-targeted">◎ Targeted</span>
-                    }
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {isGlobal(agent) ? (
-                        <span className="text-muted text-sm">All platforms</span>
-                      ) : (
-                        agent.targetPlatforms.map(pid => (
-                          <span
-                            key={pid}
-                            title={PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)' }}
-                          >
-                            <PlatformIcon platformId={pid} size={14} />
-                            {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    {agent.agentType
-                      ? <span className="badge badge-muted">{agent.agentType}</span>
-                      : <span className="text-muted text-sm">—</span>
-                    }
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                      {(agent.tags ?? []).length > 0
-                        ? (agent.tags ?? []).map(t => <span key={t} className="badge badge-muted">{t}</span>)
-                        : <span className="text-muted text-sm">—</span>
-                      }
-                    </div>
-                  </td>
-                  <td className="muted">{new Date(agent.updatedAt).toLocaleDateString()}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => onEdit(agent)}>Edit</button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => void handleDelete(agent)}
-                        disabled={deletingId === agent.id}
-                      >
-                        {deletingId === agent.id ? '…' : 'Delete'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="item-card-grid">
+          {agents.map(agent => (
+            <div key={agent.id} className="item-card">
+              <div className="item-card-name">{agent.name}</div>
+              {agent.filePath && (
+                <div className="item-card-filepath">{agent.filePath}</div>
+              )}
+              <div className="item-card-meta">
+                {isGlobal(agent)
+                  ? <span className="badge badge-global">◉ Global</span>
+                  : <span className="badge badge-targeted">◎ Targeted</span>
+                }
+                {isGlobal(agent) ? (
+                  <span className="text-muted text-sm">All platforms</span>
+                ) : (
+                  agent.targetPlatforms.map(pid => (
+                    <span
+                      key={pid}
+                      title={PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
+                      style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-secondary)' }}
+                    >
+                      <PlatformIcon platformId={pid} size={13} />
+                      {PLATFORM_LABELS[pid as keyof typeof PLATFORM_LABELS] ?? pid}
+                    </span>
+                  ))
+                )}
+                {agent.agentType && (
+                  <span className="badge badge-muted">{agent.agentType}</span>
+                )}
+                {(agent.tags ?? []).map(t => (
+                  <span key={t} className="badge badge-muted">{t}</span>
+                ))}
+              </div>
+              <div className="item-card-footer">
+                <span className="item-card-date">{new Date(agent.updatedAt).toLocaleDateString()}</span>
+                <div className="item-card-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={() => onEdit(agent)}>Edit</button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => void handleDelete(agent)}
+                    disabled={deletingId === agent.id}
+                  >
+                    {deletingId === agent.id ? '…' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

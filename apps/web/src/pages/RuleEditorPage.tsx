@@ -14,6 +14,7 @@ interface RuleEditorPageProps {
   onSave: (rule: UnifiedRule) => void
   onCancel: () => void
   detectedPlatforms: DetectedPlatform[]
+  platformId?: string
 }
 
 interface DraftRule {
@@ -43,7 +44,7 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
   }
 }
 
-export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: RuleEditorPageProps) {
+export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, platformId }: RuleEditorPageProps) {
   const [draft, setDraft] = useState<DraftRule>(() => toDraft(rule))
   const [applyGlobally, setApplyGlobally] = useState(
     () => (rule?.targetPlatforms?.length ?? 0) === 0
@@ -97,8 +98,8 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms }: Ru
       }
       const saved =
         rule === null
-          ? await rulesApi.create(dto)
-          : await rulesApi.update(rule.id, dto)
+          ? await rulesApi.create(dto, platformId)
+          : await rulesApi.update(rule.id, dto, platformId)
       onSave(saved)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed')

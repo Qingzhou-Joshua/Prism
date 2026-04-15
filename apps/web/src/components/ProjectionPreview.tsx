@@ -8,8 +8,6 @@ interface ProjectionPreviewProps {
 
 const PLATFORM_DOTS: Record<string, string> = {
   'claude-code': '#e65c46',
-  'cursor':      '#6ea8fe',
-  'openclaw':    '#34c799',
   'codebuddy':   '#c084fc',
 }
 

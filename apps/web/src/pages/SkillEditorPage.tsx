@@ -14,6 +14,7 @@ interface SkillEditorPageProps {
   onBack: () => void
   initialSkill?: UnifiedSkill
   detectedPlatforms: DetectedPlatform[]
+  platformId?: string
 }
 
 interface DraftSkill {
@@ -35,7 +36,7 @@ function toDraft(skill?: UnifiedSkill): DraftSkill {
   }
 }
 
-export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms }: SkillEditorPageProps) {
+export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platformId }: SkillEditorPageProps) {
   const [draft, setDraft] = useState<DraftSkill>(() => toDraft(initialSkill))
   const [applyGlobally, setApplyGlobally] = useState(
     () => (initialSkill?.targetPlatforms?.length ?? 0) === 0
@@ -85,9 +86,9 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms }: Ski
         targetPlatforms: (applyGlobally ? [] : targetPlatforms) as PlatformId[],
       }
       if (!initialSkill) {
-        await skillsApi.create(dto)
+        await skillsApi.create(dto, platformId)
       } else {
-        await skillsApi.update(initialSkill.id, dto)
+        await skillsApi.update(initialSkill.id, dto, platformId)
       }
       onBack()
     } catch (e) {

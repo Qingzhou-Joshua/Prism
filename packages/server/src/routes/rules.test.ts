@@ -3,13 +3,13 @@ import Fastify from 'fastify'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { FileRuleStore } from '@prism/core'
+import { DirRuleStore } from '@prism/core'
 import { registerRulesRoutes } from './rules.js'
 import type { UnifiedRule } from '@prism/shared'
 
 async function buildApp(storeDir: string) {
   const app = Fastify()
-  const store = new FileRuleStore(join(storeDir, 'rules.json'))
+  const store = new DirRuleStore(storeDir)
   await registerRulesRoutes(app, store)
   return app
 }
@@ -129,14 +129,14 @@ describe('Rules API', () => {
         name: 'Proj Rule',
         content: 'Default',
         scope: 'global',
-        platformOverrides: { openclaw: { content: 'OpenClaw specific' } },
+        platformOverrides: { codebuddy: { content: 'CodeBuddy specific' } },
       },
     })
     const { id } = created.json() as UnifiedRule
     const res = await app.inject({ method: 'GET', url: `/rules/${id}/projections` })
     expect(res.statusCode).toBe(200)
     const { projections } = res.json<{ projections: Array<{ platformId: string; content: string | null }> }>()
-    const ocProj = projections.find(p => p.platformId === 'openclaw')
-    expect(ocProj?.content).toBe('OpenClaw specific')
+    const cbProj = projections.find(p => p.platformId === 'codebuddy')
+    expect(cbProj?.content).toBe('CodeBuddy specific')
   })
 })

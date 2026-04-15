@@ -22,6 +22,8 @@ export interface UnifiedSkill {
   targetPlatforms: PlatformId[]
   createdAt: string
   updatedAt: string
+  /** Absolute path to the backing file on disk, if known */
+  filePath?: string
 }
 
 export type CreateSkillDto = Omit<UnifiedSkill, 'id' | 'createdAt' | 'updatedAt'>

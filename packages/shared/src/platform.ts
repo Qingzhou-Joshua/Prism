@@ -1,4 +1,4 @@
-export type PlatformId = 'openclaw' | 'claude-code' | 'cursor' | 'codebuddy'
+export type PlatformId = 'claude-code' | 'codebuddy'
 
 export interface PlatformCapabilities {
   rules: boolean
@@ -16,6 +16,9 @@ export interface PlatformScanResult {
   message?: string
   capabilities: PlatformCapabilities
   rulesDetected?: boolean       // whether rules/ subdir was found
+  rulesDir?: string             // absolute path to the rules directory
+  skillsDir?: string            // absolute path to the skills directory
+  agentsDir?: string            // absolute path to the agents directory
 }
 
 export interface ImportedRule {

@@ -50,6 +50,9 @@ interface PlatformScanResult {
   message?: string
   capabilities: PlatformCapabilities
   rulesDetected?: boolean
+  rulesDir?: string
+  skillsDir?: string
+  agentsDir?: string
 }
 
 const API_BASE = 'http://localhost:3001'
@@ -399,12 +402,15 @@ export default function App() {
             {/* Rules */}
             {page.view === 'rules-list' && (
               <RulesPage
+                platformId={selectedPlatformId ?? 'claude-code'}
                 onEdit={(rule) => setPage({ view: 'rules-edit', rule })}
                 onNew={() => setPage({ view: 'rules-new' })}
+                rulesDir={selectedPlatform?.rulesDir}
               />
             )}
             {page.view === 'rules-edit' && (
               <RuleEditorPage
+                platformId={selectedPlatformId ?? 'claude-code'}
                 rule={page.rule}
                 onSave={() => setPage({ view: 'rules-list' })}
                 onCancel={() => setPage({ view: 'rules-list' })}
@@ -413,6 +419,7 @@ export default function App() {
             )}
             {page.view === 'rules-new' && (
               <RuleEditorPage
+                platformId={selectedPlatformId ?? 'claude-code'}
                 rule={null}
                 onSave={() => setPage({ view: 'rules-list' })}
                 onCancel={() => setPage({ view: 'rules-list' })}
@@ -423,12 +430,15 @@ export default function App() {
             {/* Skills */}
             {page.view === 'skills-list' && (
               <SkillsPage
+                platformId={selectedPlatformId ?? 'claude-code'}
                 onEdit={(skill) => setPage({ view: 'skills-editor', skill })}
                 onNew={() => setPage({ view: 'skills-editor' })}
+                skillsDir={selectedPlatform?.skillsDir}
               />
             )}
             {page.view === 'skills-editor' && (
               <SkillEditorPage
+                platformId={selectedPlatformId ?? 'claude-code'}
                 initialSkill={page.skill}
                 onBack={() => setPage({ view: 'skills-list' })}
                 detectedPlatforms={detectedPlatforms}
@@ -438,12 +448,15 @@ export default function App() {
             {/* Agents */}
             {page.view === 'agents-list' && (
               <AgentsPage
+                platformId={selectedPlatformId ?? 'claude-code'}
                 onEdit={(agent) => setPage({ view: 'agents-editor', agent })}
                 onNew={() => setPage({ view: 'agents-editor' })}
+                agentsDir={selectedPlatform?.agentsDir}
               />
             )}
             {page.view === 'agents-editor' && (
               <AgentEditorPage
+                platformId={selectedPlatformId ?? 'claude-code'}
                 initialAgent={page.agent}
                 onBack={() => setPage({ view: 'agents-list' })}
                 detectedPlatforms={detectedPlatforms}

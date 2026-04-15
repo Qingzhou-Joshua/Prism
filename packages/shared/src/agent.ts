@@ -18,6 +18,8 @@ export interface UnifiedAgent {
   targetPlatforms: PlatformId[]
   createdAt: string
   updatedAt: string
+  /** Absolute path to the backing file on disk, if known */
+  filePath?: string
 }
 
 export type CreateAgentDto = Omit<UnifiedAgent, 'id' | 'createdAt' | 'updatedAt' | 'tags'> & {

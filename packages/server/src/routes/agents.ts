@@ -3,7 +3,7 @@ import type { AgentStore } from '@prism/core'
 import { getPlatformAgentsDir, agentFileName } from '@prism/core'
 import type { CreateAgentDto, UpdateAgentDto, PlatformId } from '@prism/shared'
 
-const ALL_PLATFORM_IDS: PlatformId[] = ['openclaw', 'claude-code', 'cursor', 'codebuddy']
+const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
 
 const createAgentSchema = {
   body: {
@@ -36,24 +36,29 @@ const updateAgentSchema = {
 
 export async function registerAgentsRoutes(
   app: FastifyInstance,
-  store: AgentStore,
+  stores: Map<string, AgentStore>,
 ): Promise<void> {
+  function getStore(platform: unknown): AgentStore {
+    const id = typeof platform === 'string' ? platform : 'claude-code'
+    return stores.get(id) ?? stores.get('claude-code')!
+  }
+
   // GET /agents
-  app.get('/agents', async () => {
-    const items = await store.list()
+  app.get<{ Querystring: { platform?: string } }>('/agents', async (request) => {
+    const items = await getStore(request.query.platform).list()
     return { items }
   })
 
   // POST /agents
-  app.post<{ Body: CreateAgentDto }>('/agents', { schema: createAgentSchema }, async (request, reply) => {
-    const agent = await store.create(request.body)
+  app.post<{ Body: CreateAgentDto; Querystring: { platform?: string } }>('/agents', { schema: createAgentSchema }, async (request, reply) => {
+    const agent = await getStore(request.query.platform).create(request.body)
     reply.code(201)
     return agent
   })
 
   // GET /agents/:id
-  app.get<{ Params: { id: string } }>('/agents/:id', async (request, reply) => {
-    const agent = await store.get(request.params.id)
+  app.get<{ Params: { id: string }; Querystring: { platform?: string } }>('/agents/:id', async (request, reply) => {
+    const agent = await getStore(request.query.platform).get(request.params.id)
     if (!agent) {
       reply.code(404)
       return { error: 'Agent not found' }
@@ -62,11 +67,11 @@ export async function registerAgentsRoutes(
   })
 
   // PUT /agents/:id
-  app.put<{ Params: { id: string }; Body: UpdateAgentDto }>(
+  app.put<{ Params: { id: string }; Body: UpdateAgentDto; Querystring: { platform?: string } }>(
     '/agents/:id',
     { schema: updateAgentSchema },
     async (request, reply) => {
-      const agent = await store.update(request.params.id, request.body)
+      const agent = await getStore(request.query.platform).update(request.params.id, request.body)
       if (!agent) {
         reply.code(404)
         return { error: 'Agent not found' }
@@ -76,8 +81,8 @@ export async function registerAgentsRoutes(
   )
 
   // DELETE /agents/:id
-  app.delete<{ Params: { id: string } }>('/agents/:id', async (request, reply) => {
-    const deleted = await store.delete(request.params.id)
+  app.delete<{ Params: { id: string }; Querystring: { platform?: string } }>('/agents/:id', async (request, reply) => {
+    const deleted = await getStore(request.query.platform).delete(request.params.id)
     if (!deleted) {
       reply.code(404)
       return { error: 'Agent not found' }
@@ -87,10 +92,10 @@ export async function registerAgentsRoutes(
   })
 
   // GET /agents/:id/projections
-  app.get<{ Params: { id: string } }>(
+  app.get<{ Params: { id: string }; Querystring: { platform?: string } }>(
     '/agents/:id/projections',
     async (request, reply) => {
-      const agent = await store.get(request.params.id)
+      const agent = await getStore(request.query.platform).get(request.params.id)
       if (!agent) {
         reply.code(404)
         return { error: 'Agent not found' }

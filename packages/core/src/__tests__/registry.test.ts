@@ -20,25 +20,25 @@ function makeAdapter(id: string): PlatformAdapter {
 
 describe('createAdapterRegistry', () => {
   it('registers adapters and returns them via getAll()', () => {
-    const a = makeAdapter('openclaw')
+    const a = makeAdapter('claude-code')
     const b = makeAdapter('codebuddy')
     const registry = createAdapterRegistry([a, b])
     expect(registry.getAll()).toHaveLength(2)
   })
 
   it('returns adapter by id via get()', () => {
-    const a = makeAdapter('openclaw')
+    const a = makeAdapter('claude-code')
     const registry = createAdapterRegistry([a])
-    expect(registry.get('openclaw' as PlatformId)).toBe(a)
+    expect(registry.get('claude-code' as PlatformId)).toBe(a)
   })
 
   it('returns undefined for unknown id', () => {
     const registry = createAdapterRegistry([])
-    expect(registry.get('cursor' as PlatformId)).toBeUndefined()
+    expect(registry.get('codebuddy' as PlatformId)).toBeUndefined()
   })
 
   it('scanAll() calls scan on all adapters and returns results', async () => {
-    const a = makeAdapter('openclaw')
+    const a = makeAdapter('claude-code')
     const b = makeAdapter('codebuddy')
     const registry = createAdapterRegistry([a, b])
     const results = await registry.scanAll()

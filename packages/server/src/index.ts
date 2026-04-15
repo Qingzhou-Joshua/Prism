@@ -1,7 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, FileRuleStore, FileProfileStore, FileSkillStore, FileAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir } from '@prism/core'
-import { openclawAdapter } from '@prism/adapter-openclaw'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { registerScanRoutes } from './routes/scan.js'
@@ -13,13 +12,13 @@ import { registerRevisionRoutes } from './routes/revisions.js'
 import { registerSkillsRoutes } from './routes/skills.js'
 import { registerAgentsRoutes } from './routes/agents.js'
 import { registerMcpRoutes } from './routes/mcp.js'
+import type { PlatformId } from '@prism/shared'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 const app = Fastify({ logger: true })
 
 const registry = createAdapterRegistry([
-  openclawAdapter,
   codebuddyAdapter,
   claudeCodeAdapter,
 ])
@@ -40,13 +39,27 @@ app.get('/health', async () => ({ status: 'ok' }))
 
 app.get('/platforms', async () => {
   const items = await registry.scanAll()
-  return { items }
+  const augmented = items.map(item => {
+    let rulesDir: string | undefined
+    let skillsDir: string | undefined
+    let agentsDir: string | undefined
+    try { rulesDir = getPlatformRulesDir(item.id) } catch { /* unsupported */ }
+    try { skillsDir = getPlatformSkillsDir(item.id) } catch { /* unsupported */ }
+    const agentsDirResult = getPlatformAgentsDir(item.id)
+    if (agentsDirResult) agentsDir = agentsDirResult
+    return { ...item, rulesDir, skillsDir, agentsDir }
+  })
+  return { items: augmented }
 })
 
 await registerScanRoutes(app, registry)
 
-const rulesStore = new FileRuleStore(join(homedir(), '.prism', 'rules', 'rules.json'))
-await registerRulesRoutes(app, rulesStore)
+const RULES_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const rulesStores = new Map<string, DirRuleStore>(
+  RULES_PLATFORM_IDS.map(id => [id, new DirRuleStore(getPlatformRulesDir(id))]),
+)
+const rulesStore = rulesStores.get('claude-code')!
+await registerRulesRoutes(app, rulesStores)
 await registerPlatformRulesRoutes(app, registry)
 
 const profileStore = new FileProfileStore(join(homedir(), '.prism', 'profiles', 'profiles.json'))
@@ -56,15 +69,21 @@ const revisionStore = new FileRevisionStore(
   join(homedir(), '.prism', 'revisions'),
   join(homedir(), '.prism', 'backups'),
 )
-const skillStore = new FileSkillStore(join(homedir(), '.prism', 'skills', 'skills.json'))
-const agentStore = new FileAgentStore(join(homedir(), '.prism', 'agents', 'agents.json'))
+const SKILLS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const skillsStores = new Map<string, DirSkillStore>(
+  SKILLS_PLATFORM_IDS.map(id => [id, new DirSkillStore(getPlatformSkillsDir(id))]),
+)
+const AGENTS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const agentsStores = new Map<string, DirAgentStore>(
+  AGENTS_PLATFORM_IDS.map(id => [id, new DirAgentStore(getPlatformAgentsDir(id)!)]),
+)
 const mcpStore = new FileMcpStore(join(homedir(), '.prism', 'mcp', 'servers.json'))
 
-const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillStore, getPlatformSkillsDir, agentStore, getPlatformAgentsDir)
+const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillsStores.get('claude-code')!, getPlatformSkillsDir, agentsStores.get('claude-code')!, getPlatformAgentsDir)
 await registerPublishRoutes(app, publishEngine, revisionStore)
 await registerRevisionRoutes(app, revisionStore)
-await registerSkillsRoutes(app, skillStore)
-await registerAgentsRoutes(app, agentStore)
+await registerSkillsRoutes(app, skillsStores)
+await registerAgentsRoutes(app, agentsStores)
 await registerMcpRoutes(app, mcpStore, registry)
 
 const port = Number(process.env.PORT ?? 3001)

@@ -11,10 +11,10 @@ describe('scanPlatforms', () => {
 
   it('calls scan() on each adapter and returns results', async () => {
     const mockResult1: PlatformScanResult = {
-      id: 'openclaw',
-      displayName: 'OpenClaw',
+      id: 'claude-code',
+      displayName: 'Claude Code',
       detected: true,
-      configPath: '/home/user/.openclaw',
+      configPath: '/home/user/.claude-internal',
       capabilities: { rules: true, profiles: false },
     }
     const mockResult2: PlatformScanResult = {
@@ -25,8 +25,8 @@ describe('scanPlatforms', () => {
     }
 
     const adapter1: PlatformAdapter = {
-      id: 'openclaw',
-      displayName: 'OpenClaw',
+      id: 'claude-code',
+      displayName: 'Claude Code',
       capabilities: { rules: true, profiles: false },
       scan: vi.fn().mockResolvedValue(mockResult1),
     }
@@ -51,15 +51,15 @@ describe('scanPlatforms', () => {
     const resolveOrder: string[] = []
 
     const slowAdapter: PlatformAdapter = {
-      id: 'openclaw',
-      displayName: 'OpenClaw',
+      id: 'claude-code',
+      displayName: 'Claude Code',
       capabilities: { rules: true, profiles: false },
       scan: vi.fn().mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 50))
         resolveOrder.push('slow')
         return {
-          id: 'openclaw',
-          displayName: 'OpenClaw',
+          id: 'claude-code',
+          displayName: 'Claude Code',
           detected: false,
           capabilities: { rules: true, profiles: false },
         } satisfies PlatformScanResult

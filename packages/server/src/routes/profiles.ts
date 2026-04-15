@@ -8,9 +8,7 @@ import type { CreateProfileDto, UpdateProfileDto, PublishPreviewFile, PlatformId
 
 const PLATFORM_DISPLAY_NAMES: Record<PlatformId, string> = {
   'claude-code': 'Claude Code',
-  'openclaw': 'OpenClaw',
   'codebuddy': 'CodeBuddy',
-  'cursor': 'Cursor',
 }
 
 async function fileExists(filePath: string): Promise<boolean> {

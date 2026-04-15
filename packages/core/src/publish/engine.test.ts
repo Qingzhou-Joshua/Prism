@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PublishEngine } from './engine.js'
@@ -222,7 +222,7 @@ describe('PublishEngine', () => {
     const profile2x2 = {
       ...PROFILE_1,
       ruleIds: ['rule-1', 'rule-2'],
-      targetPlatforms: ['claude-code' as PlatformId, 'openclaw' as PlatformId],
+      targetPlatforms: ['claude-code' as PlatformId, 'codebuddy' as PlatformId],
     }
 
     const engine = new PublishEngine(
@@ -264,7 +264,7 @@ describe('PublishEngine', () => {
     expect(pf.skillName).toBe('My Skill')
     expect(pf.ruleId).toBeUndefined()
 
-    const written = await readFile(pf.filePath, 'utf-8')
+    const written = await readFile(join(pf.filePath, 'SKILL.md'), 'utf-8')
     expect(written).toBe('skill content here')
   })
 
@@ -273,9 +273,10 @@ describe('PublishEngine', () => {
     const platformDir = await makeTmp()
     const skillsDir = await makeTmp()
 
-    // pre-create the target skill file
-    const targetPath = join(skillsDir, 'my-skill.md')
-    await writeFile(targetPath, 'old skill content')
+    // pre-create the target skill directory with SKILL.md
+    const existingSkillDir = join(skillsDir, 'my-skill')
+    await mkdir(existingSkillDir, { recursive: true })
+    await writeFile(join(existingSkillDir, 'SKILL.md'), 'old skill content')
 
     const profileWithSkill = { ...PROFILE_1, ruleIds: [], skillIds: ['skill-1'] }
 
@@ -297,7 +298,7 @@ describe('PublishEngine', () => {
     const backup = await readFile(pf.backupPath!, 'utf-8')
     expect(backup).toBe('old skill content')
 
-    const written = await readFile(pf.filePath, 'utf-8')
+    const written = await readFile(join(pf.filePath, 'SKILL.md'), 'utf-8')
     expect(written).toBe('skill content here')
   })
 
@@ -329,10 +330,10 @@ describe('PublishEngine', () => {
       ...PROFILE_1,
       ruleIds: [],
       skillIds: ['skill-1'],
-      targetPlatforms: ['claude-code' as PlatformId, 'openclaw' as PlatformId],
+      targetPlatforms: ['claude-code' as PlatformId, 'codebuddy' as PlatformId],
     }
 
-    // Only claude-code has a skills dir; openclaw throws
+    // Only claude-code has a skills dir; codebuddy throws
     const engine = new PublishEngine(
       makeRuleStore([]),
       makeProfileStore([profileWithSkill]),
@@ -346,7 +347,7 @@ describe('PublishEngine', () => {
     )
 
     const revision = await engine.publish('profile-1')
-    // Only claude-code writes a skill file; openclaw is skipped
+    // Only claude-code writes a skill file; codebuddy is skipped
     expect(revision.files).toHaveLength(1)
     expect(revision.files[0].platformId).toBe('claude-code')
     expect(revision.files[0].skillId).toBe('skill-1')
@@ -484,10 +485,10 @@ describe('PublishEngine', () => {
       ...PROFILE_1,
       ruleIds: [],
       agentIds: ['agent-1'],
-      targetPlatforms: ['claude-code' as PlatformId, 'cursor' as PlatformId],
+      targetPlatforms: ['claude-code' as PlatformId, 'codebuddy' as PlatformId],
     }
 
-    // claude-code returns a dir; cursor returns null
+    // claude-code returns a dir; codebuddy returns null
     const engine = new PublishEngine(
       makeRuleStore([]),
       makeProfileStore([profileWithAgent]),
@@ -500,7 +501,7 @@ describe('PublishEngine', () => {
     )
 
     const revision = await engine.publish('profile-1')
-    // Only claude-code writes an agent file; cursor is skipped
+    // Only claude-code writes an agent file; codebuddy is skipped
     expect(revision.files).toHaveLength(1)
     expect(revision.files[0].platformId).toBe('claude-code')
     expect(revision.files[0].agentId).toBe('agent-1')

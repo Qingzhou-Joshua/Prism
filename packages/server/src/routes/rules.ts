@@ -4,7 +4,7 @@ import { projectRule } from '@prism/core'
 import type { CreateRuleDto, UpdateRuleDto } from '@prism/shared'
 import type { PlatformId } from '@prism/shared'
 
-const ALL_PLATFORM_IDS: PlatformId[] = ['openclaw', 'claude-code', 'cursor', 'codebuddy']
+const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
 
 const createRuleSchema = {
   body: {
@@ -35,24 +35,29 @@ const updateRuleSchema = {
 
 export async function registerRulesRoutes(
   app: FastifyInstance,
-  store: RuleStore,
+  stores: Map<string, RuleStore>,
 ): Promise<void> {
+  function getStore(platform: unknown): RuleStore {
+    const id = typeof platform === 'string' ? platform : 'claude-code'
+    return stores.get(id) ?? stores.get('claude-code')!
+  }
+
   // GET /rules
-  app.get('/rules', async () => {
-    const items = await store.list()
+  app.get<{ Querystring: { platform?: string } }>('/rules', async (request) => {
+    const items = await getStore(request.query.platform).list()
     return { items }
   })
 
   // POST /rules
-  app.post<{ Body: CreateRuleDto }>('/rules', { schema: createRuleSchema }, async (request, reply) => {
-    const rule = await store.create(request.body)
+  app.post<{ Body: CreateRuleDto; Querystring: { platform?: string } }>('/rules', { schema: createRuleSchema }, async (request, reply) => {
+    const rule = await getStore(request.query.platform).create(request.body)
     reply.code(201)
     return rule
   })
 
   // GET /rules/:id
-  app.get<{ Params: { id: string } }>('/rules/:id', async (request, reply) => {
-    const rule = await store.get(request.params.id)
+  app.get<{ Params: { id: string }; Querystring: { platform?: string } }>('/rules/:id', async (request, reply) => {
+    const rule = await getStore(request.query.platform).get(request.params.id)
     if (!rule) {
       reply.code(404)
       return { error: 'Rule not found' }
@@ -61,11 +66,11 @@ export async function registerRulesRoutes(
   })
 
   // PUT /rules/:id
-  app.put<{ Params: { id: string }; Body: UpdateRuleDto }>(
+  app.put<{ Params: { id: string }; Body: UpdateRuleDto; Querystring: { platform?: string } }>(
     '/rules/:id',
     { schema: updateRuleSchema },
     async (request, reply) => {
-      const rule = await store.update(request.params.id, request.body)
+      const rule = await getStore(request.query.platform).update(request.params.id, request.body)
       if (!rule) {
         reply.code(404)
         return { error: 'Rule not found' }
@@ -75,8 +80,8 @@ export async function registerRulesRoutes(
   )
 
   // DELETE /rules/:id
-  app.delete<{ Params: { id: string } }>('/rules/:id', async (request, reply) => {
-    const deleted = await store.delete(request.params.id)
+  app.delete<{ Params: { id: string }; Querystring: { platform?: string } }>('/rules/:id', async (request, reply) => {
+    const deleted = await getStore(request.query.platform).delete(request.params.id)
     if (!deleted) {
       reply.code(404)
       return { error: 'Rule not found' }
@@ -86,10 +91,10 @@ export async function registerRulesRoutes(
   })
 
   // GET /rules/:id/projections
-  app.get<{ Params: { id: string } }>(
+  app.get<{ Params: { id: string }; Querystring: { platform?: string } }>(
     '/rules/:id/projections',
     async (request, reply) => {
-      const rule = await store.get(request.params.id)
+      const rule = await getStore(request.query.platform).get(request.params.id)
       if (!rule) {
         reply.code(404)
         return { error: 'Rule not found' }

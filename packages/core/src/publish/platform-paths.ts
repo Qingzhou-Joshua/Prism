@@ -10,12 +10,8 @@ export function getPlatformRulesDir(platformId: PlatformId): string {
   switch (platformId) {
     case 'claude-code':
       return join(home, '.claude-internal', 'rules')
-    case 'openclaw':
-      return join(home, '.openclaw', 'rules')
     case 'codebuddy':
       return join(home, '.codebuddy', 'rules')
-    case 'cursor':
-      return join(home, '.cursor', 'rules')
   }
 }
 
@@ -34,7 +30,7 @@ export function ruleFileName(name: string): string {
 
 /**
  * Returns the absolute path to the skills directory for a given platform.
- * Only claude-code and codebuddy support skills.
+ * Supported: claude-code, codebuddy.
  */
 export function getPlatformSkillsDir(platformId: PlatformId): string {
   switch (platformId) {
@@ -42,22 +38,19 @@ export function getPlatformSkillsDir(platformId: PlatformId): string {
       return join(homedir(), '.claude-internal', 'skills')
     case 'codebuddy':
       return join(homedir(), '.codebuddy', 'skills')
-    default:
-      throw new Error(`Platform ${platformId} does not support skills`)
   }
 }
 
 /**
- * Converts a skill name to a kebab-case filename with .md extension.
- * e.g. "My Skill" → "my-skill.md"
+ * Converts a skill name to a kebab-case directory name (no extension).
+ * Skills are stored as directories containing a SKILL.md file.
+ * e.g. "My Skill" → "my-skill"
  */
 export function skillFileName(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') + '.md'
-  )
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 /**
