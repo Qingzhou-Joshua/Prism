@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, FileHookStore } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { registerScanRoutes } from './routes/scan.js'
@@ -12,6 +12,7 @@ import { registerRevisionRoutes } from './routes/revisions.js'
 import { registerSkillsRoutes } from './routes/skills.js'
 import { registerAgentsRoutes } from './routes/agents.js'
 import { registerMcpRoutes } from './routes/mcp.js'
+import { registerHooksRoutes } from './routes/hooks.js'
 import type { PlatformId } from '@prism/shared'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -85,6 +86,17 @@ await registerRevisionRoutes(app, revisionStore)
 await registerSkillsRoutes(app, skillsStores)
 await registerAgentsRoutes(app, agentsStores)
 await registerMcpRoutes(app, mcpStore, registry)
+
+const HOOKS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const hooksStores = new Map<string, FileHookStore>(
+  HOOKS_PLATFORM_IDS.map(id => {
+    const base = id === 'claude-code'
+      ? join(homedir(), '.claude-internal')
+      : join(homedir(), `.${id}`)
+    return [id, new FileHookStore(join(base, 'hooks', 'hooks.json'), id)]
+  }),
+)
+await registerHooksRoutes(app, hooksStores)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
