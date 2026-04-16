@@ -7,7 +7,7 @@ import type { ImportedAgent, ImportedRule, PlatformScanResult } from '@prism/sha
 const BASE_RESULT = {
   id: 'codebuddy' as const,
   displayName: 'CodeBuddy',
-  capabilities: { rules: true, profiles: true, skills: true, agents: true },
+  capabilities: { rules: true, profiles: true, skills: true, agents: true, hooks: true },
 } satisfies Pick<PlatformScanResult, 'id' | 'displayName' | 'capabilities'>
 
 export const codebuddyAdapter: PlatformAdapter = {
