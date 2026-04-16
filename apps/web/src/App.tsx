@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer } from '@prism/shared'
+import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook } from '@prism/shared'
 import { PlatformIcon } from './components/PlatformIcon'
 import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
@@ -9,6 +9,8 @@ import { AgentsPage } from './pages/AgentsPage'
 import { AgentEditorPage } from './pages/AgentEditorPage'
 import { McpPage } from './pages/McpPage.js'
 import { McpEditorPage } from './pages/McpEditorPage.js'
+import { HooksPage } from './pages/HooksPage'
+import { HookEditorPage } from './pages/HookEditorPage'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,8 +24,10 @@ type Page =
   | { view: 'agents-editor'; agent?: UnifiedAgent }
   | { view: 'mcp-list' }
   | { view: 'mcp-editor'; server?: McpServer }
+  | { view: 'hooks-list' }
+  | { view: 'hooks-editor'; hook?: UnifiedHook }
 
-type Capability = 'rules' | 'skills' | 'agents' | 'mcp'
+type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks'
 
 type Theme = 'dark' | 'light'
 
@@ -32,6 +36,7 @@ interface PlatformCapabilities {
   skills?: boolean
   agents?: boolean
   mcp?: boolean
+  hooks?: boolean
 }
 
 interface PlatformScanResult {
@@ -75,6 +80,11 @@ const CAPABILITY_CONFIG: Record<
     icon: '🔌',
     defaultPage: { view: 'mcp-list' },
   },
+  hooks: {
+    label: 'Hooks',
+    icon: '🪝',
+    defaultPage: { view: 'hooks-list' },
+  },
 }
 
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
@@ -83,6 +93,7 @@ function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   if (platform.capabilities.skills) caps.push('skills')
   if (platform.capabilities.agents) caps.push('agents')
   if (platform.capabilities.mcp) caps.push('mcp')
+  if (platform.capabilities.hooks) caps.push('hooks')
   return caps
 }
 
@@ -101,6 +112,9 @@ function getActiveCapability(page: Page): Capability {
     case 'mcp-list':
     case 'mcp-editor':
       return 'mcp'
+    case 'hooks-list':
+    case 'hooks-editor':
+      return 'hooks'
     default:
       return 'rules'
   }
@@ -448,6 +462,22 @@ export default function App() {
               <McpEditorPage
                 initialServer={page.server}
                 onBack={() => setPage({ view: 'mcp-list' })}
+              />
+            )}
+
+            {/* Hooks */}
+            {page.view === 'hooks-list' && (
+              <HooksPage
+                platformId={selectedPlatformId ?? 'claude-code'}
+                onEdit={(hook) => setPage({ view: 'hooks-editor', hook })}
+                onNew={() => setPage({ view: 'hooks-editor' })}
+              />
+            )}
+            {page.view === 'hooks-editor' && (
+              <HookEditorPage
+                platformId={selectedPlatformId ?? 'claude-code'}
+                initialHook={page.hook}
+                onBack={() => setPage({ view: 'hooks-list' })}
               />
             )}
           </div>

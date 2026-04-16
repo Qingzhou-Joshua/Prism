@@ -93,7 +93,7 @@ const hooksStores = new Map<string, FileHookStore>(
     const base = id === 'claude-code'
       ? join(homedir(), '.claude-internal')
       : join(homedir(), `.${id}`)
-    return [id, new FileHookStore(join(base, 'hooks', 'hooks.json'), id)]
+    return [id, new FileHookStore(join(base, 'settings.json'), id)]
   }),
 )
 await registerHooksRoutes(app, hooksStores)
