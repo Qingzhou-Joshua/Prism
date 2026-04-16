@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import type { McpServer } from '@prism/shared'
 import { mcpApi } from '../api/mcp.js'
+import { PlatformIcon } from '../components/PlatformIcon'
+import { PLATFORM_LABELS } from '../constants/platforms.js'
 
 interface EnvEntry {
   key: string
@@ -49,7 +51,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   'codebuddy': '#7b1fa2',
 }
 
-const ALL_PLATFORMS = ['claude-code']
+const ALL_PLATFORMS = ['claude-code', 'codebuddy']
 
 export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
   const [draft, setDraft] = useState<DraftServer>(() => toDraft(initialServer))
@@ -58,7 +60,6 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
   const [projections, setProjections] = useState<Record<string, unknown>>({})
   const [projectionsLoading, setProjectionsLoading] = useState(false)
 
-  // Load projections for edit mode
   useEffect(() => {
     setProjections({})
     if (!initialServer) return
@@ -72,7 +73,6 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
     return () => { cancelled = true }
   }, [initialServer?.id])
 
-  // Reset draft when server changes
   useEffect(() => {
     setDraft(toDraft(initialServer))
   }, [initialServer?.id])
@@ -137,38 +137,25 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
     }
   }
 
-  const title = !initialServer ? 'New MCP Server' : `Edit MCP Server: ${initialServer.name}`
+  const title = !initialServer ? 'New MCP Server' : `Edit: ${initialServer.name}`
   const projectionEntries = Object.entries(projections)
 
-  const inputStyle: React.CSSProperties = {
-    background: '#111',
-    border: '1px solid #333',
-    borderRadius: 4,
-    color: '#f0f0f0',
-    fontSize: 13,
-    padding: '6px 10px',
-    width: '100%',
-    fontFamily: 'inherit',
-    boxSizing: 'border-box',
-  }
-
-  const monoInputStyle: React.CSSProperties = {
-    ...inputStyle,
-    fontFamily: 'ui-monospace, "Cascadia Code", monospace',
-  }
-
   return (
-    <div className="rule-editor-page">
-      <div className="rule-editor-header">
-        <h2>{title}</h2>
-        <div className="rule-editor-actions">
-          <button onClick={onBack} disabled={saving}>
+    <div className="editor-page">
+      {/* Header */}
+      <div className="page-header">
+        <div>
+          <div className="page-title">{title}</div>
+          <div className="page-subtitle">MCP Server</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={onBack} disabled={saving}>
             Cancel
           </button>
           <button
+            className="btn btn-primary"
             onClick={() => void handleSave()}
             disabled={saving || !draft.name.trim() || !draft.command.trim()}
-            className="btn-primary"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -178,139 +165,114 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
       {error && <div className="rule-editor-error">{error}</div>}
 
       <div className="rule-editor-body">
-        {/* ── Form ─────────────────────────────────────────────────────────── */}
+        {/* ── Form ─────────────────────────────────────────────── */}
         <div className="rule-editor-form">
+
           <label className="form-label">
-            Name *
+            <span className="form-label-text">Name <span className="form-required">*</span></span>
             <input
               type="text"
+              className="form-input"
               value={draft.name}
               onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g. context7"
-              className="form-input"
             />
           </label>
 
           <label className="form-label">
-            Command *
+            <span className="form-label-text">Command <span className="form-required">*</span></span>
             <input
               type="text"
+              className="form-input form-input-mono"
               value={draft.command}
               onChange={e => setDraft(prev => ({ ...prev, command: e.target.value }))}
               placeholder="e.g. npx"
-              style={monoInputStyle}
-              className="form-input"
             />
           </label>
 
           <label className="form-label">
-            Args (space-separated)
+            <span className="form-label-text">Args <span className="form-hint">(space-separated)</span></span>
             <input
               type="text"
+              className="form-input form-input-mono"
               value={draft.argsText}
               onChange={e => setDraft(prev => ({ ...prev, argsText: e.target.value }))}
               placeholder="e.g. -y @upstash/context7-mcp"
-              style={monoInputStyle}
-              className="form-input"
             />
           </label>
 
           <label className="form-label">
-            Description (optional)
+            <span className="form-label-text">Description <span className="form-hint">(optional)</span></span>
             <input
               type="text"
+              className="form-input"
               value={draft.description}
               onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Brief description of what this MCP server provides"
-              className="form-input"
             />
           </label>
 
           {/* Target Platforms */}
           <div className="form-label">
-            <span style={{ display: 'block', marginBottom: 6 }}>Target Platforms</span>
-            {ALL_PLATFORMS.map(platformId => (
-              <label
-                key={platformId}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, cursor: 'pointer' }}
-              >
-                <input
-                  type="checkbox"
-                  checked={draft.targetPlatforms.includes(platformId)}
-                  onChange={() => togglePlatform(platformId)}
-                />
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: PLATFORM_COLORS[platformId] ?? '#f0f0f0',
-                    fontFamily: 'ui-monospace, monospace',
-                  }}
-                >
-                  {platformId}
-                </span>
-              </label>
-            ))}
+            <span className="form-label-text">Target Platforms</span>
+            <div className="mcp-platform-list">
+              {ALL_PLATFORMS.map(platformId => (
+                <label key={platformId} className="mcp-platform-item">
+                  <input
+                    type="checkbox"
+                    checked={draft.targetPlatforms.includes(platformId)}
+                    onChange={() => togglePlatform(platformId)}
+                  />
+                  <PlatformIcon platformId={platformId} size={14} />
+                  <span
+                    className="mcp-platform-label"
+                    style={{ color: PLATFORM_COLORS[platformId] ?? 'var(--text-primary)' }}
+                  >
+                    {PLATFORM_LABELS[platformId as keyof typeof PLATFORM_LABELS] ?? platformId}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Environment Variables */}
           <div className="form-label">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span>Environment Variables</span>
-              <button
-                onClick={addEnvEntry}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #374151',
-                  borderRadius: 3,
-                  color: '#9ca3af',
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  fontFamily: 'inherit',
-                }}
-              >
-                + Add
-              </button>
+            <div className="mcp-env-header">
+              <span className="form-label-text">Environment Variables</span>
+              <button className="btn btn-ghost btn-sm" onClick={addEnvEntry}>+ Add</button>
             </div>
             {draft.envEntries.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#555' }}>No environment variables</div>
+              <div className="mcp-env-empty">No environment variables configured</div>
             ) : (
-              draft.envEntries.map((entry, i) => (
-                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                  <input
-                    value={entry.key}
-                    onChange={e => updateEnvEntry(i, 'key', e.target.value)}
-                    placeholder="KEY"
-                    style={{ ...monoInputStyle, flex: '0 0 180px', width: 'auto' }}
-                  />
-                  <input
-                    value={entry.value}
-                    onChange={e => updateEnvEntry(i, 'value', e.target.value)}
-                    placeholder="value"
-                    style={{ ...monoInputStyle, flex: 1, width: 'auto' }}
-                  />
-                  <button
-                    onClick={() => removeEnvEntry(i)}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid #7f1d1d',
-                      borderRadius: 3,
-                      color: '#ef4444',
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      padding: '4px 8px',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))
+              <div className="mcp-env-list">
+                {draft.envEntries.map((entry, i) => (
+                  <div key={i} className="mcp-env-row">
+                    <input
+                      className="form-input form-input-mono mcp-env-key"
+                      value={entry.key}
+                      onChange={e => updateEnvEntry(i, 'key', e.target.value)}
+                      placeholder="KEY"
+                    />
+                    <input
+                      className="form-input form-input-mono mcp-env-value"
+                      value={entry.value}
+                      onChange={e => updateEnvEntry(i, 'value', e.target.value)}
+                      placeholder="value"
+                    />
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => removeEnvEntry(i)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
 
-        {/* ── Projection Preview ────────────────────────────────────────────── */}
+        {/* ── Projection Preview ───────────────────────────────── */}
         <div className="rule-editor-preview">
           {projectionsLoading ? (
             <div className="projection-loading">Loading projections…</div>

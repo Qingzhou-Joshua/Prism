@@ -2,12 +2,12 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import type { ImportedSkill, PlatformAdapter } from '@prism/core'
-import type { ImportedAgent, ImportedRule, PlatformScanResult } from '@prism/shared'
+import type { ImportedAgent, ImportedMcpServer, ImportedRule, PlatformScanResult } from '@prism/shared'
 
 const BASE_RESULT = {
   id: 'codebuddy' as const,
   displayName: 'CodeBuddy',
-  capabilities: { rules: true, profiles: true, skills: true, agents: true, hooks: true },
+  capabilities: { rules: true, profiles: true, skills: true, agents: true, mcp: true, hooks: true },
 } satisfies Pick<PlatformScanResult, 'id' | 'displayName' | 'capabilities'>
 
 export const codebuddyAdapter: PlatformAdapter = {
@@ -116,5 +116,25 @@ export const codebuddyAdapter: PlatformAdapter = {
       }
     }
     return results
+  },
+
+  async importMcpServers(): Promise<ImportedMcpServer[]> {
+    const mcpPath = path.join(homedir(), '.codebuddy', 'mcp.json')
+    try {
+      const raw = await readFile(mcpPath, 'utf-8')
+      const mcpConfig = JSON.parse(raw) as Record<string, {
+        command: string
+        args?: string[]
+        env?: Record<string, string>
+      }>
+      return Object.entries(mcpConfig).map(([name, config]) => ({
+        name,
+        command: config.command,
+        args: config.args ?? [],
+        env: config.env,
+      }))
+    } catch {
+      return []
+    }
   },
 }
