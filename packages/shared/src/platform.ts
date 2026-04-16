@@ -6,6 +6,7 @@ export interface PlatformCapabilities {
   skills?: boolean
   agents?: boolean
   mcp?: boolean
+  hooks?: boolean
 }
 
 export interface PlatformScanResult {
