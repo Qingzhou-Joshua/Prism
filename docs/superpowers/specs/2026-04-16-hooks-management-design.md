@@ -26,8 +26,6 @@ export type HookEventType =
   | 'SubagentStart'
   | 'SubagentStop'
 
-export type HookType = 'command' | 'http' | 'prompt' | 'agent'
-
 export interface HookCommand {
   type: 'command'
   command: string
@@ -83,8 +81,8 @@ export interface UpdateHookDto {
 
 ### Serialization contract
 
-- **Read**: parse `{ hooks: { [EventType]: Entry[] } }` → flatten into `UnifiedHook[]`, injecting `eventType` from the key.
-- **Write**: group `UnifiedHook[]` by `eventType` → reconstruct original nested structure → write back to file.
+- **Read**: parse `{ hooks: { [EventType]: Entry[] } }` → flatten into `UnifiedHook[]`, injecting `eventType` from the key. Since `hooks.json` has no timestamps, `createdAt`/`updatedAt` are set to the file's `mtime` for existing entries on first read; on create/update they are set to `new Date().toISOString()`.
+- **Write**: group `UnifiedHook[]` by `eventType` → reconstruct original nested structure (omit `createdAt`/`updatedAt`/`platformId` from the written JSON to stay native-compatible) → write back to file.
 
 This ensures the file stays compatible with Claude Code's native hooks format at all times.
 
