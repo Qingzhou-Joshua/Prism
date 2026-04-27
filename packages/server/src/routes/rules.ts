@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
-import type { RuleStore } from '@prism/core'
-import { projectRule } from '@prism/core'
+import type { RuleStore, RegistryStore } from '@prism/core'
+import { projectRule, ruleToEntry } from '@prism/core'
 import type { CreateRuleDto, UpdateRuleDto } from '@prism/shared'
 import type { PlatformId } from '@prism/shared'
 
@@ -35,9 +35,17 @@ const updateRuleSchema = {
   },
 }
 
+const VALID_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
+
+function getStorePlatformId(platform: unknown): PlatformId | undefined {
+  const id = typeof platform === 'string' ? platform : 'claude-code'
+  return VALID_PLATFORM_IDS.includes(id as PlatformId) ? (id as PlatformId) : 'claude-code'
+}
+
 export async function registerRulesRoutes(
   app: FastifyInstance,
   stores: Map<string, RuleStore>,
+  registryStore?: RegistryStore,
 ): Promise<void> {
   function getStore(platform: unknown): RuleStore {
     const id = typeof platform === 'string' ? platform : 'claude-code'
@@ -53,6 +61,10 @@ export async function registerRulesRoutes(
   // POST /rules
   app.post<{ Body: CreateRuleDto; Querystring: { platform?: string } }>('/rules', { schema: createRuleSchema }, async (request, reply) => {
     const rule = await getStore(request.query.platform).create(request.body)
+    if (registryStore) {
+      const platformId = getStorePlatformId(request.query.platform)
+      if (platformId) registryStore.upsert(ruleToEntry(rule, platformId)).catch(err => app.log.warn({ err }, 'registry upsert failed'))
+    }
     reply.code(201)
     return rule
   })
@@ -77,6 +89,10 @@ export async function registerRulesRoutes(
         reply.code(404)
         return { error: 'Rule not found' }
       }
+      if (registryStore) {
+        const platformId = getStorePlatformId(request.query.platform)
+        if (platformId) registryStore.upsert(ruleToEntry(rule, platformId)).catch(err => app.log.warn({ err }, 'registry upsert failed'))
+      }
       return rule
     },
   )
@@ -87,6 +103,9 @@ export async function registerRulesRoutes(
     if (!deleted) {
       reply.code(404)
       return { error: 'Rule not found' }
+    }
+    if (registryStore) {
+      registryStore.remove(request.params.id).catch(err => app.log.warn({ err }, 'registry remove failed'))
     }
     reply.code(204)
     return null

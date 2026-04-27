@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, FileHookStore } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, FileHookStore, RegistryStore, OverrideStore } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { openclawAdapter } from '@prism/adapter-openclaw'
@@ -14,6 +14,9 @@ import { registerSkillsRoutes } from './routes/skills.js'
 import { registerAgentsRoutes } from './routes/agents.js'
 import { registerMcpRoutes } from './routes/mcp.js'
 import { registerHooksRoutes } from './routes/hooks.js'
+import { registerRegistryRoutes } from './routes/registry.js'
+import { registerOverridesRoutes } from './routes/overrides.js'
+import { registerScanRegistryRoute } from './routes/scan-registry.js'
 import type { PlatformId } from '@prism/shared'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -57,12 +60,15 @@ app.get('/platforms', async () => {
 
 await registerScanRoutes(app, registry)
 
+const registryStore = new RegistryStore()
+const overrideStore = new OverrideStore()
+
 const RULES_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const rulesStores = new Map<string, DirRuleStore>(
   RULES_PLATFORM_IDS.map(id => [id, new DirRuleStore(getPlatformRulesDir(id))]),
 )
 const rulesStore = rulesStores.get('claude-code')!
-await registerRulesRoutes(app, rulesStores)
+await registerRulesRoutes(app, rulesStores, registryStore)
 await registerPlatformRulesRoutes(app, registry)
 
 const profileStore = new FileProfileStore(join(homedir(), '.prism', 'profiles', 'profiles.json'))
@@ -111,6 +117,22 @@ await registerSkillsRoutes(app, skillsStores)
 await registerAgentsRoutes(app, agentsStores)
 await registerMcpRoutes(app, mcpStore, registry)
 await registerHooksRoutes(app, hooksStores)
+
+const REGISTRY_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
+const platformStoresMap = new Map(
+  REGISTRY_PLATFORM_IDS.map(id => [
+    id,
+    {
+      rules: rulesStores.get(id)!,
+      skills: skillsStores.get(id)!,
+      agents: agentsStores.get(id)!,
+    }
+  ])
+)
+
+await registerRegistryRoutes(app, registryStore)
+await registerOverridesRoutes(app, overrideStore)
+await registerScanRegistryRoute(app, platformStoresMap, registryStore)
 
 const port = Number(process.env.PORT ?? 3001)
 try {

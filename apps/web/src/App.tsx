@@ -11,6 +11,7 @@ import { McpPage } from './pages/McpPage.js'
 import { McpEditorPage } from './pages/McpEditorPage.js'
 import { HooksPage } from './pages/HooksPage'
 import { HookEditorPage } from './pages/HookEditorPage'
+import { ConflictsPage } from './pages/ConflictsPage'
 import { API_BASE } from './api/client'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -27,8 +28,9 @@ type Page =
   | { view: 'mcp-editor'; server?: McpServer }
   | { view: 'hooks-list' }
   | { view: 'hooks-editor'; hook?: UnifiedHook }
+  | { view: 'conflicts-list' }
 
-type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks'
+type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'conflicts'
 
 type Theme = 'dark' | 'light'
 
@@ -38,6 +40,7 @@ interface PlatformCapabilities {
   agents?: boolean
   mcp?: boolean
   hooks?: boolean
+  conflicts?: boolean
 }
 
 interface PlatformScanResult {
@@ -84,6 +87,11 @@ const CAPABILITY_CONFIG: Record<
     icon: '🪝',
     defaultPage: { view: 'hooks-list' },
   },
+  conflicts: {
+    label: 'Conflicts',
+    icon: '⚠️',
+    defaultPage: { view: 'conflicts-list' },
+  },
 }
 
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
@@ -93,6 +101,7 @@ function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   if (platform.capabilities.agents) caps.push('agents')
   if (platform.capabilities.mcp) caps.push('mcp')
   if (platform.capabilities.hooks) caps.push('hooks')
+  caps.push('conflicts')
   return caps
 }
 
@@ -114,6 +123,8 @@ function getActiveCapability(page: Page): Capability {
     case 'hooks-list':
     case 'hooks-editor':
       return 'hooks'
+    case 'conflicts-list':
+      return 'conflicts'
     default:
       return 'rules'
   }
@@ -175,6 +186,24 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
+
+  // Conflict count badge
+  const [conflictCount, setConflictCount] = useState(0)
+
+  useEffect(() => {
+    async function fetchConflictCount() {
+      try {
+        const res = await fetch(`${API_BASE}/registry/conflicts`)
+        if (res.ok) {
+          const data = await res.json()
+          setConflictCount((data.conflicts ?? []).length)
+        }
+      } catch { /* ignore */ }
+    }
+    void fetchConflictCount()
+    const interval = setInterval(() => void fetchConflictCount(), 30_000)
+    return () => clearInterval(interval)
+  }, [])
 
   const toggleTheme = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget
@@ -334,6 +363,22 @@ export default function App() {
                   >
                     <span className="nav-icon">{cfg.icon}</span>
                     {cfg.label}
+                    {cap === 'conflicts' && conflictCount > 0 && (
+                      <span
+                        style={{
+                          marginLeft: 'auto',
+                          padding: '1px 6px',
+                          background: '#bf3030',
+                          color: '#fff',
+                          borderRadius: 10,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          lineHeight: '16px',
+                        }}
+                      >
+                        {conflictCount}
+                      </span>
+                    )}
                   </button>
                 )
               })}
@@ -478,6 +523,11 @@ export default function App() {
                 initialHook={page.hook}
                 onBack={() => setPage({ view: 'hooks-list' })}
               />
+            )}
+
+            {/* Conflicts */}
+            {page.view === 'conflicts-list' && (
+              <ConflictsPage onClose={() => setPage({ view: 'rules-list' })} />
             )}
           </div>
         </main>
