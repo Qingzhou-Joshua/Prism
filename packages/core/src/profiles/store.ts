@@ -63,6 +63,7 @@ export class FileProfileStore implements ProfileStore {
         skillIds: dto.skillIds,
         agentIds: dto.agentIds ?? [],
         mcpServerIds: dto.mcpServerIds ?? [],
+        hookIds: dto.hookIds ?? [],
         targetPlatforms: dto.targetPlatforms,
         createdAt: now,
         updatedAt: now,

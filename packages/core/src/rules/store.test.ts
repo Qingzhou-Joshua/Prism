@@ -39,7 +39,7 @@ describe('FileRuleStore', () => {
 
   it('list returns all created rules', async () => {
     await store.create({ name: 'Rule A', content: 'a', scope: 'global' })
-    await store.create({ name: 'Rule B', content: 'b', scope: 'project' })
+    await store.create({ name: 'Rule B', content: 'b', scope: 'platform-only' })
     const rules = await store.list()
     expect(rules).toHaveLength(2)
   })

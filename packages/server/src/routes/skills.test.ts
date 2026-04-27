@@ -10,7 +10,8 @@ import type { UnifiedSkill } from '@prism/shared'
 async function buildApp(storeDir: string) {
   const app = Fastify()
   const store = new DirSkillStore(storeDir)
-  await registerSkillsRoutes(app, store)
+  const stores = new Map([['claude-code', store]])
+  await registerSkillsRoutes(app, stores)
   return app
 }
 

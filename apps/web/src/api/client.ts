@@ -1,4 +1,4 @@
-export const API_BASE = 'http://localhost:3001'
+export const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE ?? 'http://localhost:3001'
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
   const headers: Record<string, string> = {}

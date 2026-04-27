@@ -1,8 +1,9 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, FileHookStore } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, FileHookStore } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
+import { openclawAdapter } from '@prism/adapter-openclaw'
 import { registerScanRoutes } from './routes/scan.js'
 import { registerRulesRoutes } from './routes/rules.js'
 import { registerPlatformRulesRoutes } from './routes/platforms.js'
@@ -22,6 +23,7 @@ const app = Fastify({ logger: true })
 const registry = createAdapterRegistry([
   codebuddyAdapter,
   claudeCodeAdapter,
+  openclawAdapter,
 ])
 
 await app.register(cors, {
@@ -55,7 +57,7 @@ app.get('/platforms', async () => {
 
 await registerScanRoutes(app, registry)
 
-const RULES_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const RULES_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const rulesStores = new Map<string, DirRuleStore>(
   RULES_PLATFORM_IDS.map(id => [id, new DirRuleStore(getPlatformRulesDir(id))]),
 )
@@ -70,24 +72,17 @@ const revisionStore = new FileRevisionStore(
   join(homedir(), '.prism', 'revisions'),
   join(homedir(), '.prism', 'backups'),
 )
-const SKILLS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const SKILLS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const skillsStores = new Map<string, DirSkillStore>(
   SKILLS_PLATFORM_IDS.map(id => [id, new DirSkillStore(getPlatformSkillsDir(id))]),
 )
-const AGENTS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const AGENTS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const agentsStores = new Map<string, DirAgentStore>(
   AGENTS_PLATFORM_IDS.map(id => [id, new DirAgentStore(getPlatformAgentsDir(id)!)]),
 )
-const mcpStore = new FileMcpStore(join(homedir(), '.prism', 'mcp', 'servers.json'))
+const mcpStore = new FileMcpStore()
 
-const publishEngine = new PublishEngine(rulesStore, profileStore, join(homedir(), '.prism'), getPlatformRulesDir, skillsStores.get('claude-code')!, getPlatformSkillsDir, agentsStores.get('claude-code')!, getPlatformAgentsDir)
-await registerPublishRoutes(app, publishEngine, revisionStore)
-await registerRevisionRoutes(app, revisionStore)
-await registerSkillsRoutes(app, skillsStores)
-await registerAgentsRoutes(app, agentsStores)
-await registerMcpRoutes(app, mcpStore, registry)
-
-const HOOKS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const HOOKS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const hooksStores = new Map<string, FileHookStore>(
   HOOKS_PLATFORM_IDS.map(id => {
     const base = id === 'claude-code'
@@ -96,6 +91,25 @@ const hooksStores = new Map<string, FileHookStore>(
     return [id, new FileHookStore(join(base, 'settings.json'), id)]
   }),
 )
+
+const publishEngine = new PublishEngine(
+  rulesStore,
+  profileStore,
+  join(homedir(), '.prism'),
+  getPlatformRulesDir,
+  skillsStores.get('claude-code')!,
+  getPlatformSkillsDir,
+  agentsStores.get('claude-code')!,
+  getPlatformAgentsDir,
+  mcpStore,
+  getPlatformMcpSettingsPath,
+  hooksStores,
+)
+await registerPublishRoutes(app, publishEngine, revisionStore)
+await registerRevisionRoutes(app, revisionStore)
+await registerSkillsRoutes(app, skillsStores)
+await registerAgentsRoutes(app, agentsStores)
+await registerMcpRoutes(app, mcpStore, registry)
 await registerHooksRoutes(app, hooksStores)
 
 const port = Number(process.env.PORT ?? 3001)

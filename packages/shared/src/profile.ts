@@ -8,6 +8,7 @@ export interface Profile {
   skillIds: string[]
   agentIds: string[]
   mcpServerIds: string[]
+  hookIds: string[]
   targetPlatforms: PlatformId[]
   createdAt: string
   updatedAt: string
@@ -20,6 +21,7 @@ export interface CreateProfileDto {
   skillIds: string[]
   agentIds: string[]
   mcpServerIds?: string[]
+  hookIds?: string[]
   targetPlatforms: PlatformId[]
 }
 
@@ -29,6 +31,8 @@ export interface UpdateProfileDto {
   ruleIds?: string[]
   skillIds?: string[]
   agentIds?: string[]
+  mcpServerIds?: string[]
+  hookIds?: string[]
   targetPlatforms?: PlatformId[]
 }
 

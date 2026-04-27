@@ -10,7 +10,8 @@ import type { UnifiedRule } from '@prism/shared'
 async function buildApp(storeDir: string) {
   const app = Fastify()
   const store = new DirRuleStore(storeDir)
-  await registerRulesRoutes(app, store)
+  const stores = new Map([['claude-code', store]])
+  await registerRulesRoutes(app, stores)
   return app
 }
 

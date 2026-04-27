@@ -1,4 +1,4 @@
-export type PlatformId = 'claude-code' | 'codebuddy'
+export type PlatformId = 'claude-code' | 'codebuddy' | 'openclaw'
 
 export interface PlatformCapabilities {
   rules: boolean

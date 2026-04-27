@@ -3,6 +3,7 @@ import type { UnifiedRule } from '@prism/shared'
 import { rulesApi } from '../api/rules.js'
 import { PLATFORM_LABELS } from '../constants/platforms.js'
 import { PlatformIcon } from '../components/PlatformIcon'
+import { ScopeBadge } from '../components/ScopeBadge'
 
 interface RulesPageProps {
   onEdit: (rule: UnifiedRule) => void
@@ -81,7 +82,10 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
         <div className="item-card-grid">
           {rules.map(rule => (
             <div key={rule.id} className="item-card" onClick={() => onEdit(rule)} style={{ cursor: 'pointer' }}>
-              <div className="item-card-name">{rule.name}</div>
+              <div className="item-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {rule.name}
+                <ScopeBadge scope={rule.scope} />
+              </div>
               {rule.filePath && (
                 <div className="item-card-filepath">{rule.filePath}</div>
               )}

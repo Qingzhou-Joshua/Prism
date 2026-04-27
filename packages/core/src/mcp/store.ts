@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import type { McpServer, CreateMcpServerDto, UpdateMcpServerDto, ImportedMcpServer } from '@prism/shared'
 
-const DEFAULT_PATH = join(homedir(), '.prism', 'mcp', 'servers.json')
+const DEFAULT_PATH = join(homedir(), '.prism', 'mcp-registry.json')
 
 export interface McpStore {
   findAll(): Promise<McpServer[]>

@@ -9,6 +9,7 @@ import type { CreateProfileDto, UpdateProfileDto, PublishPreviewFile, PlatformId
 const PLATFORM_DISPLAY_NAMES: Record<PlatformId, string> = {
   'claude-code': 'Claude Code',
   'codebuddy': 'CodeBuddy',
+  'openclaw': 'OpenClaw',
 }
 
 async function fileExists(filePath: string): Promise<boolean> {
@@ -28,6 +29,10 @@ const createProfileSchema = {
       name:            { type: 'string', minLength: 1 },
       description:     { type: 'string' },
       ruleIds:         { type: 'array', items: { type: 'string' } },
+      skillIds:        { type: 'array', items: { type: 'string' } },
+      agentIds:        { type: 'array', items: { type: 'string' } },
+      mcpServerIds:    { type: 'array', items: { type: 'string' } },
+      hookIds:         { type: 'array', items: { type: 'string' } },
       targetPlatforms: { type: 'array', items: { type: 'string' } },
     },
   },
@@ -40,6 +45,10 @@ const updateProfileSchema = {
       name:            { type: 'string', minLength: 1 },
       description:     { type: 'string' },
       ruleIds:         { type: 'array', items: { type: 'string' } },
+      skillIds:        { type: 'array', items: { type: 'string' } },
+      agentIds:        { type: 'array', items: { type: 'string' } },
+      mcpServerIds:    { type: 'array', items: { type: 'string' } },
+      hookIds:         { type: 'array', items: { type: 'string' } },
       targetPlatforms: { type: 'array', items: { type: 'string' } },
     },
   },

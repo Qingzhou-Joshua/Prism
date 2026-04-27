@@ -4,7 +4,7 @@ import { projectRule } from '@prism/core'
 import type { CreateRuleDto, UpdateRuleDto } from '@prism/shared'
 import type { PlatformId } from '@prism/shared'
 
-const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
+const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 
 const createRuleSchema = {
   body: {
@@ -13,7 +13,7 @@ const createRuleSchema = {
     properties: {
       name:              { type: 'string', minLength: 1 },
       content:           { type: 'string' },
-      scope:             { type: 'string', enum: ['global', 'project'] },
+      scope:             { type: 'string', enum: ['global', 'platform-only', 'override'] },
       tags:              { type: 'array', items: { type: 'string' } },
       targetPlatforms:   { type: 'array', items: { type: 'string' } },
       platformOverrides: { type: 'object' },
@@ -27,7 +27,7 @@ const updateRuleSchema = {
     properties: {
       name:              { type: 'string', minLength: 1 },
       content:           { type: 'string' },
-      scope:             { type: 'string', enum: ['global', 'project'] },
+      scope:             { type: 'string', enum: ['global', 'platform-only', 'override'] },
       tags:              { type: 'array', items: { type: 'string' } },
       targetPlatforms:   { type: 'array', items: { type: 'string' } },
       platformOverrides: { type: 'object' },

@@ -1,0 +1,20 @@
+{
+  "name": "@prism/adapter-openclaw",
+  "version": "0.10.1",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "echo 'adapter-openclaw lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prism/core": "workspace:*",
+    "@prism/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.4"
+  }
+}

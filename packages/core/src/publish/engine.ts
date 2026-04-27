@@ -9,6 +9,7 @@ import type { ProfileStore } from '../profiles/store.js'
 import type { SkillStore } from '../skills/store.js'
 import type { AgentStore } from '../agents/store.js'
 import type { McpStore } from '../mcp/store.js'
+import type { HookStore } from '../hooks/store.js'
 import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName, getPlatformMcpSettingsPath } from './platform-paths.js'
 import { projectRule } from '../rules/project.js'
 
@@ -24,6 +25,7 @@ export class PublishEngine {
     private readonly getAgentsDir: (platformId: PlatformId) => string | null = getPlatformAgentsDir,
     private readonly mcpStore: McpStore | null = null,
     private readonly getMcpSettingsPath: (platformId: PlatformId) => string | null = getPlatformMcpSettingsPath,
+    private readonly hookStores: Map<string, HookStore> | null = null,
   ) {}
 
   async publish(profileId: string): Promise<Revision> {
@@ -219,6 +221,26 @@ export class PublishEngine {
             mcpServerId: server.id,
             mcpServerName: server.name,
           })
+        }
+      }
+
+      // Record hooks associated with this profile's platform
+      if (this.hookStores) {
+        const hookStore = this.hookStores.get(platformId)
+        if (hookStore) {
+          for (const hookId of (profile.hookIds ?? [])) {
+            const hook = await hookStore.get(hookId)
+            if (!hook) continue
+            // Hooks are already stored in the platform's settings.json via FileHookStore CRUD.
+            // Here we only record the hook in the revision so it appears in publish history.
+            publishedFiles.push({
+              platformId,
+              filePath: `[hook:${platformId}:${hook.eventType}]`,
+              isNew: false,
+              hookId: hook.id,
+              hookName: hook.description ?? hook.matcher,
+            })
+          }
         }
       }
     }

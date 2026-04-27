@@ -3,6 +3,7 @@ import type { UnifiedAgent } from '@prism/shared'
 import { agentsApi } from '../api/agents'
 import { PlatformIcon } from '../components/PlatformIcon'
 import { PLATFORM_LABELS } from '../constants/platforms'
+import { ScopeBadge } from '../components/ScopeBadge'
 
 interface AgentsPageProps {
   onEdit: (agent: UnifiedAgent) => void
@@ -76,7 +77,10 @@ export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }:
         <div className="item-card-grid">
           {agents.map(agent => (
             <div key={agent.id} className="item-card" onClick={() => onEdit(agent)} style={{ cursor: 'pointer' }}>
-              <div className="item-card-name">{agent.name}</div>
+              <div className="item-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {agent.name}
+                <ScopeBadge scope={(agent as unknown as { scope?: string }).scope ?? 'global'} />
+              </div>
               {agent.filePath && (
                 <div className="item-card-filepath">{agent.filePath}</div>
               )}

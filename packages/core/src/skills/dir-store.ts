@@ -38,7 +38,7 @@ export class DirSkillStore implements SkillStore {
   constructor(private readonly dirPath: string) {}
 
   async list(): Promise<UnifiedSkill[]> {
-    let entries: Awaited<ReturnType<typeof readdir>>
+    let entries
     try {
       entries = await readdir(this.dirPath, { withFileTypes: true })
     } catch {

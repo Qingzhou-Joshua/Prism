@@ -81,6 +81,7 @@ Review the code.`
       name: 'New Agent',
       content: 'You are a helpful assistant.',
       description: 'A test agent',
+      targetPlatforms: [],
     })
     expect(agent.id).toBeDefined()
     expect(agent.name).toBe('New Agent')
@@ -92,13 +93,13 @@ Review the code.`
   })
 
   it('create file is discoverable by list', async () => {
-    await store.create({ name: 'Listed Agent', content: 'body' })
+    await store.create({ name: 'Listed Agent', content: 'body', targetPlatforms: [] })
     const agents = await store.list()
     expect(agents).toHaveLength(1)
   })
 
   it('update rewrites file with new content', async () => {
-    const created = await store.create({ name: 'Old Agent', content: 'old body' })
+    const created = await store.create({ name: 'Old Agent', content: 'old body', targetPlatforms: [] })
     await new Promise((r) => setTimeout(r, 2))
     const updated = await store.update(created.id, { content: 'new body' })
     expect(updated).not.toBeNull()
@@ -112,7 +113,7 @@ Review the code.`
   })
 
   it('delete removes file and returns true', async () => {
-    const agent = await store.create({ name: 'Delete Me', content: 'x' })
+    const agent = await store.create({ name: 'Delete Me', content: 'x', targetPlatforms: [] })
     const result = await store.delete(agent.id)
     expect(result).toBe(true)
     expect(await store.list()).toHaveLength(0)
@@ -125,7 +126,7 @@ Review the code.`
 
   it('persists across store instances', async () => {
     const store1 = new DirAgentStore(tmpDir)
-    const agent = await store1.create({ name: 'Persist Agent', content: 'body' })
+    const agent = await store1.create({ name: 'Persist Agent', content: 'body', targetPlatforms: [] })
     const store2 = new DirAgentStore(tmpDir)
     const found = await store2.get(agent.id)
     expect(found).not.toBeNull()
@@ -133,7 +134,7 @@ Review the code.`
   })
 
   it('importAgents skips already-existing names', async () => {
-    await store.create({ name: 'Existing Agent', content: 'x' })
+    await store.create({ name: 'Existing Agent', content: 'x', targetPlatforms: [] })
     const result = await store.importAgents([
       { fileName: 'existing-agent.md', content: '# Existing Agent' },
       { fileName: 'new-agent.md', content: '# New Agent' },

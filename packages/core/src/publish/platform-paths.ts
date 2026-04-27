@@ -12,6 +12,8 @@ export function getPlatformRulesDir(platformId: PlatformId): string {
       return join(home, '.claude-internal', 'rules')
     case 'codebuddy':
       return join(home, '.codebuddy', 'rules')
+    case 'openclaw':
+      return join(home, '.openclaw', 'rules')
   }
 }
 
@@ -38,6 +40,8 @@ export function getPlatformSkillsDir(platformId: PlatformId): string {
       return join(homedir(), '.claude-internal', 'skills')
     case 'codebuddy':
       return join(homedir(), '.codebuddy', 'skills')
+    case 'openclaw':
+      return join(homedir(), '.openclaw', 'skills')
   }
 }
 
@@ -55,7 +59,6 @@ export function skillFileName(name: string): string {
 
 /**
  * Returns the absolute path to the agents directory for a given platform.
- * Only claude-code and codebuddy support agents.
  * Returns null for unsupported platforms.
  */
 export function getPlatformAgentsDir(platformId: PlatformId): string | null {
@@ -64,8 +67,8 @@ export function getPlatformAgentsDir(platformId: PlatformId): string | null {
       return join(homedir(), '.claude-internal', 'agents')
     case 'codebuddy':
       return join(homedir(), '.codebuddy', 'agents')
-    default:
-      return null
+    case 'openclaw':
+      return join(homedir(), '.openclaw', 'agents')
   }
 }
 

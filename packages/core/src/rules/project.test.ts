@@ -53,11 +53,11 @@ describe('projectRule', () => {
   })
 
   it('includes rule metadata in projection', () => {
-    const rule = makeRule({ id: 'abc', name: 'My Rule', scope: 'project' })
+    const rule = makeRule({ id: 'abc', name: 'My Rule', scope: 'platform-only' })
     const projection = projectRule(rule, 'codebuddy')
     expect(projection.ruleId).toBe('abc')
     expect(projection.name).toBe('My Rule')
     expect(projection.platformId).toBe('codebuddy')
-    expect(projection.scope).toBe('project')
+    expect(projection.scope).toBe('platform-only')
   })
 })

@@ -11,6 +11,9 @@ export interface RuleStore {
   delete(id: string): Promise<boolean>
 }
 
+/**
+ * @deprecated 请使用 DirRuleStore 代替。FileRuleStore 将在后续版本移除。
+ */
 export class FileRuleStore implements RuleStore {
   private writeQueue: Promise<void> = Promise.resolve()
 

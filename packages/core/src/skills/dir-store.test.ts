@@ -85,6 +85,8 @@ trigger: /my-skill
       name: 'New Skill',
       content: 'Do something.',
       trigger: '/new-skill',
+      tags: [],
+      targetPlatforms: [],
     })
     expect(skill.id).toBeDefined()
     expect(skill.name).toBe('New Skill')
@@ -95,13 +97,13 @@ trigger: /my-skill
   })
 
   it('create file is discoverable by list', async () => {
-    await store.create({ name: 'Listed Skill', content: 'body', trigger: undefined })
+    await store.create({ name: 'Listed Skill', content: 'body', trigger: undefined, tags: [], targetPlatforms: [] })
     const skills = await store.list()
     expect(skills).toHaveLength(1)
   })
 
   it('update rewrites file with new content', async () => {
-    const created = await store.create({ name: 'Old Skill', content: 'old', trigger: undefined })
+    const created = await store.create({ name: 'Old Skill', content: 'old', trigger: undefined, tags: [], targetPlatforms: [] })
     await new Promise((r) => setTimeout(r, 2))
     const updated = await store.update(created.id, { content: 'new body' })
     expect(updated).not.toBeNull()
@@ -115,7 +117,7 @@ trigger: /my-skill
   })
 
   it('delete removes directory and returns true', async () => {
-    const skill = await store.create({ name: 'Delete Me', content: 'x', trigger: undefined })
+    const skill = await store.create({ name: 'Delete Me', content: 'x', trigger: undefined, tags: [], targetPlatforms: [] })
     const result = await store.delete(skill.id)
     expect(result).toBe(true)
     expect(await store.list()).toHaveLength(0)
@@ -128,7 +130,7 @@ trigger: /my-skill
 
   it('persists across store instances', async () => {
     const store1 = new DirSkillStore(tmpDir)
-    const skill = await store1.create({ name: 'Persist Skill', content: 'body', trigger: undefined })
+    const skill = await store1.create({ name: 'Persist Skill', content: 'body', trigger: undefined, tags: [], targetPlatforms: [] })
     const store2 = new DirSkillStore(tmpDir)
     const found = await store2.get(skill.id)
     expect(found).not.toBeNull()

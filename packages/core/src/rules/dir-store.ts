@@ -76,7 +76,7 @@ function parseRuleFile(
     name: typeof meta.name === 'string' ? meta.name : basename(fileName, ext),
     content: body.replace(/^\n/, ''),
     scope:
-      typeof meta.scope === 'string' && (meta.scope === 'global' || meta.scope === 'project')
+      typeof meta.scope === 'string' && (meta.scope === 'global' || meta.scope === 'platform-only' || meta.scope === 'override')
         ? meta.scope
         : 'global',
     tags: Array.isArray(meta.tags)
@@ -164,7 +164,7 @@ export class DirRuleStore implements RuleStore {
   constructor(private readonly dirPath: string) {}
 
   async list(): Promise<UnifiedRule[]> {
-    let entries: Awaited<ReturnType<typeof readdir>>
+    let entries
     try {
       entries = await readdir(this.dirPath, { withFileTypes: true })
     } catch {

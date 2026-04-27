@@ -13,6 +13,8 @@ export interface PublishedFile {
   agentName?: string
   mcpServerId?: string
   mcpServerName?: string
+  hookId?: string
+  hookName?: string
 }
 
 export interface Revision {

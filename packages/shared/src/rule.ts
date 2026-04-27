@@ -1,6 +1,6 @@
 import type { PlatformId } from './platform.js'
 
-export type RuleScope = 'global' | 'project'
+export type RuleScope = 'global' | 'platform-only' | 'override'
 
 /** 可扩展结构，预留 enabled/priority 等字段 */
 export interface PlatformOverride {

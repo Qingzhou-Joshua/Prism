@@ -3,6 +3,7 @@ import type { UnifiedSkill } from '@prism/shared'
 import { skillsApi } from '../api/skills'
 import { PlatformIcon } from '../components/PlatformIcon'
 import { PLATFORM_LABELS } from '../constants/platforms'
+import { ScopeBadge } from '../components/ScopeBadge'
 
 interface SkillsPageProps {
   onEdit: (skill: UnifiedSkill) => void
@@ -76,7 +77,10 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
         <div className="item-card-grid">
           {skills.map(skill => (
             <div key={skill.id} className="item-card" onClick={() => onEdit(skill)} style={{ cursor: 'pointer' }}>
-              <div className="item-card-name">{skill.name}</div>
+              <div className="item-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {skill.name}
+                <ScopeBadge scope={(skill as unknown as { scope?: string }).scope ?? 'global'} />
+              </div>
               {skill.filePath && (
                 <div className="item-card-filepath">{skill.filePath}</div>
               )}

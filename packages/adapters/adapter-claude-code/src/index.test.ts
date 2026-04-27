@@ -80,6 +80,6 @@ describe('claudeCodeAdapter', () => {
   it('has correct adapter id, displayName, and capabilities', () => {
     expect(claudeCodeAdapter.id).toBe('claude-code')
     expect(claudeCodeAdapter.displayName).toBe('Claude Code')
-    expect(claudeCodeAdapter.capabilities).toEqual({ rules: true, profiles: true, skills: true, agents: true, mcp: true })
+    expect(claudeCodeAdapter.capabilities).toEqual({ rules: true, profiles: true, skills: true, agents: true, mcp: true, hooks: true })
   })
 })

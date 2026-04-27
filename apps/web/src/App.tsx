@@ -11,6 +11,7 @@ import { McpPage } from './pages/McpPage.js'
 import { McpEditorPage } from './pages/McpEditorPage.js'
 import { HooksPage } from './pages/HooksPage'
 import { HookEditorPage } from './pages/HookEditorPage'
+import { API_BASE } from './api/client'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,8 +52,6 @@ interface PlatformScanResult {
   skillsDir?: string
   agentsDir?: string
 }
-
-const API_BASE = 'http://localhost:3001'
 
 // ── Capability config ─────────────────────────────────────────────────────────
 
