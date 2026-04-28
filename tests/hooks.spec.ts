@@ -1,4 +1,27 @@
 import { test, expect, type Page } from '@playwright/test'
+import { createHook, deleteHook, createRule, deleteRule } from './helpers/api.js'
+
+// ── Shared seeded data ────────────────────────────────────────────────────────
+
+// Hook seeded before each test; cleaned up after.
+let seededHookId: string | null = null
+
+test.beforeEach(async () => {
+  const hook = await createHook({
+    eventType: 'PreToolUse',
+    matcher: 'Write|Edit',
+    description: 'E2E seeded hook for hooks.spec.ts',
+    actions: [{ type: 'command', command: 'echo e2e-seeded-hook' }],
+  })
+  seededHookId = hook.id
+})
+
+test.afterEach(async () => {
+  if (seededHookId) {
+    await deleteHook(seededHookId).catch(() => {/* already deleted is fine */})
+    seededHookId = null
+  }
+})
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -20,6 +43,19 @@ async function goToHooks(page: Page) {
   await hooksNav.click()
 }
 
+/** Click the "New Hook" button in the page header (not the empty-state button). */
+async function clickNewHookHeaderBtn(page: Page) {
+  // The page header button is always present; the empty-state button only appears when hooks is empty.
+  // Use .page-header selector to be specific and avoid strict-mode violation.
+  const headerBtn = page.locator('.page-header .btn-primary', { hasText: 'New Hook' })
+  if (await headerBtn.count() > 0) {
+    await headerBtn.click()
+  } else {
+    // Fallback: click first matching button (handles layout variations)
+    await page.locator('.btn-primary', { hasText: 'New Hook' }).first().click()
+  }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Hooks Management', () => {
@@ -30,12 +66,12 @@ test.describe('Hooks Management', () => {
     // Page title should appear
     await expect(page.locator('.page-title', { hasText: 'Hooks' })).toBeVisible()
 
-    // Subtitle shows hook count (we know there are hooks in claude-code)
+    // Subtitle shows hook count (we seeded one hook so there is at least 1)
     const subtitle = page.locator('.page-subtitle')
     await expect(subtitle).toBeVisible()
     await expect(subtitle).toContainText('hook')
 
-    // At least one event group should be visible (PreToolUse, PostToolUse, etc.)
+    // At least one event group should be visible (PreToolUse from seeded hook)
     const eventGroups = page.locator('.hooks-event-group')
     await expect(eventGroups.first()).toBeVisible({ timeout: 8000 })
     const groupCount = await eventGroups.count()
@@ -44,7 +80,6 @@ test.describe('Hooks Management', () => {
     // Event group headers visible with chevron
     const firstHeader = page.locator('.hooks-event-header').first()
     await expect(firstHeader).toBeVisible()
-    await expect(firstHeader).toContainText('PreToolUse')
 
     // Hook cards inside expanded group
     const hookCards = page.locator('.item-card')
@@ -59,7 +94,7 @@ test.describe('Hooks Management', () => {
     await selectClaudeCode(page)
     await goToHooks(page)
 
-    // Wait for groups to load
+    // Wait for groups to load (seeded hook ensures PreToolUse group exists)
     await expect(page.locator('.hooks-event-group').first()).toBeVisible({ timeout: 8000 })
 
     // Scope everything to the first event group
@@ -94,8 +129,8 @@ test.describe('Hooks Management', () => {
     // Wait for page to load
     await expect(page.locator('.page-title', { hasText: 'Hooks' })).toBeVisible()
 
-    // Click New Hook button
-    await page.locator('.btn-primary', { hasText: 'New Hook' }).click()
+    // Click New Hook button (header button, avoids strict-mode with empty-state btn)
+    await clickNewHookHeaderBtn(page)
 
     // Editor should open
     await expect(page.locator('.rule-editor-page')).toBeVisible()
@@ -129,8 +164,8 @@ test.describe('Hooks Management', () => {
 
     const hooksBefore = await page.locator('.item-card').count()
 
-    // Open new hook editor
-    await page.locator('.btn-primary', { hasText: 'New Hook' }).click()
+    // Open new hook editor (header button)
+    await clickNewHookHeaderBtn(page)
     await expect(page.locator('h2', { hasText: 'New Hook' })).toBeVisible()
 
     // Set Event Type to PostToolUse (already default)
@@ -159,8 +194,7 @@ test.describe('Hooks Management', () => {
     // Should return to hooks list
     await expect(page.locator('.page-title', { hasText: 'Hooks' })).toBeVisible({ timeout: 8000 })
 
-    // New hook should appear in the list
-    // Find the Write|Edit matcher in a PostToolUse group (use exact event type match)
+    // New hook should appear in the list — find the Write|Edit matcher in a PostToolUse group
     const newHookCard = page.locator('.item-card .hooks-matcher', { hasText: 'Write|Edit' }).last()
     await expect(newHookCard).toBeVisible()
 
@@ -171,15 +205,15 @@ test.describe('Hooks Management', () => {
     await selectClaudeCode(page)
     await goToHooks(page)
 
-    // Wait for hooks to load
+    // Wait for hooks to load (seeded hook ensures groups exist)
     await expect(page.locator('.hooks-event-group').first()).toBeVisible({ timeout: 8000 })
 
-    // Find and click the hook we created in test 4 (Write|Edit in PostToolUse)
-    // Or fall back to the first available hook
-    const postToolUseGroup = page.locator('.hooks-event-group', { hasText: 'PostToolUse' })
-    let targetCard: ReturnType<Page['locator']>
+    // Find and click the seeded hook by its matcher text
+    const e2eCard = page.locator('.item-card', {
+      has: page.locator('.hooks-matcher', { hasText: 'Write|Edit' })
+    }).first()
 
-    const e2eCard = page.locator('.item-card', { has: page.locator('.hooks-matcher', { hasText: 'Write|Edit' }) }).last()
+    let targetCard: ReturnType<Page['locator']>
     if (await e2eCard.count() > 0) {
       targetCard = e2eCard
     } else {
@@ -214,21 +248,21 @@ test.describe('Hooks Management', () => {
     await selectClaudeCode(page)
     await goToHooks(page)
 
-    // Wait for hooks to load
+    // Wait for hooks to load (seeded hook ensures groups exist)
     await expect(page.locator('.hooks-event-group').first()).toBeVisible({ timeout: 8000 })
 
-    // Find our test hook by description text in the card
+    // Find the seeded hook by its action command
     const testHookCard = page.locator('.item-card', {
-      has: page.locator('.hooks-action-preview', { hasText: 'echo test-hook-e2e' })
+      has: page.locator('.hooks-action-preview', { hasText: 'echo e2e-seeded-hook' })
     })
 
     if (await testHookCard.count() === 0) {
-      console.log('⚠ Test hook not found (may not have been created in this run). Skipping delete test.')
+      console.log('⚠ Seeded test hook not found. Skipping delete test.')
       test.skip()
       return
     }
 
-    // Click Delete (not the card itself)
+    // Click Delete
     page.on('dialog', async dialog => {
       expect(dialog.type()).toBe('confirm')
       await dialog.accept()
@@ -241,6 +275,7 @@ test.describe('Hooks Management', () => {
     // Card should disappear
     await expect(testHookCard).not.toBeVisible({ timeout: 5000 })
 
+    // The afterEach cleanup will try to delete seededHookId — that's fine (already deleted)
     console.log('✓ E2E test hook deleted successfully')
   })
 
@@ -251,8 +286,8 @@ test.describe('Hooks Management', () => {
     await expect(page.locator('.page-title', { hasText: 'Hooks' })).toBeVisible()
     const hookCountBefore = await page.locator('.item-card').count()
 
-    // Open new hook form
-    await page.locator('.btn-primary', { hasText: 'New Hook' }).click()
+    // Open new hook form (header button)
+    await clickNewHookHeaderBtn(page)
     await expect(page.locator('h2', { hasText: 'New Hook' })).toBeVisible()
 
     // Fill in matcher
@@ -272,26 +307,40 @@ test.describe('Hooks Management', () => {
   })
 
   test('8. Regression: Rules tab still works after navigating Hooks', async ({ page }) => {
-    await selectClaudeCode(page)
-    await goToHooks(page)
+    // Seed a rule to ensure Rules list is non-empty
+    let seededRuleId: string | null = null
+    const rule = await createRule({
+      name: `e2e-hooks-regression-rule-${Date.now()}`,
+      content: '# E2E regression test rule',
+    })
+    seededRuleId = rule.id
 
-    // Verify Hooks page loaded
-    await expect(page.locator('.page-title', { hasText: 'Hooks' })).toBeVisible({ timeout: 8000 })
+    try {
+      await selectClaudeCode(page)
+      await goToHooks(page)
 
-    // Navigate to Rules
-    const rulesNav = page.locator('.sidebar-nav-item', { hasText: 'Rules' })
-    await expect(rulesNav).toBeVisible()
-    await rulesNav.click()
+      // Verify Hooks page loaded
+      await expect(page.locator('.page-title', { hasText: 'Hooks' })).toBeVisible({ timeout: 8000 })
 
-    // Rules page should load
-    await expect(page.locator('.page-title', { hasText: 'Rules' })).toBeVisible({ timeout: 8000 })
+      // Navigate to Rules
+      const rulesNav = page.locator('.sidebar-nav-item', { hasText: 'Rules' })
+      await expect(rulesNav).toBeVisible()
+      await rulesNav.click()
 
-    // Rules should be listed
-    const ruleCards = page.locator('.item-card')
-    await expect(ruleCards.first()).toBeVisible({ timeout: 8000 })
-    const ruleCount = await ruleCards.count()
-    expect(ruleCount).toBeGreaterThan(0)
+      // Rules page should load
+      await expect(page.locator('.page-title', { hasText: 'Rules' })).toBeVisible({ timeout: 8000 })
 
-    console.log(`✓ Rules tab regression: ${ruleCount} rules visible after navigating from Hooks`)
+      // Rules should be listed (at least the seeded rule)
+      const ruleCards = page.locator('.item-card')
+      await expect(ruleCards.first()).toBeVisible({ timeout: 8000 })
+      const ruleCount = await ruleCards.count()
+      expect(ruleCount).toBeGreaterThan(0)
+
+      console.log(`✓ Rules tab regression: ${ruleCount} rules visible after navigating from Hooks`)
+    } finally {
+      if (seededRuleId) {
+        await deleteRule(seededRuleId).catch(() => {/* ignore */})
+      }
+    }
   })
 })

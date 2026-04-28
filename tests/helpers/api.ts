@@ -78,6 +78,46 @@ export async function setOverride(
   if (!res.ok) throw new Error(`setOverride failed: ${res.status}`)
 }
 
+// ── Hooks helpers ─────────────────────────────────────────────────────────────
+
+export interface CreateHookPayload {
+  eventType: string
+  matcher: string
+  description?: string
+  actions: Array<{ type: string; command: string }>
+}
+
+export interface HookResponse {
+  id: string
+  eventType: string
+  matcher: string
+  description?: string
+  actions: Array<{ type: string; command: string }>
+  platformId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export async function createHook(
+  payload: CreateHookPayload,
+  platform = 'claude-code',
+): Promise<HookResponse> {
+  const res = await fetch(`${API_BASE}/hooks?platform=${platform}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(`createHook failed: ${res.status} ${await res.text()}`)
+  return res.json()
+}
+
+export async function deleteHook(id: string, platform = 'claude-code'): Promise<void> {
+  const res = await fetch(`${API_BASE}/hooks/${id}?platform=${platform}`, { method: 'DELETE' })
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`deleteHook failed: ${res.status}`)
+  }
+}
+
 export async function deleteOverride(
   platformId: string,
   assetType: string,

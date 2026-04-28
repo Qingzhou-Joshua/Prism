@@ -140,7 +140,9 @@ test.describe('Group D API: Override CRUD', () => {
       const body = await res.json()
       expect(body).toHaveProperty('items')
       expect(Array.isArray(body.items)).toBe(true)
-      expect(body.items).toContain(id)
+      // items 是对象数组 [{id, content}]，提取 id 字段后再断言包含目标 id
+      const itemIds = body.items.map((item: { id: string }) => item.id)
+      expect(itemIds).toContain(id)
     } finally {
       await deleteOverride('codebuddy', 'skill', id).catch(() => {/* 容忍 404 */})
     }
