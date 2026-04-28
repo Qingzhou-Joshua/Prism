@@ -93,6 +93,18 @@ export class RegistryStore {
     })
   }
 
+  async removeByPlatform(id: string, platformId: string): Promise<boolean> {
+    return this.enqueue(async () => {
+      const registry = await this.load()
+      const idx = registry.entries.findIndex(e => e.id === id && e.platformId === platformId)
+      if (idx === -1) return false
+      registry.entries.splice(idx, 1)
+      registry.lastUpdated = new Date().toISOString()
+      await this.save(registry)
+      return true
+    })
+  }
+
   async findById(id: string): Promise<RegistryEntry | null> {
     const registry = await this.load()
     return registry.entries.find(e => e.id === id) ?? null

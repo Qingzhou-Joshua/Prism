@@ -25,7 +25,12 @@ interface ConflictGroup {
   entries: RegistryEntry[]
 }
 
-// ── Platform badge color map ───────────────────────────────────────────────────
+interface ConflictContentEntry {
+  entry: RegistryEntry
+  content: string
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const PLATFORM_COLORS: Record<string, string> = {
   'claude-code': '#7c5cbf',
@@ -39,7 +44,144 @@ const PLATFORM_LABELS: Record<string, string> = {
   'openclaw':    'OpenClaw',
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── DiffViewer ────────────────────────────────────────────────────────────────
+
+function DiffViewer({ entries }: { entries: ConflictContentEntry[] }) {
+  return (
+    <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+      {entries.map(({ entry, content }) => (
+        <div key={entry.id} style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              display: 'inline-block',
+              padding: '2px 8px',
+              borderRadius: 4,
+              fontSize: 11,
+              fontWeight: 500,
+              background: PLATFORM_COLORS[entry.platformId] ?? '#555',
+              color: '#fff',
+              marginBottom: 6,
+            }}
+          >
+            {PLATFORM_LABELS[entry.platformId] ?? entry.platformId}
+          </div>
+          <pre
+            style={{
+              margin: 0,
+              padding: '8px 10px',
+              background: 'var(--bg-hover)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 6,
+              fontSize: 12,
+              fontFamily: 'monospace',
+              overflow: 'auto',
+              maxHeight: 280,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              lineHeight: 1.5,
+            }}
+          >
+            {content || '(empty)'}
+          </pre>
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              fontFamily: 'monospace',
+              wordBreak: 'break-all',
+            }}
+          >
+            {entry.filePath}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── MergeModal ────────────────────────────────────────────────────────────────
+
+interface MergeModalProps {
+  name: string
+  initialContent: string
+  loading: boolean
+  onConfirm: (content: string) => void
+  onClose: () => void
+}
+
+function MergeModal({ name, initialContent, loading, onConfirm, onClose }: MergeModalProps) {
+  const [content, setContent] = useState(initialContent)
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.55)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        style={{
+          background: 'var(--bg-primary, #1e1e1e)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 10,
+          padding: 20,
+          width: 640,
+          maxWidth: '90vw',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 15 }}>
+          合并为全局版本 — {name}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          编辑下方内容作为合并后的全局版本，确认后将写入所有目标平台的同名资产。
+        </div>
+        <textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          style={{
+            flex: 1,
+            minHeight: 320,
+            fontFamily: 'monospace',
+            fontSize: 12,
+            lineHeight: 1.5,
+            padding: '8px 10px',
+            background: 'var(--bg-hover)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 6,
+            color: 'inherit',
+            resize: 'vertical',
+          }}
+        />
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button className="btn btn-sm" onClick={onClose} disabled={loading}>
+            取消
+          </button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => onConfirm(content)}
+            disabled={loading}
+          >
+            {loading ? '合并中…' : '确认合并'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 
 interface ConflictsPageProps {
   onClose?: () => void
@@ -49,6 +191,23 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
   const [conflicts, setConflicts] = useState<ConflictGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
+
+  // Per-key content cache and loading state
+  const [contentMap, setContentMap] = useState<Record<string, ConflictContentEntry[]>>({})
+  const [contentLoadingKeys, setContentLoadingKeys] = useState<Set<string>>(new Set())
+
+  // Resolve operation loading state (per key)
+  const [resolvingKeys, setResolvingKeys] = useState<Set<string>>(new Set())
+
+  // Merge modal
+  const [mergeModal, setMergeModal] = useState<{
+    key: string
+    name: string
+    entries: ConflictContentEntry[]
+  } | null>(null)
+  const [mergingKey, setMergingKey] = useState<string | null>(null)
+
+  // ── Data loading ─────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -69,6 +228,29 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
 
   useEffect(() => { void load() }, [load])
 
+  const loadContent = useCallback(async (key: string) => {
+    setContentLoadingKeys(prev => new Set([...prev, key]))
+    try {
+      const res = await fetch(
+        `${API_BASE}/registry/conflicts/${encodeURIComponent(key)}/content`
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setContentMap(prev => ({ ...prev, [key]: data.entries ?? [] }))
+      }
+    } catch {
+      // Content won't be shown; user can still use resolve buttons
+    } finally {
+      setContentLoadingKeys(prev => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
+  }, [])
+
+  // ── Expand / collapse ─────────────────────────────────────────────────────────
+
   function toggleExpanded(key: string) {
     setExpandedKeys(prev => {
       const next = new Set(prev)
@@ -76,10 +258,79 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
         next.delete(key)
       } else {
         next.add(key)
+        // Load content on first expand
+        if (!contentMap[key] && !contentLoadingKeys.has(key)) {
+          void loadContent(key)
+        }
       }
       return next
     })
   }
+
+  // ── Resolve actions ───────────────────────────────────────────────────────────
+
+  function markResolved(key: string) {
+    // After success: refresh list, collapse & clear cached content for this key
+    void load()
+    setExpandedKeys(prev => { const n = new Set(prev); n.delete(key); return n })
+    setContentMap(prev => { const n = { ...prev }; delete n[key]; return n })
+  }
+
+  async function handleKeepOne(key: string, winnerId: string) {
+    setResolvingKeys(prev => new Set([...prev, key]))
+    try {
+      const res = await fetch(
+        `${API_BASE}/registry/conflicts/${encodeURIComponent(key)}/resolve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'keep-one', winnerId }),
+        }
+      )
+      if (res.ok) markResolved(key)
+    } finally {
+      setResolvingKeys(prev => { const n = new Set(prev); n.delete(key); return n })
+    }
+  }
+
+  async function handleKeepBoth(key: string) {
+    setResolvingKeys(prev => new Set([...prev, key]))
+    try {
+      const res = await fetch(
+        `${API_BASE}/registry/conflicts/${encodeURIComponent(key)}/resolve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'keep-both' }),
+        }
+      )
+      if (res.ok) markResolved(key)
+    } finally {
+      setResolvingKeys(prev => { const n = new Set(prev); n.delete(key); return n })
+    }
+  }
+
+  async function handleMerge(key: string, content: string) {
+    setMergingKey(key)
+    try {
+      const res = await fetch(
+        `${API_BASE}/registry/conflicts/${encodeURIComponent(key)}/resolve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'merge', content }),
+        }
+      )
+      if (res.ok) {
+        setMergeModal(null)
+        markResolved(key)
+      }
+    } finally {
+      setMergingKey(null)
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   if (loading) return <div className="loading-state">Loading conflicts…</div>
 
@@ -107,9 +358,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
               </span>
             )}
           </div>
-          <div className="page-subtitle">
-            Cross-platform asset conflicts detected
-          </div>
+          <div className="page-subtitle">Cross-platform asset conflicts detected</div>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={() => void load()}>
           ↻ Refresh
@@ -132,17 +381,20 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
         <div className="item-card-grid">
           {conflicts.map(group => {
             const isExpanded = expandedKeys.has(group.key)
+            const isContentLoading = contentLoadingKeys.has(group.key)
+            const isResolving = resolvingKeys.has(group.key)
+            const loadedEntries = contentMap[group.key]
             const platforms = group.entries.map(e => e.platformId)
+
             return (
-              <div key={group.key} className="item-card" style={{ cursor: 'pointer' }}>
+              <div key={group.key} className="item-card">
                 {/* Card header row */}
                 <div
-                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
                   onClick={() => toggleExpanded(group.key)}
                 >
                   <span style={{ fontWeight: 600, flex: 1 }}>{group.name}</span>
                   <span
-                    className="badge"
                     style={{
                       background: 'var(--bg-hover)',
                       color: 'var(--text-secondary)',
@@ -161,7 +413,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
 
                 {/* Platform badges */}
                 <div
-                  style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}
+                  style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', cursor: 'pointer' }}
                   onClick={() => toggleExpanded(group.key)}
                 >
                   {platforms.map((pid, idx) => (
@@ -191,76 +443,104 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                   </span>
                 </div>
 
-                {/* Expanded detail: file paths */}
+                {/* Expanded detail */}
                 {isExpanded && (
                   <div
                     style={{
                       marginTop: 12,
                       borderTop: '1px solid var(--border-default)',
-                      paddingTop: 10,
+                      paddingTop: 12,
                     }}
                   >
-                    {group.entries.map((entry, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          marginBottom: 10,
-                          padding: '8px 10px',
-                          background: 'var(--bg-hover)',
-                          borderRadius: 6,
-                          border: '1px solid var(--border-default)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <span
-                            style={{
-                              padding: '1px 7px',
-                              borderRadius: 4,
-                              fontSize: 11,
-                              fontWeight: 500,
-                              background: PLATFORM_COLORS[entry.platformId] ?? '#555',
-                              color: '#fff',
-                            }}
-                          >
-                            {PLATFORM_LABELS[entry.platformId] ?? entry.platformId}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: 'var(--text-muted)',
-                              fontFamily: 'monospace',
-                            }}
-                          >
-                            checksum: {entry.checksum.slice(0, 8)}…
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: 'var(--text-secondary)',
-                            fontFamily: 'monospace',
-                            wordBreak: 'break-all',
-                          }}
-                        >
-                          {entry.filePath}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: 4,
-                            fontSize: 11,
-                            color: 'var(--text-muted)',
-                          }}
-                        >
-                          Updated {new Date(entry.updatedAt).toLocaleDateString()}
-                        </div>
+                    {/* Content loading indicator */}
+                    {isContentLoading && (
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 0' }}>
+                        Loading content…
                       </div>
-                    ))}
+                    )}
+
+                    {/* Side-by-side diff viewer */}
+                    {!isContentLoading && loadedEntries && (
+                      <DiffViewer entries={loadedEntries} />
+                    )}
+
+                    {/* Resolve buttons */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        marginTop: 14,
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {/* 合并为全局版本 — only shown when content is loaded */}
+                      {loadedEntries && (
+                        <button
+                          className="btn btn-primary btn-sm"
+                          disabled={isResolving}
+                          onClick={() =>
+                            setMergeModal({
+                              key: group.key,
+                              name: group.name,
+                              entries: loadedEntries,
+                            })
+                          }
+                        >
+                          合并为全局版本
+                        </button>
+                      )}
+
+                      {/* 以 {platform} 为准 — one button per entry */}
+                      {group.entries.map(entry => (
+                        <button
+                          key={entry.id}
+                          className="btn btn-sm"
+                          disabled={isResolving}
+                          onClick={() => void handleKeepOne(group.key, entry.id)}
+                        >
+                          以 {PLATFORM_LABELS[entry.platformId] ?? entry.platformId} 为准
+                        </button>
+                      ))}
+
+                      {/* 分开各自保留 */}
+                      <button
+                        className="btn btn-sm"
+                        disabled={isResolving}
+                        onClick={() => void handleKeepBoth(group.key)}
+                      >
+                        分开各自保留
+                      </button>
+
+                      {/* Resolving indicator */}
+                      {isResolving && (
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                          解决中…
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
             )
           })}
         </div>
+      )}
+
+      {/* Merge modal */}
+      {mergeModal && (
+        <MergeModal
+          name={mergeModal.name}
+          initialContent={mergeModal.entries
+            .map(
+              ({ entry, content }) =>
+                `// === ${PLATFORM_LABELS[entry.platformId] ?? entry.platformId} ===\n${content}`
+            )
+            .join('\n\n')}
+          loading={mergingKey === mergeModal.key}
+          onConfirm={content => void handleMerge(mergeModal.key, content)}
+          onClose={() => setMergeModal(null)}
+        />
       )}
     </div>
   )
