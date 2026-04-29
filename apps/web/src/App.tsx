@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook } from '@prism/shared'
+import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook, UnifiedCommand } from '@prism/shared'
 import { PlatformIcon } from './components/PlatformIcon'
 import { useFileWatcher } from './hooks/useFileWatcher'
 import { FileChangeBanner } from './components/FileChangeBanner'
@@ -13,6 +13,8 @@ import { McpPage } from './pages/McpPage.js'
 import { McpEditorPage } from './pages/McpEditorPage.js'
 import { HooksPage } from './pages/HooksPage'
 import { HookEditorPage } from './pages/HookEditorPage'
+import { CommandsPage } from './pages/CommandsPage'
+import { CommandEditorPage } from './pages/CommandEditorPage'
 import { ConflictsPage } from './pages/ConflictsPage'
 import { API_BASE } from './api/client'
 
@@ -30,9 +32,11 @@ type Page =
   | { view: 'mcp-editor'; server?: McpServer }
   | { view: 'hooks-list' }
   | { view: 'hooks-editor'; hook?: UnifiedHook }
+  | { view: 'commands-list' }
+  | { view: 'commands-editor'; command?: UnifiedCommand }
   | { view: 'conflicts-list' }
 
-type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'conflicts'
+type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'commands' | 'conflicts'
 
 type Theme = 'dark' | 'light'
 
@@ -42,6 +46,7 @@ interface PlatformCapabilities {
   agents?: boolean
   mcp?: boolean
   hooks?: boolean
+  commands?: boolean
   conflicts?: boolean
 }
 
@@ -56,6 +61,7 @@ interface PlatformScanResult {
   rulesDir?: string
   skillsDir?: string
   agentsDir?: string
+  commandsDir?: string
 }
 
 // ── Capability config ─────────────────────────────────────────────────────────
@@ -89,6 +95,11 @@ const CAPABILITY_CONFIG: Record<
     icon: '🪝',
     defaultPage: { view: 'hooks-list' },
   },
+  commands: {
+    label: 'Commands',
+    icon: '⌨️',
+    defaultPage: { view: 'commands-list' },
+  },
   conflicts: {
     label: 'Conflicts',
     icon: '⚠️',
@@ -103,6 +114,7 @@ function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   if (platform.capabilities.agents) caps.push('agents')
   if (platform.capabilities.mcp) caps.push('mcp')
   if (platform.capabilities.hooks) caps.push('hooks')
+  if (platform.capabilities.commands) caps.push('commands')
   caps.push('conflicts')
   return caps
 }
@@ -125,6 +137,9 @@ function getActiveCapability(page: Page): Capability {
     case 'hooks-list':
     case 'hooks-editor':
       return 'hooks'
+    case 'commands-list':
+    case 'commands-editor':
+      return 'commands'
     case 'conflicts-list':
       return 'conflicts'
     default:
@@ -528,6 +543,21 @@ export default function App() {
                 platformId={selectedPlatformId ?? 'claude-code'}
                 initialHook={page.hook}
                 onBack={() => setPage({ view: 'hooks-list' })}
+              />
+            )}
+
+            {/* Commands */}
+            {page.view === 'commands-list' && (
+              <CommandsPage
+                platform={selectedPlatformId ?? undefined}
+                onEdit={(cmd) => setPage({ view: 'commands-editor', command: cmd })}
+              />
+            )}
+            {page.view === 'commands-editor' && (
+              <CommandEditorPage
+                command={page.command}
+                onBack={() => setPage({ view: 'commands-list' })}
+                platform={selectedPlatformId ?? undefined}
               />
             )}
 

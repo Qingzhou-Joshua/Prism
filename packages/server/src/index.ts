@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, FileHookStore, RegistryStore, OverrideStore, FileWatcher } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, getPlatformCommandsDir, FileHookStore, DirCommandStore, RegistryStore, OverrideStore, FileWatcher } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { openclawAdapter } from '@prism/adapter-openclaw'
@@ -14,6 +14,7 @@ import { registerSkillsRoutes } from './routes/skills.js'
 import { registerAgentsRoutes } from './routes/agents.js'
 import { registerMcpRoutes } from './routes/mcp.js'
 import { registerHooksRoutes } from './routes/hooks.js'
+import { registerCommandsRoutes } from './routes/commands.js'
 import { registerRegistryRoutes } from './routes/registry.js'
 import { registerOverridesRoutes } from './routes/overrides.js'
 import { registerScanRegistryRoute } from './routes/scan-registry.js'
@@ -50,11 +51,13 @@ app.get('/platforms', async () => {
     let rulesDir: string | undefined
     let skillsDir: string | undefined
     let agentsDir: string | undefined
+    let commandsDir: string | undefined
     try { rulesDir = getPlatformRulesDir(item.id) } catch { /* unsupported */ }
     try { skillsDir = getPlatformSkillsDir(item.id) } catch { /* unsupported */ }
     const agentsDirResult = getPlatformAgentsDir(item.id)
     if (agentsDirResult) agentsDir = agentsDirResult
-    return { ...item, rulesDir, skillsDir, agentsDir }
+    try { commandsDir = getPlatformCommandsDir(item.id) } catch { /* unsupported */ }
+    return { ...item, rulesDir, skillsDir, agentsDir, commandsDir }
   })
   return { items: augmented }
 })
@@ -100,6 +103,11 @@ const hooksStores = new Map<string, FileHookStore>(
   }),
 )
 
+const COMMANDS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
+const commandsStores = new Map<string, DirCommandStore>(
+  COMMANDS_PLATFORM_IDS.map(id => [id, new DirCommandStore(getPlatformCommandsDir(id))]),
+)
+
 const publishEngine = new PublishEngine(
   rulesStore,
   profileStore,
@@ -112,6 +120,8 @@ const publishEngine = new PublishEngine(
   mcpStore,
   getPlatformMcpSettingsPath,
   hooksStores,
+  commandsStores.get('claude-code')!,
+  getPlatformCommandsDir,
   (filePath) => fileWatcher.suppressNext(filePath),
 )
 await registerPublishRoutes(app, publishEngine, revisionStore)
@@ -120,6 +130,7 @@ await registerSkillsRoutes(app, skillsStores)
 await registerAgentsRoutes(app, agentsStores)
 await registerMcpRoutes(app, mcpStore, registry)
 await registerHooksRoutes(app, hooksStores)
+await registerCommandsRoutes(app, commandsStores)
 
 const REGISTRY_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const platformStoresMap = new Map(

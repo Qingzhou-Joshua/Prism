@@ -98,3 +98,27 @@ export function getPlatformMcpSettingsPath(platformId: PlatformId): string | nul
       return null
   }
 }
+
+/**
+ * Returns the absolute path to the commands directory for a given platform.
+ */
+export function getPlatformCommandsDir(platformId: PlatformId): string {
+  switch (platformId) {
+    case 'claude-code': return join(homedir(), '.claude-internal', 'commands')
+    case 'codebuddy':   return join(homedir(), '.codebuddy', 'commands')
+    case 'openclaw':    return join(homedir(), '.openclaw', 'commands')
+  }
+}
+
+/**
+ * Converts a command name to a kebab-case filename with .md extension.
+ * e.g. "Deploy App" → "deploy-app.md"
+ */
+export function commandFileName(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '.md'
+  )
+}

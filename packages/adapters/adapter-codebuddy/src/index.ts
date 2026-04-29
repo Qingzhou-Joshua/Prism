@@ -7,7 +7,7 @@ import type { ImportedAgent, ImportedMcpServer, ImportedRule, PlatformScanResult
 const BASE_RESULT = {
   id: 'codebuddy' as const,
   displayName: 'CodeBuddy',
-  capabilities: { rules: true, profiles: true, skills: true, agents: true, mcp: true, hooks: true },
+  capabilities: { rules: true, profiles: true, skills: true, agents: true, mcp: true, hooks: true, commands: true },
 } satisfies Pick<PlatformScanResult, 'id' | 'displayName' | 'capabilities'>
 
 export const codebuddyAdapter: PlatformAdapter = {

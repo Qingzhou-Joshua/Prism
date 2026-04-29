@@ -9,6 +9,7 @@ export interface Profile {
   agentIds: string[]
   mcpServerIds: string[]
   hookIds: string[]
+  commandIds: string[]
   targetPlatforms: PlatformId[]
   createdAt: string
   updatedAt: string
@@ -22,6 +23,7 @@ export interface CreateProfileDto {
   agentIds: string[]
   mcpServerIds?: string[]
   hookIds?: string[]
+  commandIds?: string[]
   targetPlatforms: PlatformId[]
 }
 
@@ -33,6 +35,7 @@ export interface UpdateProfileDto {
   agentIds?: string[]
   mcpServerIds?: string[]
   hookIds?: string[]
+  commandIds?: string[]
   targetPlatforms?: PlatformId[]
 }
 

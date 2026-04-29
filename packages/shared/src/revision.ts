@@ -15,6 +15,8 @@ export interface PublishedFile {
   mcpServerName?: string
   hookId?: string
   hookName?: string
+  commandId?: string
+  commandName?: string
 }
 
 export interface Revision {

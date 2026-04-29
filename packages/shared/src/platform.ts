@@ -7,6 +7,7 @@ export interface PlatformCapabilities {
   agents?: boolean
   mcp?: boolean
   hooks?: boolean
+  commands?: boolean
 }
 
 export interface PlatformScanResult {
@@ -20,6 +21,7 @@ export interface PlatformScanResult {
   rulesDir?: string             // absolute path to the rules directory
   skillsDir?: string            // absolute path to the skills directory
   agentsDir?: string            // absolute path to the agents directory
+  commandsDir?: string          // absolute path to the commands directory
 }
 
 export interface ImportedRule {

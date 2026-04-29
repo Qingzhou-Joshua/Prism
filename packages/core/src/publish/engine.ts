@@ -10,7 +10,8 @@ import type { SkillStore } from '../skills/store.js'
 import type { AgentStore } from '../agents/store.js'
 import type { McpStore } from '../mcp/store.js'
 import type { HookStore } from '../hooks/store.js'
-import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName, getPlatformMcpSettingsPath } from './platform-paths.js'
+import type { CommandStore } from '../commands/store.js'
+import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName, getPlatformMcpSettingsPath, getPlatformCommandsDir, commandFileName } from './platform-paths.js'
 import { projectRule } from '../rules/project.js'
 
 export class PublishEngine {
@@ -26,6 +27,8 @@ export class PublishEngine {
     private readonly mcpStore: McpStore | null = null,
     private readonly getMcpSettingsPath: (platformId: PlatformId) => string | null = getPlatformMcpSettingsPath,
     private readonly hookStores: Map<string, HookStore> | null = null,
+    private readonly commandStore: CommandStore | null = null,
+    private readonly getCommandsDir: (platformId: PlatformId) => string = getPlatformCommandsDir,
     /** Optional callback to suppress file-watcher false positives for Prism-initiated writes. */
     private readonly suppressWatchPath?: (filePath: string) => void,
   ) {}
@@ -247,6 +250,47 @@ export class PublishEngine {
               hookName: hook.description ?? hook.matcher,
             })
           }
+        }
+      }
+
+      // Write command files
+      if (this.commandStore) {
+        for (const commandId of (profile.commandIds ?? [])) {
+          const command = await this.commandStore.get(commandId)
+          if (!command) continue
+
+          // Only publish to platforms this command targets (empty = all platforms)
+          if (command.targetPlatforms.length > 0 && !command.targetPlatforms.includes(platformId)) continue
+
+          const commandsDir = this.getCommandsDir(platformId)
+          const fileName = commandFileName(command.name)
+          const targetPath = join(commandsDir, fileName)
+
+          let isNew = true
+          let backupPath: string | undefined
+          try {
+            await stat(targetPath)
+            isNew = false
+            const backupDir = join(this.prismDir, 'backups', revisionId, `${platformId}-commands`)
+            await mkdir(backupDir, { recursive: true })
+            backupPath = join(backupDir, fileName)
+            await copyFile(targetPath, backupPath)
+          } catch {
+            // File does not exist — isNew stays true
+          }
+
+          await mkdir(commandsDir, { recursive: true })
+          this.suppressWatchPath?.(targetPath)
+          await writeFile(targetPath, command.content, 'utf-8')
+
+          publishedFiles.push({
+            platformId,
+            filePath: targetPath,
+            backupPath,
+            isNew,
+            commandId: command.id,
+            commandName: command.name,
+          })
         }
       }
     }

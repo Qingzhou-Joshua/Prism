@@ -21,7 +21,11 @@ export class FileProfileStore implements ProfileStore {
       const raw = await readFile(this.filePath, 'utf-8')
       const parsed = JSON.parse(raw)
       if (!Array.isArray(parsed)) throw new Error('profiles.json: expected array')
-      return parsed as Profile[]
+      // 兼容旧数据：补齐 commandIds 字段
+      return (parsed as Profile[]).map(p => ({
+        ...p,
+        commandIds: p.commandIds ?? [],
+      }))
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
       throw err
@@ -64,6 +68,7 @@ export class FileProfileStore implements ProfileStore {
         agentIds: dto.agentIds ?? [],
         mcpServerIds: dto.mcpServerIds ?? [],
         hookIds: dto.hookIds ?? [],
+        commandIds: dto.commandIds ?? [],
         targetPlatforms: dto.targetPlatforms,
         createdAt: now,
         updatedAt: now,
