@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, getPlatformCommandsDir, FileHookStore, DirCommandStore, RegistryStore, OverrideStore, FileWatcher, KnowledgeStore, GitSyncConfigStore, GitSyncStore, GitSyncService } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, IdeSettingsMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, getPlatformCommandsDir, FileHookStore, DirCommandStore, RegistryStore, OverrideStore, FileWatcher, KnowledgeStore, GitSyncConfigStore, GitSyncStore, GitSyncService } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { openclawAdapter } from '@prism/adapter-openclaw'
@@ -93,7 +93,7 @@ const AGENTS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw
 const agentsStores = new Map<string, DirAgentStore>(
   AGENTS_PLATFORM_IDS.map(id => [id, new DirAgentStore(getPlatformAgentsDir(id)!)]),
 )
-const mcpStore = new FileMcpStore()
+const mcpStore = new IdeSettingsMcpStore()
 
 const HOOKS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const hooksStores = new Map<string, FileHookStore>(
