@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { KnowledgeStore } from '@prism/core'
 import type { FileHookStore } from '@prism/core'
-import type { IngestKnowledgeDto, CreateKnowledgeEntryDto } from '@prism/shared'
+import type { IngestKnowledgeDto, CreateKnowledgeEntryDto, GenerateProjectRuleDto, PublishGeneratedAssetDto } from '@prism/shared'
 
 const KNOWLEDGE_HOOK_DESCRIPTION = 'Prism Knowledge Capture'
 
@@ -249,4 +249,66 @@ export async function registerKnowledgeRoutes(
 
     return { removed }
   })
+
+  // ─── Generated Assets ───────────────────────────────────────────────────────
+
+  // GET /knowledge/generated
+  app.get('/knowledge/generated', async () => {
+    const items = await store.listGenerated()
+    return { items }
+  })
+
+  // GET /knowledge/generated/:id
+  app.get<{ Params: { id: string } }>('/knowledge/generated/:id', async (request, reply) => {
+    const asset = await store.getGenerated(request.params.id)
+    if (!asset) {
+      reply.code(404)
+      return { error: 'Generated asset not found' }
+    }
+    return asset
+  })
+
+  // DELETE /knowledge/generated/:id
+  app.delete<{ Params: { id: string } }>('/knowledge/generated/:id', async (request, reply) => {
+    const deleted = await store.deleteGenerated(request.params.id)
+    if (!deleted) {
+      reply.code(404)
+      return { error: 'Generated asset not found' }
+    }
+    reply.code(204)
+    return null
+  })
+
+  // POST /knowledge/generate/profile-rule
+  app.post('/knowledge/generate/profile-rule', async () => {
+    return store.generateProfileRule()
+  })
+
+  // POST /knowledge/generate/project-rule
+  app.post<{ Body: GenerateProjectRuleDto }>('/knowledge/generate/project-rule', async (request, reply) => {
+    try {
+      return await store.generateProjectRule(request.body ?? {})
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      if (message.startsWith('No knowledge entries')) {
+        reply.code(400)
+        return { error: message }
+      }
+      throw err
+    }
+  })
+
+  // POST /knowledge/generated/:id/publish
+  app.post<{ Params: { id: string }; Body: PublishGeneratedAssetDto }>(
+    '/knowledge/generated/:id/publish',
+    async (request, reply) => {
+      try {
+        return await store.publishGeneratedAsset(request.params.id, request.body)
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        reply.code(500)
+        return { error: message }
+      }
+    },
+  )
 }

@@ -1,11 +1,16 @@
-import { readdir, readFile, writeFile, unlink, mkdir } from 'node:fs/promises'
+import { readdir, readFile, writeFile, unlink, mkdir, symlink, lstat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import type {
   DeveloperProfile,
   KnowledgeEntry,
   CreateKnowledgeEntryDto,
+  GeneratedAsset,
+  GenerateProjectRuleDto,
+  PublishGeneratedAssetDto,
 } from '@prism/shared'
+import { getPlatformRulesDir, getPlatformSkillsDir } from '../publish/platform-paths.js'
 
 const FRONT_MATTER_RE = /^---\r?\n([\s\S]*?)^---\r?\n?([\s\S]*)$/m
 
@@ -94,10 +99,12 @@ function serialiseEntry(entry: KnowledgeEntry): string {
 export class KnowledgeStore {
   private readonly entriesDir: string
   private readonly profilePath: string
+  private readonly generatedDir: string
 
   constructor(private readonly baseDir: string) {
     this.entriesDir = join(baseDir, 'entries')
     this.profilePath = join(baseDir, 'developer-profile.md')
+    this.generatedDir = join(baseDir, 'generated')
   }
 
   async getProfile(): Promise<DeveloperProfile> {
@@ -263,5 +270,301 @@ export class KnowledgeStore {
     } catch {
       return null
     }
+  }
+
+  // ─── Generated Asset: 序列化 / 反序列化 ────────────────────────────────────
+
+  private serialiseGenerated(asset: GeneratedAsset): string {
+    const { content, ...meta } = asset
+    const publishedToJson = JSON.stringify(meta.publishedTo ?? [])
+    const { publishedTo: _publishedTo, ...rest } = meta
+    const frontmatter = Object.entries({ ...rest, publishedToJson })
+      .map(([k, v]) => {
+        if (v === undefined || v === null) return null
+        if (Array.isArray(v)) return `${k}: ${JSON.stringify(v)}`
+        return `${k}: ${yamlScalar(String(v))}`
+      })
+      .filter((line): line is string => line !== null)
+      .join('\n')
+    return `---\n${frontmatter}\n---\n${content}`
+  }
+
+  private parseGeneratedFile(raw: string): GeneratedAsset | null {
+    try {
+      const { meta, body } = parseFrontMatter(raw)
+      if (typeof meta.id !== 'string') return null
+      if (meta.type !== 'rule' && meta.type !== 'skill') return null
+      if (meta.sourceType !== 'developer-profile' && meta.sourceType !== 'knowledge-entries') return null
+
+      let publishedTo: GeneratedAsset['publishedTo'] = []
+      if (typeof meta.publishedToJson === 'string') {
+        try {
+          // yamlScalar() 将 JSON 字符串中的 " 转义为 \"，parseYamlBlock 读回时
+          // 值会带上外层 " 和内部 \" 转义。需要还原：去掉首尾 " 并反转义。
+          let raw = meta.publishedToJson
+          if (raw.startsWith('"') && raw.endsWith('"')) {
+            raw = raw.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+          }
+          const parsed: unknown = JSON.parse(raw)
+          if (Array.isArray(parsed)) {
+            publishedTo = parsed.filter(
+              (item): item is { platformId: string; symlinkPath: string; linkedAt: string } =>
+                typeof item === 'object' &&
+                item !== null &&
+                typeof (item as Record<string, unknown>).platformId === 'string' &&
+                typeof (item as Record<string, unknown>).symlinkPath === 'string' &&
+                typeof (item as Record<string, unknown>).linkedAt === 'string',
+            )
+          }
+        } catch {
+          // leave publishedTo as []
+        }
+      }
+
+      const sourceIds = Array.isArray(meta.sourceIds)
+        ? (meta.sourceIds as unknown[]).filter((s): s is string => typeof s === 'string')
+        : undefined
+
+      return {
+        id: meta.id,
+        type: meta.type,
+        name: typeof meta.name === 'string' ? meta.name : '',
+        content: body,
+        sourceType: meta.sourceType,
+        sourceIds,
+        domain: typeof meta.domain === 'string' ? meta.domain : undefined,
+        projectPath: typeof meta.projectPath === 'string' ? meta.projectPath : undefined,
+        generatedAt: typeof meta.generatedAt === 'string' ? meta.generatedAt : '',
+        publishedTo,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  // ─── Generated Asset: CRUD ─────────────────────────────────────────────────
+
+  async listGenerated(): Promise<GeneratedAsset[]> {
+    let files: string[]
+    try {
+      const dirents = await readdir(this.generatedDir, { withFileTypes: true })
+      files = dirents
+        .filter(d => d.isFile() && d.name.endsWith('.md'))
+        .map(d => d.name)
+    } catch {
+      return []
+    }
+
+    const assets: GeneratedAsset[] = []
+    for (const fileName of files) {
+      const filePath = join(this.generatedDir, fileName)
+      try {
+        const raw = await readFile(filePath, 'utf-8')
+        const asset = this.parseGeneratedFile(raw)
+        if (asset) assets.push(asset)
+      } catch {
+        // skip unreadable files
+      }
+    }
+    return assets
+  }
+
+  async getGenerated(id: string): Promise<GeneratedAsset | null> {
+    const filePath = join(this.generatedDir, `${id}.md`)
+    try {
+      const raw = await readFile(filePath, 'utf-8')
+      return this.parseGeneratedFile(raw)
+    } catch {
+      return null
+    }
+  }
+
+  async saveGenerated(asset: GeneratedAsset): Promise<GeneratedAsset> {
+    await mkdir(this.generatedDir, { recursive: true })
+    const filePath = join(this.generatedDir, `${asset.id}.md`)
+    await writeFile(filePath, this.serialiseGenerated(asset), 'utf-8')
+    return asset
+  }
+
+  async deleteGenerated(id: string): Promise<boolean> {
+    const filePath = join(this.generatedDir, `${id}.md`)
+    try {
+      // 先读取 asset，清理所有已发布的 symlinks
+      const asset = await this.getGenerated(id)
+      if (asset) {
+        for (const p of asset.publishedTo) {
+          try {
+            await unlink(p.symlinkPath)
+          } catch {
+            // symlink 可能已不存在，忽略
+          }
+        }
+      }
+      await unlink(filePath)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // ─── Generated Asset: 生成方法 ─────────────────────────────────────────────
+
+  async generateProfileRule(): Promise<GeneratedAsset> {
+    const profile = await this.getProfile()
+
+    // 幂等：如已有 developer-profile 类型的 asset，复用其 id 和 publishedTo
+    const existing = (await this.listGenerated()).find(
+      a => a.sourceType === 'developer-profile',
+    )
+
+    const name = profile.name || 'Developer'
+    const content = [
+      '---',
+      `description: Developer profile context for ${name}`,
+      '---',
+      '# Developer Profile',
+      '',
+      `**Name**: ${profile.name ?? ''}  **Role**: ${profile.role ?? 'Developer'}`,
+      '',
+      `**Core Skills**: ${profile.skills.length > 0 ? profile.skills.join(', ') : 'Not specified'}`,
+      '',
+      profile.bio,
+    ].join('\n')
+
+    const asset: GeneratedAsset = {
+      id: existing?.id ?? randomUUID(),
+      type: 'rule',
+      name: 'developer-profile-context',
+      content,
+      sourceType: 'developer-profile',
+      generatedAt: new Date().toISOString(),
+      publishedTo: existing?.publishedTo ?? [],
+    }
+
+    return this.saveGenerated(asset)
+  }
+
+  async generateProjectRule(dto: GenerateProjectRuleDto): Promise<GeneratedAsset> {
+    const entries = await this.listEntries({
+      domain: dto.domain,
+      projectPath: dto.projectPath,
+    })
+
+    if (entries.length < 1) {
+      throw new Error('No knowledge entries found for the given filter')
+    }
+
+    // 取最近 5 条 summary
+    const recentSummaries = entries.slice(0, 5).map(e => `- ${e.summary}`).join('\n')
+
+    // 提取所有 tags 去重
+    const allTags = [...new Set(entries.flatMap(e => e.tags))]
+
+    // 取最新 entry 的 content 前 2000 字
+    const latestContent = entries[0].content.slice(0, 2000)
+
+    const content = [
+      '---',
+      `description: Project context for ${dto.domain ?? dto.projectPath ?? 'general'}`,
+      '---',
+      '# Project Knowledge Context',
+      '',
+      `**Domain**: ${dto.domain ?? 'general'}`,
+      dto.projectPath ? `**Project**: ${dto.projectPath}` : '',
+      `**Tags**: ${allTags.length > 0 ? allTags.join(', ') : 'none'}`,
+      '',
+      '## Recent Session Summaries',
+      '',
+      recentSummaries,
+      '',
+      '## Latest Session Content',
+      '',
+      latestContent,
+    ].filter(line => line !== undefined).join('\n')
+
+    // 幂等：如已有同 domain+projectPath 的 'knowledge-entries' asset，复用
+    const existing = (await this.listGenerated()).find(
+      a =>
+        a.sourceType === 'knowledge-entries' &&
+        (a.domain ?? undefined) === (dto.domain ?? undefined) &&
+        (a.projectPath ?? undefined) === (dto.projectPath ?? undefined),
+    )
+
+    const asset: GeneratedAsset = {
+      id: existing?.id ?? randomUUID(),
+      type: 'rule',
+      name: `project-context-${dto.domain ?? dto.projectPath ?? 'general'}`,
+      content,
+      sourceType: 'knowledge-entries',
+      sourceIds: entries.map(e => e.id),
+      domain: dto.domain,
+      projectPath: dto.projectPath,
+      generatedAt: new Date().toISOString(),
+      publishedTo: existing?.publishedTo ?? [],
+    }
+
+    return this.saveGenerated(asset)
+  }
+
+  // ─── Generated Asset: Symlink 发布 ─────────────────────────────────────────
+
+  private getPlatformAssetDir(platformId: string, assetType: 'rule' | 'skill'): string {
+    // platformId 对应 PlatformId，但此处接受 string 保持灵活性
+    // 使用 platform-paths.ts 的辅助函数确定目录
+    if (assetType === 'rule') {
+      return getPlatformRulesDir(platformId as Parameters<typeof getPlatformRulesDir>[0])
+    }
+    return getPlatformSkillsDir(platformId as Parameters<typeof getPlatformSkillsDir>[0])
+  }
+
+  async publishGeneratedAsset(assetId: string, dto: PublishGeneratedAssetDto): Promise<GeneratedAsset> {
+    const asset = await this.getGenerated(assetId)
+    if (!asset) {
+      throw new Error(`Generated asset not found: ${assetId}`)
+    }
+
+    const sourcePath = join(this.generatedDir, `${assetId}.md`)
+    const targetDir = this.getPlatformAssetDir(dto.platformId, dto.assetType)
+
+    // skill 类型需要子目录（与 PublishEngine 一致），rule 直接放到 targetDir
+    let symlinkPath: string
+    if (dto.assetType === 'skill') {
+      const skillDirName = asset.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+      const skillDir = join(targetDir, skillDirName)
+      await mkdir(skillDir, { recursive: true })
+      symlinkPath = join(skillDir, 'SKILL.md')
+    } else {
+      await mkdir(targetDir, { recursive: true })
+      const fileName = asset.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') + '.md'
+      symlinkPath = join(targetDir, fileName)
+    }
+
+    // 若目标已存在（文件或旧 symlink，含 dangling symlink），先删除
+    // 使用 lstat 而非 access：access 会跟随 symlink，dangling symlink 会抛 ENOENT；lstat 只检查 link 本身
+    try {
+      await lstat(symlinkPath)
+      await unlink(symlinkPath)
+    } catch {
+      // 目标不存在，无需 unlink
+    }
+
+    await symlink(sourcePath, symlinkPath)
+
+    // 更新 publishedTo（追加或覆盖同 platformId 的记录）
+    const linkedAt = new Date().toISOString()
+    const existingIdx = asset.publishedTo.findIndex(p => p.platformId === dto.platformId)
+    if (existingIdx >= 0) {
+      asset.publishedTo[existingIdx] = { platformId: dto.platformId, symlinkPath, linkedAt }
+    } else {
+      asset.publishedTo.push({ platformId: dto.platformId, symlinkPath, linkedAt })
+    }
+
+    return this.saveGenerated(asset)
   }
 }

@@ -1,5 +1,5 @@
 import { request } from './client.js'
-import type { DeveloperProfile, KnowledgeEntry } from '@prism/shared'
+import type { DeveloperProfile, KnowledgeEntry, GeneratedAsset } from '@prism/shared'
 
 export interface KnowledgeEntriesFilter {
   domain?: string
@@ -74,5 +74,40 @@ export const knowledgeApi = {
       `/knowledge/hook-status${qs}`,
     )
     return result ?? { enabled: false, platforms: {} }
+  },
+
+  async listGenerated(): Promise<GeneratedAsset[]> {
+    const result = await request<{ items: GeneratedAsset[] }>('/knowledge/generated')
+    return result?.items ?? []
+  },
+
+  async generateProfileRule(): Promise<GeneratedAsset> {
+    const result = await request<GeneratedAsset>('/knowledge/generate/profile-rule', {
+      method: 'POST',
+    })
+    if (!result) throw new Error('Failed to generate profile rule')
+    return result
+  },
+
+  async generateProjectRule(dto: { domain?: string; projectPath?: string }): Promise<GeneratedAsset> {
+    const result = await request<GeneratedAsset>('/knowledge/generate/project-rule', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    })
+    if (!result) throw new Error('Failed to generate project rule')
+    return result
+  },
+
+  async publishGenerated(id: string, dto: { platformId: string; assetType: 'rule' | 'skill' }): Promise<GeneratedAsset> {
+    const result = await request<GeneratedAsset>(`/knowledge/generated/${id}/publish`, {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    })
+    if (!result) throw new Error('Failed to publish generated asset')
+    return result
+  },
+
+  async deleteGenerated(id: string): Promise<void> {
+    await request<null>(`/knowledge/generated/${id}`, { method: 'DELETE' })
   },
 }
