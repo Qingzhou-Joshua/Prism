@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, getPlatformCommandsDir, FileHookStore, DirCommandStore, RegistryStore, OverrideStore, FileWatcher, KnowledgeStore } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, getPlatformCommandsDir, FileHookStore, DirCommandStore, RegistryStore, OverrideStore, FileWatcher, KnowledgeStore, GitSyncConfigStore, GitSyncStore, GitSyncService } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { openclawAdapter } from '@prism/adapter-openclaw'
@@ -20,8 +20,9 @@ import { registerRegistryRoutes } from './routes/registry.js'
 import { registerOverridesRoutes } from './routes/overrides.js'
 import { registerScanRegistryRoute } from './routes/scan-registry.js'
 import { registerWatcherRoutes } from './routes/watcher.js'
+import { registerGitSyncRoutes } from './routes/git-sync.js'
 import type { PlatformId } from '@prism/shared'
-import { homedir } from 'node:os'
+import { homedir, hostname } from 'node:os'
 import { join } from 'node:path'
 
 const app = Fastify({ logger: true })
@@ -152,6 +153,16 @@ await registerRegistryRoutes(app, registryStore)
 await registerOverridesRoutes(app, overrideStore)
 await registerScanRegistryRoute(app, platformStoresMap, registryStore, fileWatcher)
 await registerWatcherRoutes(app, registryStore, fileWatcher)
+
+const gitSyncConfigStore = new GitSyncConfigStore()
+const gitConfig = await gitSyncConfigStore.load()
+const gitSyncStore = gitConfig
+  ? new GitSyncStore(join(homedir(), '.prism', 'git-sync'), homedir())
+  : null
+const gitSyncService = gitSyncStore
+  ? new GitSyncService(gitSyncStore, registryStore, overrideStore, knowledgeStore, hostname())
+  : null
+await registerGitSyncRoutes(app, gitSyncService, gitSyncConfigStore)
 
 const port = Number(process.env.PORT ?? 3001)
 try {

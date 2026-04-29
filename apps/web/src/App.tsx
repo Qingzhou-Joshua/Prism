@@ -19,6 +19,8 @@ import { ConflictsPage } from './pages/ConflictsPage'
 import { KnowledgePage } from './pages/KnowledgePage'
 import { KnowledgeProfilePage } from './pages/KnowledgeProfilePage'
 import { KnowledgeEntryDetailPage } from './pages/KnowledgeEntryDetailPage'
+import { SettingsPage } from './pages/SettingsPage.js'
+import { GitSyncPage } from './pages/GitSyncPage.js'
 import { knowledgeApi } from './api/knowledge'
 import { API_BASE } from './api/client'
 
@@ -42,8 +44,10 @@ type Page =
   | { view: 'knowledge-list' }
   | { view: 'knowledge-profile' }
   | { view: 'knowledge-entry'; entry: KnowledgeEntry }
+  | { view: 'settings' }
+  | { view: 'git-sync' }
 
-type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'commands' | 'conflicts' | 'knowledge'
+type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'commands' | 'conflicts' | 'knowledge' | 'settings' | 'git-sync'
 
 type Theme = 'dark' | 'light'
 
@@ -118,6 +122,16 @@ const CAPABILITY_CONFIG: Record<
     icon: '🧠',
     defaultPage: { view: 'knowledge-list' },
   },
+  settings: {
+    label: 'Settings',
+    icon: '⚙️',
+    defaultPage: { view: 'settings' },
+  },
+  'git-sync': {
+    label: 'Git Sync',
+    icon: '🔄',
+    defaultPage: { view: 'git-sync' },
+  },
 }
 
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
@@ -130,6 +144,8 @@ function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   if (platform.capabilities.commands) caps.push('commands')
   caps.push('conflicts')
   caps.push('knowledge')
+  caps.push('settings')
+  caps.push('git-sync')
   return caps
 }
 
@@ -160,6 +176,10 @@ function getActiveCapability(page: Page): Capability {
     case 'knowledge-profile':
     case 'knowledge-entry':
       return 'knowledge'
+    case 'settings':
+      return 'settings'
+    case 'git-sync':
+      return 'git-sync'
     default:
       return 'rules'
   }
@@ -607,6 +627,16 @@ export default function App() {
                   }
                 }}
               />
+            )}
+
+            {/* Settings */}
+            {page.view === 'settings' && (
+              <SettingsPage onNavigateToGitSync={() => setPage({ view: 'git-sync' })} />
+            )}
+
+            {/* Git Sync */}
+            {page.view === 'git-sync' && (
+              <GitSyncPage />
             )}
           </div>
         </main>
