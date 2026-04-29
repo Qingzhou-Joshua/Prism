@@ -26,6 +26,8 @@ export class PublishEngine {
     private readonly mcpStore: McpStore | null = null,
     private readonly getMcpSettingsPath: (platformId: PlatformId) => string | null = getPlatformMcpSettingsPath,
     private readonly hookStores: Map<string, HookStore> | null = null,
+    /** Optional callback to suppress file-watcher false positives for Prism-initiated writes. */
+    private readonly suppressWatchPath?: (filePath: string) => void,
   ) {}
 
   async publish(profileId: string): Promise<Revision> {
@@ -64,6 +66,7 @@ export class PublishEngine {
         }
 
         await mkdir(platformDir, { recursive: true })
+        this.suppressWatchPath?.(targetPath)
         await writeFile(targetPath, projection.content, 'utf-8')
 
         publishedFiles.push({
@@ -109,6 +112,7 @@ export class PublishEngine {
           }
 
           await mkdir(skillDir, { recursive: true })
+          this.suppressWatchPath?.(targetPath)
           await writeFile(targetPath, skill.content, 'utf-8')
 
           publishedFiles.push({
@@ -148,6 +152,7 @@ export class PublishEngine {
           }
 
           await mkdir(agentsDir, { recursive: true })
+          this.suppressWatchPath?.(targetPath)
           await writeFile(targetPath, agent.content, 'utf-8')
 
           publishedFiles.push({
@@ -211,6 +216,7 @@ export class PublishEngine {
 
           // Ensure parent directory exists and write back
           await mkdir(join(settingsPath, '..'), { recursive: true })
+          this.suppressWatchPath?.(settingsPath)
           await writeFile(settingsPath, JSON.stringify(settingsObj, null, 2), 'utf-8')
 
           publishedFiles.push({

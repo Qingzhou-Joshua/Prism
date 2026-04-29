@@ -30,3 +30,12 @@ export interface ConflictGroup {
   name: string
   entries: RegistryEntry[]  // 2+ entries with same type+name from different platforms
 }
+
+export interface WatcherChangeEvent {
+  entryId: string
+  filePath: string
+  platformId: string
+  assetType: AssetType
+  assetName: string
+  detectedAt: string  // ISO timestamp
+}

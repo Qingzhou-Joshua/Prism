@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { DirRuleStore, DirSkillStore, DirAgentStore, RegistryStore } from '@prism/core'
 import { ruleToEntry, skillToEntry, agentToEntry } from '@prism/core'
+import type { FileWatcher } from '@prism/core'
 import type { PlatformId } from '@prism/shared'
 
 interface PlatformStores {
@@ -13,6 +14,7 @@ export async function registerScanRegistryRoute(
   app: FastifyInstance,
   platformStores: Map<PlatformId, PlatformStores>,
   registryStore: RegistryStore,
+  fileWatcher?: FileWatcher,
 ): Promise<void> {
   // POST /registry/scan
   app.post('/registry/scan', async (_, reply) => {
@@ -37,6 +39,10 @@ export async function registerScanRegistryRoute(
       } catch (err) {
         errors.push(`${platformId}: ${err instanceof Error ? err.message : String(err)}`)
       }
+    }
+
+    if (fileWatcher) {
+      await fileWatcher.refresh()
     }
 
     reply.code(errors.length > 0 ? 207 : 200)

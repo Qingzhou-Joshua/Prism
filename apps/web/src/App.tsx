@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook } from '@prism/shared'
 import { PlatformIcon } from './components/PlatformIcon'
+import { useFileWatcher } from './hooks/useFileWatcher'
+import { FileChangeBanner } from './components/FileChangeBanner'
 import { RulesPage } from './pages/RulesPage'
 import { RuleEditorPage } from './pages/RuleEditorPage'
 import { SkillsPage } from './pages/SkillsPage'
@@ -282,6 +284,9 @@ export default function App() {
 
   const capabilities = selectedPlatform ? getPlatformCapabilities(selectedPlatform) : []
 
+  // File watcher
+  const { changes, dismissChange } = useFileWatcher()
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -410,6 +415,7 @@ export default function App() {
 
         {/* Main content area */}
         <main className="app-main">
+          <FileChangeBanner changes={changes} onDismiss={dismissChange} />
           <div className="app-content">
             {/* Error banner */}
             {platformsError && (

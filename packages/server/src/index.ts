@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, FileHookStore, RegistryStore, OverrideStore } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, FileMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, FileHookStore, RegistryStore, OverrideStore, FileWatcher } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { openclawAdapter } from '@prism/adapter-openclaw'
@@ -17,6 +17,7 @@ import { registerHooksRoutes } from './routes/hooks.js'
 import { registerRegistryRoutes } from './routes/registry.js'
 import { registerOverridesRoutes } from './routes/overrides.js'
 import { registerScanRegistryRoute } from './routes/scan-registry.js'
+import { registerWatcherRoutes } from './routes/watcher.js'
 import type { PlatformId } from '@prism/shared'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -62,6 +63,7 @@ await registerScanRoutes(app, registry)
 
 const registryStore = new RegistryStore()
 const overrideStore = new OverrideStore()
+const fileWatcher = new FileWatcher(registryStore)
 
 const RULES_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const rulesStores = new Map<string, DirRuleStore>(
@@ -110,6 +112,7 @@ const publishEngine = new PublishEngine(
   mcpStore,
   getPlatformMcpSettingsPath,
   hooksStores,
+  (filePath) => fileWatcher.suppressNext(filePath),
 )
 await registerPublishRoutes(app, publishEngine, revisionStore)
 await registerRevisionRoutes(app, revisionStore)
@@ -132,10 +135,15 @@ const platformStoresMap = new Map(
 
 await registerRegistryRoutes(app, registryStore)
 await registerOverridesRoutes(app, overrideStore)
-await registerScanRegistryRoute(app, platformStoresMap, registryStore)
+await registerScanRegistryRoute(app, platformStoresMap, registryStore, fileWatcher)
+await registerWatcherRoutes(app, registryStore, fileWatcher)
 
 const port = Number(process.env.PORT ?? 3001)
 try {
+  app.addHook('onClose', async () => {
+    fileWatcher.stop()
+  })
+  await fileWatcher.start()
   await app.listen({ port, host: '0.0.0.0' })
 } catch (err) {
   app.log.error(err)
