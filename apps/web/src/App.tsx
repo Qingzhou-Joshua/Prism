@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook, UnifiedCommand } from '@prism/shared'
+import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook, UnifiedCommand, KnowledgeEntry } from '@prism/shared'
 import { PlatformIcon } from './components/PlatformIcon'
 import { useFileWatcher } from './hooks/useFileWatcher'
 import { FileChangeBanner } from './components/FileChangeBanner'
@@ -16,6 +16,10 @@ import { HookEditorPage } from './pages/HookEditorPage'
 import { CommandsPage } from './pages/CommandsPage'
 import { CommandEditorPage } from './pages/CommandEditorPage'
 import { ConflictsPage } from './pages/ConflictsPage'
+import { KnowledgePage } from './pages/KnowledgePage'
+import { KnowledgeProfilePage } from './pages/KnowledgeProfilePage'
+import { KnowledgeEntryDetailPage } from './pages/KnowledgeEntryDetailPage'
+import { knowledgeApi } from './api/knowledge'
 import { API_BASE } from './api/client'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -35,8 +39,11 @@ type Page =
   | { view: 'commands-list' }
   | { view: 'commands-editor'; command?: UnifiedCommand }
   | { view: 'conflicts-list' }
+  | { view: 'knowledge-list' }
+  | { view: 'knowledge-profile' }
+  | { view: 'knowledge-entry'; entry: KnowledgeEntry }
 
-type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'commands' | 'conflicts'
+type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'commands' | 'conflicts' | 'knowledge'
 
 type Theme = 'dark' | 'light'
 
@@ -48,6 +55,7 @@ interface PlatformCapabilities {
   hooks?: boolean
   commands?: boolean
   conflicts?: boolean
+  knowledge?: boolean
 }
 
 interface PlatformScanResult {
@@ -105,6 +113,11 @@ const CAPABILITY_CONFIG: Record<
     icon: '⚠️',
     defaultPage: { view: 'conflicts-list' },
   },
+  knowledge: {
+    label: 'Knowledge',
+    icon: '🧠',
+    defaultPage: { view: 'knowledge-list' },
+  },
 }
 
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
@@ -116,6 +129,7 @@ function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   if (platform.capabilities.hooks) caps.push('hooks')
   if (platform.capabilities.commands) caps.push('commands')
   caps.push('conflicts')
+  caps.push('knowledge')
   return caps
 }
 
@@ -142,6 +156,10 @@ function getActiveCapability(page: Page): Capability {
       return 'commands'
     case 'conflicts-list':
       return 'conflicts'
+    case 'knowledge-list':
+    case 'knowledge-profile':
+    case 'knowledge-entry':
+      return 'knowledge'
     default:
       return 'rules'
   }
@@ -564,6 +582,31 @@ export default function App() {
             {/* Conflicts */}
             {page.view === 'conflicts-list' && (
               <ConflictsPage onClose={() => setPage({ view: 'rules-list' })} />
+            )}
+
+            {/* Knowledge */}
+            {page.view === 'knowledge-list' && (
+              <KnowledgePage
+                onEditProfile={() => setPage({ view: 'knowledge-profile' })}
+                onViewEntry={(entry) => setPage({ view: 'knowledge-entry', entry })}
+              />
+            )}
+            {page.view === 'knowledge-profile' && (
+              <KnowledgeProfilePage onBack={() => setPage({ view: 'knowledge-list' })} />
+            )}
+            {page.view === 'knowledge-entry' && 'entry' in page && (
+              <KnowledgeEntryDetailPage
+                entry={page.entry}
+                onBack={() => setPage({ view: 'knowledge-list' })}
+                onDelete={async () => {
+                  try {
+                    await knowledgeApi.deleteEntry(page.entry.id)
+                    setPage({ view: 'knowledge-list' })
+                  } catch (e) {
+                    alert(e instanceof Error ? e.message : 'Delete failed')
+                  }
+                }}
+              />
             )}
           </div>
         </main>
