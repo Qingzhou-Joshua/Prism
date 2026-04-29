@@ -43,7 +43,7 @@ interface McpMeta {
 // ── IdeSettingsMcpStore ─────────────────────────────────────────────────────
 //
 // Follows the 卸载安全 principle:
-//   - MCP command/args/env live in ~/.claude-internal/settings.json (mcpServers key)
+//   - MCP command/args/env live in ~/.claude/settings.json (mcpServers key)
 //   - Prism metadata (id, description, targetPlatforms, timestamps) live in
 //     ~/.prism/mcp-meta.json
 //   - ~/.prism/mcp-registry.json (old FileMcpStore path) is migrated and removed
@@ -56,7 +56,7 @@ interface McpMeta {
 export class IdeSettingsMcpStore implements McpStore {
   private writeQueue: Promise<void> = Promise.resolve()
 
-  /** path to ~/.claude-internal/settings.json (or null if platform unsupported) */
+  /** path to ~/.claude/settings.json (or null if platform unsupported) */
   private readonly settingsPath: string | null
 
   /** path to ~/.prism/mcp-meta.json */

@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, IdeSettingsMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, getPlatformCommandsDir, FileHookStore, DirCommandStore, RegistryStore, OverrideStore, FileWatcher, KnowledgeStore, GitSyncConfigStore, GitSyncStore, GitSyncService } from '@prism/core'
+import { createAdapterRegistry, DirRuleStore, FileProfileStore, DirSkillStore, DirAgentStore, IdeSettingsMcpStore, PublishEngine, FileRevisionStore, getPlatformRulesDir, getPlatformSkillsDir, getPlatformAgentsDir, getPlatformMcpSettingsPath, getPlatformCommandsDir, FileHookStore, DirCommandStore, RegistryStore, OverrideStore, FileWatcher, KnowledgeStore, GitSyncConfigStore, GitSyncStore, GitSyncService, resolveClaudeCodeBaseDir, setClaudeCodeBaseDir, claudeCodeBase } from '@prism/core'
 import { codebuddyAdapter } from '@prism/adapter-codebuddy'
 import { claudeCodeAdapter } from '@prism/adapter-claude-code'
 import { openclawAdapter } from '@prism/adapter-openclaw'
@@ -32,6 +32,10 @@ const registry = createAdapterRegistry([
   claudeCodeAdapter,
   openclawAdapter,
 ])
+
+// Detect the Claude Code base dir (any ~/.claude* directory, preferring ~/.claude)
+// and cache the result so all path functions return the correct directories.
+setClaudeCodeBaseDir(await resolveClaudeCodeBaseDir())
 
 await app.register(cors, {
   origin: (origin, cb) => {
@@ -99,7 +103,7 @@ const HOOKS_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw'
 const hooksStores = new Map<string, FileHookStore>(
   HOOKS_PLATFORM_IDS.map(id => {
     const base = id === 'claude-code'
-      ? join(homedir(), '.claude-internal')
+      ? claudeCodeBase()
       : join(homedir(), `.${id}`)
     return [id, new FileHookStore(join(base, 'settings.json'), id)]
   }),

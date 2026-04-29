@@ -3,9 +3,10 @@ import { claudeCodeAdapter } from './index.js'
 
 vi.mock('node:fs/promises', () => ({
   access: vi.fn(),
+  readdir: vi.fn(),
 }))
 
-import { access } from 'node:fs/promises'
+import { access, readdir } from 'node:fs/promises'
 
 describe('claudeCodeAdapter', () => {
   const originalHome = process.env.HOME
@@ -13,6 +14,8 @@ describe('claudeCodeAdapter', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     process.env.HOME = '/home/testuser'
+    // By default, readdir returns no .claude* dirs so access fallback is tried
+    vi.mocked(readdir).mockRejectedValue(new Error('ENOENT'))
   })
 
   afterEach(() => {
@@ -30,32 +33,31 @@ describe('claudeCodeAdapter', () => {
     expect(result.message).toContain('HOME')
   })
 
-  it('returns detected: false when neither ~/.claude-internal nor ~/.claude exist', async () => {
-    vi.mocked(access)
-      .mockRejectedValueOnce(new Error('ENOENT'))
-      .mockRejectedValueOnce(new Error('ENOENT'))
+  it('returns detected: false when no ~/.claude directory exists', async () => {
+    // readdir throws, access also throws
+    vi.mocked(access).mockRejectedValueOnce(new Error('ENOENT'))
 
     const result = await claudeCodeAdapter.scan()
     expect(result.detected).toBe(false)
     expect(result.message).toContain('not found')
   })
 
-  it('returns detected: true using ~/.claude-internal when it exists', async () => {
-    // First call (.claude-internal): success; second call (rules/): fail
-    vi.mocked(access)
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('ENOENT'))
+  it('returns detected: true using ~/.claude when it exists via readdir', async () => {
+    // readdir returns .claude dir; rules/ access fails
+    vi.mocked(readdir).mockResolvedValueOnce([
+      { name: '.claude', isDirectory: () => true, isFile: () => false } as never,
+    ])
+    vi.mocked(access).mockRejectedValueOnce(new Error('ENOENT'))
 
     const result = await claudeCodeAdapter.scan()
     expect(result.detected).toBe(true)
-    expect(result.configPath).toBe('/home/testuser/.claude-internal')
+    expect(result.configPath).toBe('/home/testuser/.claude')
     expect(result.rulesDetected).toBe(false)
   })
 
-  it('returns detected: true using ~/.claude as fallback when only it exists', async () => {
-    // First call (.claude-internal): fail; second call (.claude): success; third call (rules/): fail
+  it('returns detected: true using ~/.claude via access fallback', async () => {
+    // readdir throws, access on ~/.claude succeeds; rules/ access fails
     vi.mocked(access)
-      .mockRejectedValueOnce(new Error('ENOENT'))
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('ENOENT'))
 
@@ -66,10 +68,11 @@ describe('claudeCodeAdapter', () => {
   })
 
   it('returns rulesDetected: true when rules/ subdirectory exists', async () => {
-    // First call (.claude-internal): success; second call (rules/): success
-    vi.mocked(access)
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(undefined)
+    // readdir returns .claude dir; rules/ access succeeds
+    vi.mocked(readdir).mockResolvedValueOnce([
+      { name: '.claude', isDirectory: () => true, isFile: () => false } as never,
+    ])
+    vi.mocked(access).mockResolvedValueOnce(undefined)
 
     const result = await claudeCodeAdapter.scan()
     expect(result.detected).toBe(true)

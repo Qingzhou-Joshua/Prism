@@ -14,7 +14,7 @@ describe('scanPlatforms', () => {
       id: 'claude-code',
       displayName: 'Claude Code',
       detected: true,
-      configPath: '/home/user/.claude-internal',
+      configPath: '/home/user/.claude',
       capabilities: { rules: true, profiles: false },
     }
     const mockResult2: PlatformScanResult = {

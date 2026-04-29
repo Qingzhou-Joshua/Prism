@@ -1,5 +1,4 @@
 import { access, readdir, readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import path, { relative } from 'node:path'
 import { glob } from 'glob'
 import type { ImportedSkill, PlatformAdapter } from '@prism/core'
@@ -15,19 +14,25 @@ async function resolveConfigPath(): Promise<string | null> {
   const home = process.env.HOME
   if (!home) return null
 
-  const primaryPath = path.join(home, '.claude-internal')
-  const fallbackPath = path.join(home, '.claude')
-
+  // Scan homedir for .claude* directories, preferring `.claude`
   try {
-    await access(primaryPath)
-    return primaryPath
+    const entries = await readdir(home, { withFileTypes: true })
+    const claudeDirs = entries
+      .filter(e => e.isDirectory() && /^\.claude/.test(e.name))
+      .map(e => e.name)
+    if (claudeDirs.includes('.claude')) return path.join(home, '.claude')
+    if (claudeDirs.length > 0) return path.join(home, claudeDirs[0])
   } catch {
-    try {
-      await access(fallbackPath)
-      return fallbackPath
-    } catch {
-      return null
-    }
+    // fallthrough
+  }
+
+  // Last resort: check if ~/.claude exists directly
+  const defaultPath = path.join(home, '.claude')
+  try {
+    await access(defaultPath)
+    return defaultPath
+  } catch {
+    return null
   }
 }
 
@@ -47,7 +52,7 @@ export const claudeCodeAdapter: PlatformAdapter = {
       return {
         ...BASE_RESULT,
         detected: false,
-        message: 'Claude Code config not found at ~/.claude-internal or ~/.claude',
+        message: 'Claude Code config not found at ~/.claude',
       }
     }
 
@@ -100,20 +105,9 @@ export const claudeCodeAdapter: PlatformAdapter = {
   },
 
   async importSkills(): Promise<ImportedSkill[]> {
-    const primaryDir = path.join(homedir(), '.claude-internal', 'skills')
-    const fallbackDir = path.join(homedir(), '.claude', 'skills')
-
-    let skillsDir: string | undefined
-    for (const dir of [primaryDir, fallbackDir]) {
-      try {
-        await access(dir)
-        skillsDir = dir
-        break
-      } catch {
-        // try next
-      }
-    }
-    if (!skillsDir) return []
+    const configPath = await resolveConfigPath()
+    if (!configPath) return []
+    const skillsDir = path.join(configPath, 'skills')
 
     const mdFiles = await glob('**/*.md', { cwd: skillsDir, absolute: true })
     const skills: ImportedSkill[] = []
@@ -129,22 +123,16 @@ export const claudeCodeAdapter: PlatformAdapter = {
   },
 
   async importAgents(): Promise<ImportedAgent[]> {
-    const primaryDir = path.join(homedir(), '.claude-internal', 'agents')
-    const fallbackDir = path.join(homedir(), '.claude', 'agents')
+    const configPath = await resolveConfigPath()
+    if (!configPath) return []
+    const agentsDir = path.join(configPath, 'agents')
 
-    let agentsDir: string | undefined
-    for (const dir of [primaryDir, fallbackDir]) {
-      try {
-        await access(dir)
-        agentsDir = dir
-        break
-      } catch {
-        // try next
-      }
+    let files: string[]
+    try {
+      files = await readdir(agentsDir)
+    } catch {
+      return []
     }
-    if (!agentsDir) return []
-
-    const files = await readdir(agentsDir)
     const mdFiles = files.filter(f => f.endsWith('.md'))
     const results: ImportedAgent[] = []
     for (const fileName of mdFiles) {
@@ -160,29 +148,25 @@ export const claudeCodeAdapter: PlatformAdapter = {
   },
 
   async importMcpServers(): Promise<ImportedMcpServer[]> {
-    const settingsPaths = [
-      path.join(homedir(), '.claude-internal', 'settings.json'),
-      path.join(homedir(), '.claude', 'settings.json'),
-    ]
-    for (const settingsPath of settingsPaths) {
-      try {
-        const raw = await readFile(settingsPath, 'utf8')
-        const settings = JSON.parse(raw) as Record<string, unknown>
-        const mcpServers = (settings.mcpServers ?? {}) as Record<string, {
-          command: string
-          args?: string[]
-          env?: Record<string, string>
-        }>
-        return Object.entries(mcpServers).map(([name, config]) => ({
-          name,
-          command: config.command,
-          args: config.args ?? [],
-          env: config.env,
-        }))
-      } catch {
-        continue
-      }
+    const configPath = await resolveConfigPath()
+    if (!configPath) return []
+    const settingsPath = path.join(configPath, 'settings.json')
+    try {
+      const raw = await readFile(settingsPath, 'utf8')
+      const settings = JSON.parse(raw) as Record<string, unknown>
+      const mcpServers = (settings.mcpServers ?? {}) as Record<string, {
+        command: string
+        args?: string[]
+        env?: Record<string, string>
+      }>
+      return Object.entries(mcpServers).map(([name, config]) => ({
+        name,
+        command: config.command,
+        args: config.args ?? [],
+        env: config.env,
+      }))
+    } catch {
+      return []
     }
-    return []
   },
 }

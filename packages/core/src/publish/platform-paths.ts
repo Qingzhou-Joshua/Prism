@@ -1,19 +1,62 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { readdir } from 'node:fs/promises'
 import type { PlatformId } from '@prism/shared'
+
+// ── Claude Code base dir detection ─────────────────────────────────────────
+//
+// Scans homedir() for any directory matching /^\.claude/ and prefers `.claude`.
+// Falls back to `~/.claude` if no match is found.
+//
+// Usage: call resolveClaudeCodeBaseDir() once at server startup, then call
+// setClaudeCodeBaseDir() with the result before constructing any stores.
+// All path functions below will use the cached value automatically.
+
+let _claudeCodeBaseDir: string | null = null
+
+/** Override the detected Claude Code base directory (e.g. for tests or startup). */
+export function setClaudeCodeBaseDir(dir: string): void {
+  _claudeCodeBaseDir = dir
+}
+
+/** Returns the cached base dir, defaulting to ~/.claude if not yet resolved. */
+export function claudeCodeBase(): string {
+  return _claudeCodeBaseDir ?? join(homedir(), '.claude')
+}
+
+/**
+ * Detect the Claude Code config base directory at runtime.
+ * Scans homedir() for directories matching `.claude*`, preferring `.claude` if present.
+ * Falls back to `~/.claude` if none found.
+ * Call this once at server startup and pass the result to setClaudeCodeBaseDir().
+ */
+export async function resolveClaudeCodeBaseDir(): Promise<string> {
+  const home = homedir()
+  const defaultDir = join(home, '.claude')
+  try {
+    const entries = await readdir(home, { withFileTypes: true })
+    const claudeDirs = entries
+      .filter(e => e.isDirectory() && /^\.claude/.test(e.name))
+      .map(e => e.name)
+    if (claudeDirs.includes('.claude')) return join(home, '.claude')
+    if (claudeDirs.length > 0) return join(home, claudeDirs[0])
+  } catch {
+    // fallthrough to default
+  }
+  return defaultDir
+}
 
 /**
  * Returns the absolute path to the rules directory for a given platform.
  */
 export function getPlatformRulesDir(platformId: PlatformId): string {
-  const home = homedir()
   switch (platformId) {
     case 'claude-code':
-      return join(home, '.claude-internal', 'rules')
+      return join(claudeCodeBase(), 'rules')
     case 'codebuddy':
-      return join(home, '.codebuddy', 'rules')
+      return join(homedir(), '.codebuddy', 'rules')
     case 'openclaw':
-      return join(home, '.openclaw', 'rules')
+      return join(homedir(), '.openclaw', 'rules')
   }
 }
 
@@ -37,7 +80,7 @@ export function ruleFileName(name: string): string {
 export function getPlatformSkillsDir(platformId: PlatformId): string {
   switch (platformId) {
     case 'claude-code':
-      return join(homedir(), '.claude-internal', 'skills')
+      return join(claudeCodeBase(), 'skills')
     case 'codebuddy':
       return join(homedir(), '.codebuddy', 'skills')
     case 'openclaw':
@@ -64,7 +107,7 @@ export function skillFileName(name: string): string {
 export function getPlatformAgentsDir(platformId: PlatformId): string | null {
   switch (platformId) {
     case 'claude-code':
-      return join(homedir(), '.claude-internal', 'agents')
+      return join(claudeCodeBase(), 'agents')
     case 'codebuddy':
       return join(homedir(), '.codebuddy', 'agents')
     case 'openclaw':
@@ -93,7 +136,7 @@ export function agentFileName(name: string): string {
 export function getPlatformMcpSettingsPath(platformId: PlatformId): string | null {
   switch (platformId) {
     case 'claude-code':
-      return join(homedir(), '.claude-internal', 'settings.json')
+      return join(claudeCodeBase(), 'settings.json')
     default:
       return null
   }
@@ -104,7 +147,7 @@ export function getPlatformMcpSettingsPath(platformId: PlatformId): string | nul
  */
 export function getPlatformCommandsDir(platformId: PlatformId): string {
   switch (platformId) {
-    case 'claude-code': return join(homedir(), '.claude-internal', 'commands')
+    case 'claude-code': return join(claudeCodeBase(), 'commands')
     case 'codebuddy':   return join(homedir(), '.codebuddy', 'commands')
     case 'openclaw':    return join(homedir(), '.openclaw', 'commands')
   }
