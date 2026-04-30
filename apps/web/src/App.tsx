@@ -96,6 +96,13 @@ const CAPABILITY_DEFAULT_PAGES: Record<Capability, Page> = {
 type GlobalCapability = 'conflicts' | 'knowledge' | 'git-sync' | 'settings'
 const GLOBAL_CAPS: GlobalCapability[] = ['conflicts', 'knowledge', 'git-sync', 'settings']
 
+const CAPABILITY_ICONS: Record<GlobalCapability, string> = {
+  conflicts: '⚠️',
+  knowledge: '🧠',
+  'git-sync': '⇅',
+  settings: '⚙',
+}
+
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   const caps: Capability[] = []
   if (platform.capabilities.rules) caps.push('rules')
@@ -212,7 +219,8 @@ function GlobalNavBar({
             onClick={() => onNavigate(cap)}
             aria-label={t(`nav.${capKey}`)}
           >
-            {t(`nav.${capKey}`)}
+            <span className="global-nav-icon">{CAPABILITY_ICONS[cap]}</span>
+            <span className="global-nav-label">{t(`nav.${capKey}`)}</span>
             {cap === 'conflicts' && conflictCount > 0 && (
               <span className="global-nav-badge">{conflictCount}</span>
             )}

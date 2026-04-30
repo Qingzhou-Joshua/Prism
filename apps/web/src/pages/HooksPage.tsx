@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UnifiedHook, HookEventType } from '@prism/shared'
 import { hooksApi } from '../api/hooks'
+import { MotionCard, FadeIn } from '../components/MotionCard'
 
 interface HooksPageProps {
   platformId: string
@@ -101,6 +102,7 @@ export function HooksPage({ platformId, onEdit, onNew }: HooksPageProps) {
 
   return (
     <div>
+      <FadeIn>
       <div className="page-header">
         <div>
           <div className="page-title">{t('hooks.title')}</div>
@@ -108,14 +110,17 @@ export function HooksPage({ platformId, onEdit, onNew }: HooksPageProps) {
         </div>
         <button className="btn btn-primary" onClick={onNew}>{t('hooks.newBtn')}</button>
       </div>
+      </FadeIn>
 
       {hooks.length === 0 && (
+        <FadeIn delay={0.1}>
         <div className="empty-state">
           <div className="empty-state-icon">🪝</div>
           <div className="empty-state-title">{t('hooks.empty')}</div>
           <div className="empty-state-desc">{t('hooks.emptyHint')}</div>
           <button className="btn btn-primary" onClick={onNew}>{t('hooks.newBtn')}</button>
         </div>
+        </FadeIn>
       )}
 
       {orderedKeys.map(eventType => {
@@ -134,12 +139,12 @@ export function HooksPage({ platformId, onEdit, onNew }: HooksPageProps) {
 
             {!isCollapsed && (
               <div className="hooks-event-items">
-                {items.map(hook => (
-                  <div
+                {items.map((hook, i) => (
+                  <MotionCard
                     key={hook.id}
-                    className="item-card"
-                    onClick={() => onEdit(hook)}
+                    index={i}
                     style={{ cursor: 'pointer' }}
+                    onClick={() => onEdit(hook)}
                   >
                     <div className="item-card-name hooks-matcher">{hook.matcher}</div>
                     {hook.description && (
@@ -161,7 +166,7 @@ export function HooksPage({ platformId, onEdit, onNew }: HooksPageProps) {
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </MotionCard>
                 ))}
               </div>
             )}

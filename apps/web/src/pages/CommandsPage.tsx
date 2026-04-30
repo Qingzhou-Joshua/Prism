@@ -4,6 +4,7 @@ import type { UnifiedCommand } from '@prism/shared'
 import { commandsApi } from '../api/commands'
 import { PlatformIcon } from '../components/PlatformIcon'
 import { PLATFORM_LABELS } from '../constants/platforms'
+import { MotionCard, FadeIn } from '../components/MotionCard'
 
 interface CommandsPageProps {
   platform?: string
@@ -56,6 +57,7 @@ export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
 
   return (
     <div>
+      <FadeIn>
       <div className="page-header">
         <div>
           <div className="page-title">{t('commands.title')}</div>
@@ -63,20 +65,23 @@ export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
         </div>
         <button className="btn btn-primary" onClick={() => onEdit(undefined)}>{t('commands.newBtn')}</button>
       </div>
+      </FadeIn>
 
       {commands.length === 0 && (
+        <FadeIn delay={0.1}>
         <div className="empty-state">
           <div className="empty-state-icon">⌨️</div>
           <div className="empty-state-title">{t('commands.empty')}</div>
           <div className="empty-state-desc">{t('commands.emptyHint')}</div>
           <button className="btn btn-primary" onClick={() => onEdit(undefined)}>{t('commands.newBtn')}</button>
         </div>
+        </FadeIn>
       )}
 
       {commands.length > 0 && (
         <div className="item-card-grid">
-          {commands.map(command => (
-            <div key={command.id} className="item-card" onClick={() => onEdit(command)} style={{ cursor: 'pointer' }}>
+          {commands.map((command, i) => (
+            <MotionCard key={command.id} index={i} style={{ cursor: 'pointer' }} onClick={() => onEdit(command)}>
               <div className="item-card-name">
                 {command.name}
               </div>
@@ -118,7 +123,7 @@ export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
                   </button>
                 </div>
               </div>
-            </div>
+            </MotionCard>
           ))}
         </div>
       )}

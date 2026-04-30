@@ -5,6 +5,7 @@ import { skillsApi } from '../api/skills'
 import { PlatformIcon } from '../components/PlatformIcon'
 import { PLATFORM_LABELS } from '../constants/platforms'
 import { ScopeBadge } from '../components/ScopeBadge'
+import { MotionCard, FadeIn } from '../components/MotionCard'
 
 interface SkillsPageProps {
   onEdit: (skill: UnifiedSkill) => void
@@ -59,6 +60,7 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
 
   return (
     <div>
+      <FadeIn>
       <div className="page-header">
         <div>
           <div className="page-title">{t('skills.title')}</div>
@@ -66,20 +68,23 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
         </div>
         <button className="btn btn-primary" onClick={onNew}>{t('skills.newBtn')}</button>
       </div>
+      </FadeIn>
 
       {skills.length === 0 && (
+        <FadeIn delay={0.1}>
         <div className="empty-state">
           <div className="empty-state-icon">🛠</div>
           <div className="empty-state-title">{t('skills.empty')}</div>
           <div className="empty-state-desc">{t('skills.emptyHint')}</div>
           <button className="btn btn-primary" onClick={onNew}>{t('skills.newBtn')}</button>
         </div>
+        </FadeIn>
       )}
 
       {skills.length > 0 && (
         <div className="item-card-grid">
-          {skills.map(skill => (
-            <div key={skill.id} className="item-card" onClick={() => onEdit(skill)} style={{ cursor: 'pointer' }}>
+          {skills.map((skill, i) => (
+            <MotionCard key={skill.id} index={i} style={{ cursor: 'pointer' }} onClick={() => onEdit(skill)}>
               <div className="item-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {skill.name}
                 <ScopeBadge scope={(skill as unknown as { scope?: string }).scope ?? 'global'} />
@@ -119,7 +124,7 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
                   </button>
                 </div>
               </div>
-            </div>
+            </MotionCard>
           ))}
         </div>
       )}

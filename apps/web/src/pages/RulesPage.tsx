@@ -5,6 +5,7 @@ import { rulesApi } from '../api/rules.js'
 import { PLATFORM_LABELS } from '../constants/platforms.js'
 import { PlatformIcon } from '../components/PlatformIcon'
 import { ScopeBadge } from '../components/ScopeBadge'
+import { MotionCard, FadeIn } from '../components/MotionCard'
 
 interface RulesPageProps {
   onEdit: (rule: UnifiedRule) => void
@@ -60,31 +61,35 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
   return (
     <div>
       {/* Header */}
-      <div className="page-header">
-        <div>
-          <div className="page-title">{t('rules.title')}</div>
-          <div className="page-subtitle">{t('rules.count', { count: rules.length })}</div>
-        </div>
-        <button className="btn btn-primary" onClick={onNew}>{t('rules.newBtn')}</button>
-      </div>
-
-      {/* Empty state */}
-      {rules.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
-          <div className="empty-state-title">{t('rules.empty')}</div>
-          <div className="empty-state-desc">
-            {t('rules.emptyHint')}
+      <FadeIn>
+        <div className="page-header">
+          <div>
+            <div className="page-title">{t('rules.title')}</div>
+            <div className="page-subtitle">{t('rules.count', { count: rules.length })}</div>
           </div>
           <button className="btn btn-primary" onClick={onNew}>{t('rules.newBtn')}</button>
         </div>
+      </FadeIn>
+
+      {/* Empty state */}
+      {rules.length === 0 && (
+        <FadeIn delay={0.1}>
+          <div className="empty-state">
+            <div className="empty-state-icon">📋</div>
+            <div className="empty-state-title">{t('rules.empty')}</div>
+            <div className="empty-state-desc">
+              {t('rules.emptyHint')}
+            </div>
+            <button className="btn btn-primary" onClick={onNew}>{t('rules.newBtn')}</button>
+          </div>
+        </FadeIn>
       )}
 
       {/* Rules card grid */}
       {rules.length > 0 && (
         <div className="item-card-grid">
-          {rules.map(rule => (
-            <div key={rule.id} className="item-card" onClick={() => onEdit(rule)} style={{ cursor: 'pointer' }}>
+          {rules.map((rule, i) => (
+            <MotionCard key={rule.id} index={i} style={{ cursor: 'pointer' }} onClick={() => onEdit(rule)}>
               <div className="item-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {rule.name}
                 <ScopeBadge scope={rule.scope} />
@@ -121,7 +126,7 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
                   </button>
                 </div>
               </div>
-            </div>
+            </MotionCard>
           ))}
         </div>
       )}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { KnowledgeEntry, DeveloperProfile, GeneratedAsset } from '@prism/shared'
 import { knowledgeApi } from '../api/knowledge'
+import { MotionCard, FadeIn } from '../components/MotionCard'
 
 interface KnowledgePageProps {
   onEditProfile: () => void
@@ -264,8 +265,8 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       {/* ── Entry cards ── */}
       {entries.length > 0 && (
         <div className="item-card-grid">
-          {entries.map(entry => (
-            <div key={entry.id} className="item-card">
+          {entries.map((entry, i) => (
+            <MotionCard key={entry.id} index={i}>
               <div className="item-card-meta" style={{ marginBottom: 6 }}>
                 <span className="badge badge-accent">{entry.domain}</span>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
@@ -302,7 +303,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                   </button>
                 </div>
               </div>
-            </div>
+            </MotionCard>
           ))}
         </div>
       )}
@@ -386,10 +387,10 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
         {/* Generated asset cards */}
         {generatedAssets.length > 0 && (
           <div className="item-card-grid">
-            {generatedAssets.map(asset => {
+            {generatedAssets.map((asset, i) => {
               const sel = getPublishSelect(asset.id)
               return (
-                <div key={asset.id} className="item-card">
+                <MotionCard key={asset.id} index={i}>
                   <div className="item-card-meta" style={{ marginBottom: 6 }}>
                     <span className="badge badge-accent">{asset.type}</span>
                     <span className="badge badge-muted">{asset.sourceType}</span>
@@ -456,7 +457,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                       {deletingGeneratedId === asset.id ? '…' : '🗑'}
                     </button>
                   </div>
-                </div>
+                </MotionCard>
               )
             })}
           </div>

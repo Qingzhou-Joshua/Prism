@@ -4,6 +4,7 @@ import type { McpServer } from '@prism/shared'
 import { mcpApi } from '../api/mcp.js'
 import { PlatformIcon } from '../components/PlatformIcon'
 import { PLATFORM_LABELS } from '../constants/platforms.js'
+import { MotionCard, FadeIn } from '../components/MotionCard'
 
 interface McpPageProps {
   onEdit: (server: McpServer) => void
@@ -76,6 +77,7 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
   return (
     <div>
       {/* Header */}
+      <FadeIn>
       <div className="page-header">
         <div>
           <div className="page-title">{t('mcp.title')}</div>
@@ -92,9 +94,11 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
           <button className="btn btn-primary" onClick={onNew}>{t('mcp.newBtn')}</button>
         </div>
       </div>
+      </FadeIn>
 
       {/* Empty state */}
       {servers.length === 0 && (
+        <FadeIn delay={0.1}>
         <div className="empty-state">
           <div className="empty-state-icon">🔌</div>
           <div className="empty-state-title">{t('mcp.empty')}</div>
@@ -112,17 +116,18 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
             <button className="btn btn-primary" onClick={onNew}>{t('mcp.newBtn')}</button>
           </div>
         </div>
+        </FadeIn>
       )}
 
       {/* Card grid */}
       {servers.length > 0 && (
         <div className="item-card-grid">
-          {servers.map(server => (
-            <div
+          {servers.map((server, i) => (
+            <MotionCard
               key={server.id}
-              className="item-card"
-              onClick={() => onEdit(server)}
+              index={i}
               style={{ cursor: 'pointer' }}
+              onClick={() => onEdit(server)}
             >
               {/* Name */}
               <div className="item-card-name">{server.name}</div>
@@ -177,7 +182,7 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
                   </button>
                 </div>
               </div>
-            </div>
+            </MotionCard>
           ))}
         </div>
       )}
