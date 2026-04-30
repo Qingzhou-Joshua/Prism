@@ -16,6 +16,7 @@ docs/
 # Playwright artifacts
 artifacts/
 test-results/
+.playwright-mcp/
 
 # Compiled JS artifacts (TypeScript sources are authoritative)
 apps/web/src/**/*.js

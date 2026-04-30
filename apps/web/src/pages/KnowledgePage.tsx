@@ -298,7 +298,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                     onClick={() => void handleDelete(entry)}
                     disabled={deletingId === entry.id}
                   >
-                    {deletingId === entry.id ? '…' : '🗑'}
+                    {deletingId === entry.id ? '…' : tCommon('btn.delete')}
                   </button>
                 </div>
               </div>

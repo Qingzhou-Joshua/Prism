@@ -79,18 +79,6 @@ interface PlatformScanResult {
 
 // ── Capability config ─────────────────────────────────────────────────────────
 
-const CAPABILITY_ICONS: Record<Capability, string> = {
-  rules: '📋',
-  skills: '⚡',
-  agents: '🤖',
-  mcp: '🔌',
-  hooks: '🪝',
-  commands: '⌨️',
-  conflicts: '⚠️',
-  knowledge: '🧠',
-  settings: '⚙️',
-  'git-sync': '🔄',
-}
 
 const CAPABILITY_DEFAULT_PAGES: Record<Capability, Page> = {
   rules: { view: 'rules-list' },
@@ -105,6 +93,9 @@ const CAPABILITY_DEFAULT_PAGES: Record<Capability, Page> = {
   'git-sync': { view: 'git-sync' },
 }
 
+type GlobalCapability = 'conflicts' | 'knowledge' | 'git-sync' | 'settings'
+const GLOBAL_CAPS: GlobalCapability[] = ['conflicts', 'knowledge', 'git-sync', 'settings']
+
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   const caps: Capability[] = []
   if (platform.capabilities.rules) caps.push('rules')
@@ -113,10 +104,6 @@ function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   if (platform.capabilities.mcp) caps.push('mcp')
   if (platform.capabilities.hooks) caps.push('hooks')
   if (platform.capabilities.commands) caps.push('commands')
-  caps.push('conflicts')
-  caps.push('knowledge')
-  caps.push('settings')
-  caps.push('git-sync')
   return caps
 }
 
@@ -200,6 +187,39 @@ function MoonIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
+  )
+}
+
+function GlobalNavBar({
+  activeCapability,
+  conflictCount,
+  onNavigate,
+}: {
+  activeCapability: Capability
+  conflictCount: number
+  onNavigate: (cap: Capability) => void
+}) {
+  const { t } = useTranslation('common')
+  return (
+    <div className="header-global-nav">
+      {GLOBAL_CAPS.map((cap) => {
+        const capKey = cap === 'git-sync' ? 'gitSync' : cap
+        const isActive = activeCapability === cap
+        return (
+          <button
+            key={cap}
+            className={`global-nav-btn${isActive ? ' active' : ''}`}
+            onClick={() => onNavigate(cap)}
+            aria-label={t(`nav.${capKey}`)}
+          >
+            {t(`nav.${capKey}`)}
+            {cap === 'conflicts' && conflictCount > 0 && (
+              <span className="global-nav-badge">{conflictCount}</span>
+            )}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -313,6 +333,7 @@ export default function App() {
   const [page, setPage] = useState<Page>({ view: 'rules-list' })
 
   const activeCapability = getActiveCapability(page)
+  const isGlobalPage = (GLOBAL_CAPS as Capability[]).includes(activeCapability)
 
   const navigateTo = useCallback((cap: Capability) => {
     setPage(CAPABILITY_DEFAULT_PAGES[cap])
@@ -369,6 +390,12 @@ export default function App() {
 
         {/* Right controls */}
         <div className="header-right">
+          <GlobalNavBar
+            activeCapability={activeCapability}
+            conflictCount={conflictCount}
+            onNavigate={navigateTo}
+          />
+          <div className="header-right-divider" />
           <LanguageToggle />
           <div className="theme-toggle-pill">
             <button
@@ -393,7 +420,8 @@ export default function App() {
 
       {/* ── Body: sidebar + main ────────────────────────────────────────── */}
       <div className="app-body">
-        {/* Sidebar */}
+        {/* Sidebar：仅 IDE 模式显示 */}
+        {!isGlobalPage && (
         <aside className="app-sidebar">
           {selectedPlatform && capabilities.length > 0 && (
             <>
@@ -401,7 +429,6 @@ export default function App() {
                 {selectedPlatform.displayName}
               </div>
               {capabilities.map((cap) => {
-                const icon = CAPABILITY_ICONS[cap]
                 const capKey = cap === 'git-sync' ? 'gitSync' : cap
                 return (
                   <button
@@ -409,24 +436,7 @@ export default function App() {
                     className={`sidebar-nav-item${activeCapability === cap ? ' active' : ''}`}
                     onClick={() => navigateTo(cap)}
                   >
-                    <span className="nav-icon">{icon}</span>
                     {t(`nav.${capKey}`)}
-                    {cap === 'conflicts' && conflictCount > 0 && (
-                      <span
-                        style={{
-                          marginLeft: 'auto',
-                          padding: '1px 6px',
-                          background: '#bf3030',
-                          color: '#fff',
-                          borderRadius: 10,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          lineHeight: '16px',
-                        }}
-                      >
-                        {conflictCount}
-                      </span>
-                    )}
                   </button>
                 )
               })}
@@ -455,15 +465,15 @@ export default function App() {
             </div>
           )}
         </aside>
+        )}
 
         {/* Main content area */}
-        <main className="app-main">
+        <main className={`app-main${isGlobalPage ? ' app-main--global' : ''}`}>
           <FileChangeBanner changes={changes} onDismiss={dismissChange} />
           <div className="app-content">
             {/* Error banner */}
             {platformsError && (
               <div className="alert alert-danger" style={{ marginBottom: 20 }}>
-                <span>⚠</span>
                 <div>
                   <strong>{t('status.error')}:</strong> {platformsError}
                   <div style={{ marginTop: 6 }}>

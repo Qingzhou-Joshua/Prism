@@ -115,7 +115,7 @@ export function GitSyncPanel({
             padding: '2px 8px',
             borderRadius: 10,
           }}>
-            🌿 {branch}
+            {branch}
           </span>
         )}
         {lastSyncAt && (

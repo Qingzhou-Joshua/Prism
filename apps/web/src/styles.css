@@ -566,30 +566,6 @@ p { margin: 0; }
   box-shadow: 2px 0 8px rgba(245, 78, 0, 0.35);
 }
 
-.sidebar-nav-item .nav-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.sidebar-nav-item.active .nav-icon {
-  background: rgba(245, 78, 0, 0.2);
-  border-color: rgba(245, 78, 0, 0.35);
-  box-shadow: 0 0 8px rgba(245, 78, 0, 0.25);
-}
-
-.sidebar-nav-item:hover:not(.active) .nav-icon {
-  background: var(--bg-hover);
-  border-color: var(--border-default);
-}
 
 .sidebar-nav-item .nav-count {
   margin-left: auto;
@@ -2303,6 +2279,88 @@ code {
     height: auto;
     overflow: visible;
   }
+}
+
+/* ============================================================
+   GLOBAL NAV (header pill tabs for global capabilities)
+   ============================================================ */
+.header-global-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.global-nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: rgba(242, 241, 237, 0.55);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.global-nav-btn:hover {
+  background: rgba(242, 241, 237, 0.08);
+  color: rgba(242, 241, 237, 0.85);
+}
+
+.global-nav-btn.active {
+  background: rgba(245, 78, 0, 0.18);
+  color: rgba(242, 241, 237, 0.95);
+  box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.25) inset;
+}
+
+
+.global-nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  background: #bf3030;
+  color: #fff;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Global page full-width layout ─────────────────────────── */
+/* When sidebar is hidden, app-main fills the entire app-body */
+/* No extra width rules needed — flex: 1 handles it */
+
+/* Global page content: max-width + center for readability */
+.app-main--global > .app-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 40px;
+}
+
+@media (max-width: 1024px) {
+  .app-main--global > .app-content {
+    max-width: none;
+    padding: 24px 20px;
+  }
+}
+
+.header-right-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(242, 241, 237, 0.12);
+  margin: 0 4px;
 }
 
 /* ============================================================
