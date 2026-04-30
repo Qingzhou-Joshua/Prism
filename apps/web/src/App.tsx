@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook, UnifiedCommand, KnowledgeEntry } from '@prism/shared'
 import { PlatformIcon } from './components/PlatformIcon'
 import { useFileWatcher } from './hooks/useFileWatcher'
@@ -78,60 +79,30 @@ interface PlatformScanResult {
 
 // ── Capability config ─────────────────────────────────────────────────────────
 
-const CAPABILITY_CONFIG: Record<
-  Capability,
-  { label: string; icon: string; defaultPage: Page }
-> = {
-  rules: {
-    label: 'Rules',
-    icon: '📋',
-    defaultPage: { view: 'rules-list' },
-  },
-  skills: {
-    label: 'Skills',
-    icon: '⚡',
-    defaultPage: { view: 'skills-list' },
-  },
-  agents: {
-    label: 'Agents',
-    icon: '🤖',
-    defaultPage: { view: 'agents-list' },
-  },
-  mcp: {
-    label: 'MCP Servers',
-    icon: '🔌',
-    defaultPage: { view: 'mcp-list' },
-  },
-  hooks: {
-    label: 'Hooks',
-    icon: '🪝',
-    defaultPage: { view: 'hooks-list' },
-  },
-  commands: {
-    label: 'Commands',
-    icon: '⌨️',
-    defaultPage: { view: 'commands-list' },
-  },
-  conflicts: {
-    label: 'Conflicts',
-    icon: '⚠️',
-    defaultPage: { view: 'conflicts-list' },
-  },
-  knowledge: {
-    label: 'Knowledge',
-    icon: '🧠',
-    defaultPage: { view: 'knowledge-list' },
-  },
-  settings: {
-    label: 'Settings',
-    icon: '⚙️',
-    defaultPage: { view: 'settings' },
-  },
-  'git-sync': {
-    label: 'Git Sync',
-    icon: '🔄',
-    defaultPage: { view: 'git-sync' },
-  },
+const CAPABILITY_ICONS: Record<Capability, string> = {
+  rules: '📋',
+  skills: '⚡',
+  agents: '🤖',
+  mcp: '🔌',
+  hooks: '🪝',
+  commands: '⌨️',
+  conflicts: '⚠️',
+  knowledge: '🧠',
+  settings: '⚙️',
+  'git-sync': '🔄',
+}
+
+const CAPABILITY_DEFAULT_PAGES: Record<Capability, Page> = {
+  rules: { view: 'rules-list' },
+  skills: { view: 'skills-list' },
+  agents: { view: 'agents-list' },
+  mcp: { view: 'mcp-list' },
+  hooks: { view: 'hooks-list' },
+  commands: { view: 'commands-list' },
+  conflicts: { view: 'conflicts-list' },
+  knowledge: { view: 'knowledge-list' },
+  settings: { view: 'settings' },
+  'git-sync': { view: 'git-sync' },
 }
 
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
@@ -232,9 +203,26 @@ function MoonIcon() {
   )
 }
 
+function LanguageToggle() {
+  const { i18n } = useTranslation()
+  const isZh = i18n.language.startsWith('zh')
+  return (
+    <button
+      className="lang-toggle"
+      onClick={() => i18n.changeLanguage(isZh ? 'en' : 'zh')}
+      title={isZh ? 'Switch to English' : '切换为中文'}
+      aria-label={isZh ? 'Switch to English' : '切换为中文'}
+    >
+      {isZh ? 'EN' : '中'}
+    </button>
+  )
+}
+
 // ── Main App component ────────────────────────────────────────────────────────
 
 export default function App() {
+  const { t } = useTranslation('common')
+
   // Theme
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
 
@@ -327,7 +315,7 @@ export default function App() {
   const activeCapability = getActiveCapability(page)
 
   const navigateTo = useCallback((cap: Capability) => {
-    setPage(CAPABILITY_CONFIG[cap].defaultPage)
+    setPage(CAPABILITY_DEFAULT_PAGES[cap])
   }, [])
 
   const handlePlatformSelect = useCallback((id: string) => {
@@ -356,12 +344,12 @@ export default function App() {
         <nav className="platform-tabs">
           {platformsLoading && (
             <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, padding: '0 12px' }}>
-              Loading platforms…
+              {t('status.loading')}
             </span>
           )}
           {!platformsLoading && platforms.length === 0 && !platformsError && (
             <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, padding: '0 12px' }}>
-              No platforms detected
+              {t('platform.allPlatforms')}
             </span>
           )}
           {!platformsLoading &&
@@ -381,6 +369,7 @@ export default function App() {
 
         {/* Right controls */}
         <div className="header-right">
+          <LanguageToggle />
           <div className="theme-toggle-pill">
             <button
               className={`theme-toggle-icon${theme === 'light' ? ' active' : ''}`}
@@ -412,15 +401,16 @@ export default function App() {
                 {selectedPlatform.displayName}
               </div>
               {capabilities.map((cap) => {
-                const cfg = CAPABILITY_CONFIG[cap]
+                const icon = CAPABILITY_ICONS[cap]
+                const capKey = cap === 'git-sync' ? 'gitSync' : cap
                 return (
                   <button
                     key={cap}
                     className={`sidebar-nav-item${activeCapability === cap ? ' active' : ''}`}
                     onClick={() => navigateTo(cap)}
                   >
-                    <span className="nav-icon">{cfg.icon}</span>
-                    {cfg.label}
+                    <span className="nav-icon">{icon}</span>
+                    {t(`nav.${capKey}`)}
                     {cap === 'conflicts' && conflictCount > 0 && (
                       <span
                         style={{
@@ -445,7 +435,7 @@ export default function App() {
 
           {!platformsLoading && platforms.length === 0 && (
             <div style={{ padding: '16px 8px', color: 'var(--text-muted)', fontSize: 12 }}>
-              No platforms detected.
+              {t('status.notConfigured')}
               <br />
               <button
                 onClick={fetchPlatforms}
@@ -460,7 +450,7 @@ export default function App() {
                   cursor: 'pointer',
                 }}
               >
-                Retry scan
+                {t('btn.retry')}
               </button>
             </div>
           )}
@@ -475,7 +465,7 @@ export default function App() {
               <div className="alert alert-danger" style={{ marginBottom: 20 }}>
                 <span>⚠</span>
                 <div>
-                  <strong>Connection error:</strong> {platformsError}
+                  <strong>{t('status.error')}:</strong> {platformsError}
                   <div style={{ marginTop: 6 }}>
                     <code>pnpm --filter @prism/server dev</code>
                   </div>
@@ -484,7 +474,7 @@ export default function App() {
                     style={{ marginTop: 8 }}
                     onClick={fetchPlatforms}
                   >
-                    Retry
+                    {t('btn.retry')}
                   </button>
                 </div>
               </div>

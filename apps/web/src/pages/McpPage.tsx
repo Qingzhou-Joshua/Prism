@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { McpServer } from '@prism/shared'
 import { mcpApi } from '../api/mcp.js'
 import { PlatformIcon } from '../components/PlatformIcon'
@@ -10,6 +11,8 @@ interface McpPageProps {
 }
 
 export function McpPage({ onEdit, onNew }: McpPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [servers, setServers] = useState<McpServer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +26,7 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
       const items = await mcpApi.list()
       setServers(items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load MCP servers')
+      setError(e instanceof Error ? e.message : t('mcp.loadingFailed'))
     } finally {
       setLoading(false)
     }
@@ -38,7 +41,7 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
       await mcpApi.delete(server.id)
       setServers(prev => prev.filter(s => s.id !== server.id))
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed')
+      alert(e instanceof Error ? e.message : t('mcp.deleteFailed'))
     } finally {
       setDeletingId(null)
     }
@@ -50,23 +53,23 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
       setError(null)
       const scanned = await mcpApi.scanPlatform('claude-code')
       if (scanned.length === 0) {
-        alert('No MCP servers found in Claude Code settings')
+        alert(t('mcp.noServersInClaude'))
         return
       }
       await mcpApi.importFromPlatform('claude-code')
       await load()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Import failed')
+      setError(e instanceof Error ? e.message : t('mcp.importFailed'))
     } finally {
       setImporting(false)
     }
   }
 
-  if (loading) return <div className="loading-state">Loading MCP servers…</div>
+  if (loading) return <div className="loading-state">{t('mcp.title')}…</div>
   if (error) return (
     <div className="error-state">
       <span>⚠ {error}</span>
-      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Retry</button>
+      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
 
@@ -75,8 +78,8 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
       {/* Header */}
       <div className="page-header">
         <div>
-          <div className="page-title">MCP Servers</div>
-          <div className="page-subtitle">{servers.length} server{servers.length !== 1 ? 's' : ''} configured</div>
+          <div className="page-title">{t('mcp.title')}</div>
+          <div className="page-subtitle">{t('mcp.count', { count: servers.length })}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -84,9 +87,9 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
             onClick={() => void handleImport()}
             disabled={importing}
           >
-            {importing ? 'Importing…' : '↓ Import from Claude Code'}
+            {importing ? t('mcp.importing') : t('mcp.importBtn')}
           </button>
-          <button className="btn btn-primary" onClick={onNew}>+ New Server</button>
+          <button className="btn btn-primary" onClick={onNew}>{t('mcp.newBtn')}</button>
         </div>
       </div>
 
@@ -94,9 +97,9 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
       {servers.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🔌</div>
-          <div className="empty-state-title">No MCP servers yet</div>
+          <div className="empty-state-title">{t('mcp.empty')}</div>
           <div className="empty-state-desc">
-            Add a server manually or import from an existing platform configuration.
+            {t('mcp.emptyHint')}
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
             <button
@@ -104,9 +107,9 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
               onClick={() => void handleImport()}
               disabled={importing}
             >
-              {importing ? 'Importing…' : '↓ Import from Claude Code'}
+              {importing ? t('mcp.importing') : t('mcp.importBtn')}
             </button>
-            <button className="btn btn-primary" onClick={onNew}>+ New Server</button>
+            <button className="btn btn-primary" onClick={onNew}>{t('mcp.newBtn')}</button>
           </div>
         </div>
       )}
@@ -141,7 +144,7 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
               {server.env && Object.keys(server.env).length > 0 && (
                 <div className="item-card-meta">
                   <span className="badge badge-muted">
-                    {Object.keys(server.env).length} env var{Object.keys(server.env).length !== 1 ? 's' : ''}
+                    {t('mcp.envVars', { count: Object.keys(server.env).length })}
                   </span>
                 </div>
               )}
@@ -170,7 +173,7 @@ export function McpPage({ onEdit, onNew }: McpPageProps) {
                     onClick={e => { e.stopPropagation(); void handleDelete(server) }}
                     disabled={deletingId === server.id}
                   >
-                    {deletingId === server.id ? '…' : 'Delete'}
+                    {deletingId === server.id ? '…' : tCommon('btn.delete')}
                   </button>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { UnifiedRule } from '@prism/shared'
 import { rulesApi } from '../api/rules.js'
 import { PLATFORM_LABELS } from '../constants/platforms.js'
@@ -13,6 +14,8 @@ interface RulesPageProps {
 }
 
 export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [rules, setRules] = useState<UnifiedRule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +28,7 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
       const items = await rulesApi.list(platformId)
       setRules(items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load rules')
+      setError(e instanceof Error ? e.message : t('rules.loadingFailed'))
     } finally {
       setLoading(false)
     }
@@ -46,11 +49,11 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
     }
   }
 
-  if (loading) return <div className="loading-state">Loading rules…</div>
+  if (loading) return <div className="loading-state">{tCommon('status.loading')}</div>
   if (error) return (
     <div className="error-state">
       <span>⚠ {error}</span>
-      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Retry</button>
+      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
 
@@ -59,21 +62,21 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
       {/* Header */}
       <div className="page-header">
         <div>
-          <div className="page-title">Rules</div>
-          <div className="page-subtitle">{rules.length} rule{rules.length !== 1 ? 's' : ''} managed</div>
+          <div className="page-title">{t('rules.title')}</div>
+          <div className="page-subtitle">{t('rules.count', { count: rules.length })}</div>
         </div>
-        <button className="btn btn-primary" onClick={onNew}>+ New Rule</button>
+        <button className="btn btn-primary" onClick={onNew}>{t('rules.newBtn')}</button>
       </div>
 
       {/* Empty state */}
       {rules.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">📋</div>
-          <div className="empty-state-title">No rules yet</div>
+          <div className="empty-state-title">{t('rules.empty')}</div>
           <div className="empty-state-desc">
-            Create a rule or import from a platform using the Scanner tab.
+            {t('rules.emptyHint')}
           </div>
-          <button className="btn btn-primary" onClick={onNew}>+ New Rule</button>
+          <button className="btn btn-primary" onClick={onNew}>{t('rules.newBtn')}</button>
         </div>
       )}
 
@@ -102,8 +105,8 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
                     </span>
                   ))
                 ) : null}
-                {rule.tags.map(t => (
-                  <span key={t} className="badge badge-muted">{t}</span>
+                {rule.tags.map(tag => (
+                  <span key={tag} className="badge badge-muted">{tag}</span>
                 ))}
               </div>
               <div className="item-card-footer">
@@ -114,7 +117,7 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
                     onClick={(e) => { e.stopPropagation(); void handleDelete(rule) }}
                     disabled={deletingId === rule.id}
                   >
-                    {deletingId === rule.id ? '…' : 'Delete'}
+                    {deletingId === rule.id ? '…' : tCommon('btn.delete')}
                   </button>
                 </div>
               </div>

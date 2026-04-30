@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { UnifiedSkill } from '@prism/shared'
 import { skillsApi } from '../api/skills'
 import { PlatformIcon } from '../components/PlatformIcon'
@@ -13,6 +14,8 @@ interface SkillsPageProps {
 }
 
 export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }: SkillsPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [skills, setSkills] = useState<UnifiedSkill[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +28,7 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
       const items = await skillsApi.list(platformId)
       setSkills(items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load skills')
+      setError(e instanceof Error ? e.message : t('skills.loadingFailed'))
     } finally {
       setLoading(false)
     }
@@ -46,11 +49,11 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
     }
   }
 
-  if (loading) return <div className="loading-state">Loading skills…</div>
+  if (loading) return <div className="loading-state">{tCommon('status.loading')}</div>
   if (error) return (
     <div className="error-state">
       <span>⚠ {error}</span>
-      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Retry</button>
+      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
 
@@ -58,18 +61,18 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
     <div>
       <div className="page-header">
         <div>
-          <div className="page-title">Skills</div>
-          <div className="page-subtitle">{skills.length} skill{skills.length !== 1 ? 's' : ''} managed</div>
+          <div className="page-title">{t('skills.title')}</div>
+          <div className="page-subtitle">{t('skills.count', { count: skills.length })}</div>
         </div>
-        <button className="btn btn-primary" onClick={onNew}>+ New Skill</button>
+        <button className="btn btn-primary" onClick={onNew}>{t('skills.newBtn')}</button>
       </div>
 
       {skills.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🛠</div>
-          <div className="empty-state-title">No skills yet</div>
-          <div className="empty-state-desc">Create a skill to define reusable agent capabilities.</div>
-          <button className="btn btn-primary" onClick={onNew}>+ New Skill</button>
+          <div className="empty-state-title">{t('skills.empty')}</div>
+          <div className="empty-state-desc">{t('skills.emptyHint')}</div>
+          <button className="btn btn-primary" onClick={onNew}>{t('skills.newBtn')}</button>
         </div>
       )}
 
@@ -100,8 +103,8 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
                 {skill.trigger && (
                   <span className="badge badge-muted">{skill.trigger}</span>
                 )}
-                {(skill.tags ?? []).map(t => (
-                  <span key={t} className="badge badge-muted">{t}</span>
+                {(skill.tags ?? []).map(tag => (
+                  <span key={tag} className="badge badge-muted">{tag}</span>
                 ))}
               </div>
               <div className="item-card-footer">
@@ -112,7 +115,7 @@ export function SkillsPage({ onEdit, onNew, skillsDir: _skillsDir, platformId }:
                     onClick={(e) => { e.stopPropagation(); void handleDelete(skill) }}
                     disabled={deletingId === skill.id}
                   >
-                    {deletingId === skill.id ? '…' : 'Delete'}
+                    {deletingId === skill.id ? '…' : tCommon('btn.delete')}
                   </button>
                 </div>
               </div>

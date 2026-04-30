@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { UnifiedAgent } from '@prism/shared'
 import { agentsApi } from '../api/agents'
 import { PlatformIcon } from '../components/PlatformIcon'
@@ -13,6 +14,8 @@ interface AgentsPageProps {
 }
 
 export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }: AgentsPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [agents, setAgents] = useState<UnifiedAgent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +28,7 @@ export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }:
       const items = await agentsApi.list(platformId)
       setAgents(items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load agents')
+      setError(e instanceof Error ? e.message : t('agents.loadingFailed'))
     } finally {
       setLoading(false)
     }
@@ -46,11 +49,11 @@ export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }:
     }
   }
 
-  if (loading) return <div className="loading-state">Loading agents…</div>
+  if (loading) return <div className="loading-state">{tCommon('status.loading')}</div>
   if (error) return (
     <div className="error-state">
       <span>⚠ {error}</span>
-      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Retry</button>
+      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
 
@@ -58,18 +61,18 @@ export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }:
     <div>
       <div className="page-header">
         <div>
-          <div className="page-title">Agents</div>
-          <div className="page-subtitle">{agents.length} agent{agents.length !== 1 ? 's' : ''} managed</div>
+          <div className="page-title">{t('agents.title')}</div>
+          <div className="page-subtitle">{t('agents.count', { count: agents.length })}</div>
         </div>
-        <button className="btn btn-primary" onClick={onNew}>+ New Agent</button>
+        <button className="btn btn-primary" onClick={onNew}>{t('agents.newBtn')}</button>
       </div>
 
       {agents.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🤖</div>
-          <div className="empty-state-title">No agents yet</div>
-          <div className="empty-state-desc">Create an agent to define reusable AI agent definitions.</div>
-          <button className="btn btn-primary" onClick={onNew}>+ New Agent</button>
+          <div className="empty-state-title">{t('agents.empty')}</div>
+          <div className="empty-state-desc">{t('agents.emptyHint')}</div>
+          <button className="btn btn-primary" onClick={onNew}>{t('agents.newBtn')}</button>
         </div>
       )}
 
@@ -100,8 +103,8 @@ export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }:
                 {agent.agentType && (
                   <span className="badge badge-muted">{agent.agentType}</span>
                 )}
-                {(agent.tags ?? []).map(t => (
-                  <span key={t} className="badge badge-muted">{t}</span>
+                {(agent.tags ?? []).map(tag => (
+                  <span key={tag} className="badge badge-muted">{tag}</span>
                 ))}
               </div>
               <div className="item-card-footer">
@@ -112,7 +115,7 @@ export function AgentsPage({ onEdit, onNew, agentsDir: _agentsDir, platformId }:
                     onClick={(e) => { e.stopPropagation(); void handleDelete(agent) }}
                     disabled={deletingId === agent.id}
                   >
-                    {deletingId === agent.id ? '…' : 'Delete'}
+                    {deletingId === agent.id ? '…' : tCommon('btn.delete')}
                   </button>
                 </div>
               </div>

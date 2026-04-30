@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitSyncConfig } from '@prism/shared'
 import { gitSyncApi } from '../api/git-sync.js'
 import { GitSyncInitWizard } from '../components/GitSyncInitWizard.js'
@@ -22,6 +23,8 @@ function formatDate(iso?: string): string {
 }
 
 export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [config, setConfig] = useState<GitSyncConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -44,11 +47,11 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
       const { config: cfg } = await gitSyncApi.getConfig()
       setConfig(cfg)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load Git Sync config')
+      setError(e instanceof Error ? e.message : t('settings.loadingFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { void load() }, [load])
 
@@ -83,28 +86,28 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
     try {
       const result = await gitSyncApi.initSync(formUrl.trim(), formBranch.trim() || 'main')
       if (!result.success) {
-        setSaveError(result.message ?? 'Failed to save')
+        setSaveError(result.message ?? t('settings.saveFailed'))
         return
       }
       const { config: newConfig } = await gitSyncApi.getConfig()
       setConfig(newConfig)
       setShowForm(false)
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Failed to save')
+      setSaveError(e instanceof Error ? e.message : t('settings.saveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
   async function handleDisconnect() {
-    if (!confirm('Are you sure you want to disconnect Git Sync? This will not delete the remote repository.')) {
+    if (!confirm(t('settings.disconnectConfirm'))) {
       return
     }
     try {
       await gitSyncApi.deleteConfig()
       setConfig(null)
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to disconnect Git Sync')
+      alert(e instanceof Error ? e.message : t('settings.disconnectFailed'))
     }
   }
 
@@ -118,11 +121,11 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Settings</div>
+        <div className="page-title">{t('settings.title')}</div>
       </div>
 
       {loading && (
-        <div className="loading-state">Loading settings…</div>
+        <div className="loading-state">{tCommon('status.loading')}</div>
       )}
 
       {error && (
@@ -135,12 +138,12 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
           <div className="item-card" style={{ padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <span style={{ fontSize: 18 }}>🔄</span>
-              <span style={{ fontWeight: 600, fontSize: 15 }}>Git Sync</span>
+              <span style={{ fontWeight: 600, fontSize: 15 }}>{t('settings.gitSync')}</span>
               {/* Status badge */}
               {config ? (
-                <span className="badge badge-accent" style={{ marginLeft: 4 }}>Configured</span>
+                <span className="badge badge-accent" style={{ marginLeft: 4 }}>{tCommon('status.configured')}</span>
               ) : (
-                <span className="badge badge-muted" style={{ marginLeft: 4 }}>Not configured</span>
+                <span className="badge badge-muted" style={{ marginLeft: 4 }}>{tCommon('status.notConfigured')}</span>
               )}
             </div>
 
@@ -149,27 +152,27 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
               <div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
                   <div style={{ marginBottom: 4 }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Remote URL: </span>
+                    <span style={{ color: 'var(--text-muted)' }}>{t('settings.remoteUrl')}</span>
                     <code style={{ fontSize: 12 }}>{maskUrl(config.remoteUrl)}</code>
                   </div>
                   <div style={{ marginBottom: 4 }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Branch: </span>
+                    <span style={{ color: 'var(--text-muted)' }}>{t('settings.branch')}</span>
                     <code style={{ fontSize: 12 }}>{config.branch}</code>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Last sync: </span>
+                    <span style={{ color: 'var(--text-muted)' }}>{t('settings.lastSync')}</span>
                     {formatDate(config.lastSyncAt)}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                   <button className="btn btn-primary btn-sm" onClick={onNavigateToGitSync}>
-                    Open Git Sync →
+                    {t('settings.openGitSync')}
                   </button>
                   <button className="btn btn-ghost btn-sm" onClick={handleEditClick}>
-                    Edit
+                    {tCommon('btn.edit')}
                   </button>
                   <button className="btn btn-danger btn-sm" onClick={() => void handleDisconnect()}>
-                    Disconnect
+                    {t('settings.disconnect')}
                   </button>
                 </div>
               </div>
@@ -179,11 +182,10 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
             {!config && !showForm && !showWizard && (
               <div>
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
-                  Git Sync lets you sync Prism assets (Rules, Skills, Agents, etc.) across multiple machines
-                  via a Git repository. Connect a remote repo to get started.
+                  {t('settings.gitSyncDescription')}
                 </p>
                 <button className="btn btn-primary btn-sm" onClick={handleConfigureClick}>
-                  Configure Git Sync
+                  {t('settings.configureGitSync')}
                 </button>
               </div>
             )}
@@ -201,7 +203,7 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
               <div style={{ marginTop: 4 }}>
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                    Remote URL <span style={{ color: 'var(--danger, #ef4444)' }}>*</span>
+                    {t('settings.remoteUrlLabel')} <span style={{ color: 'var(--danger, #ef4444)' }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -220,7 +222,7 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
 
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                    Branch
+                    {t('settings.branchLabel')}
                   </label>
                   <input
                     type="text"
@@ -244,14 +246,14 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
                     onClick={() => void handleSave()}
                     disabled={saving}
                   >
-                    {saving ? 'Saving…' : 'Save'}
+                    {saving ? tCommon('status.saving') : tCommon('btn.save')}
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => setShowForm(false)}
                     disabled={saving}
                   >
-                    Cancel
+                    {tCommon('btn.cancel')}
                   </button>
                 </div>
               </div>

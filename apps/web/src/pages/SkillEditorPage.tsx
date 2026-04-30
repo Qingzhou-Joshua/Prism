@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Editor from '@monaco-editor/react'
 import type { UnifiedSkill } from '@prism/shared'
 import type { PlatformId } from '@prism/shared'
@@ -37,6 +38,8 @@ function toDraft(skill?: UnifiedSkill): DraftSkill {
 }
 
 export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platformId }: SkillEditorPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [draft, setDraft] = useState<DraftSkill>(() => toDraft(initialSkill))
   const [applyGlobally, setApplyGlobally] = useState(
     () => (initialSkill?.targetPlatforms?.length ?? 0) === 0
@@ -91,7 +94,7 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
       }
       onBack()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed')
+      setError(e instanceof Error ? e.message : t('skillEditor.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -108,7 +111,7 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
           type="text"
           value={draft.name}
           onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="Skill name…"
+          placeholder={t('skillEditor.namePlaceholder')}
           className="editor-toolbar-name"
         />
 
@@ -123,7 +126,7 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
               onChange={e => handleApplyGloballyToggle(e.target.checked)}
             />
             <PlatformIcon platformId="global" size={14} />
-            <span>All platforms</span>
+            <span>{tCommon('platform.allPlatforms')}</span>
           </label>
 
           {detectedPlatforms.map(platform => (
@@ -140,7 +143,7 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
           ))}
 
           {isInvalidPlatformState && (
-            <span className="toolbar-platform-warning">Select at least one</span>
+            <span className="toolbar-platform-warning">{tCommon('platform.selectAtLeastOne')}</span>
           )}
         </div>
 
@@ -148,14 +151,14 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
 
         <div className="editor-toolbar-actions">
           <button className="btn btn-ghost btn-sm" onClick={onBack} disabled={saving}>
-            Cancel
+            {tCommon('btn.cancel')}
           </button>
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
-            {saving ? 'Saving…' : 'Save Skill'}
+            {saving ? tCommon('status.saving') : t('skillEditor.saveSkill')}
           </button>
         </div>
       </div>
@@ -166,14 +169,14 @@ export function SkillEditorPage({ onBack, initialSkill, detectedPlatforms, platf
           type="text"
           value={draft.trigger}
           onChange={e => setDraft(prev => ({ ...prev, trigger: e.target.value }))}
-          placeholder="Trigger (e.g. /myskill)"
+          placeholder={t('skillEditor.triggerPlaceholder')}
           className="editor-meta-input"
         />
         <input
           type="text"
           value={draft.category}
           onChange={e => setDraft(prev => ({ ...prev, category: e.target.value }))}
-          placeholder="Category (e.g. development)"
+          placeholder={t('skillEditor.categoryPlaceholder')}
           className="editor-meta-input"
         />
       </div>

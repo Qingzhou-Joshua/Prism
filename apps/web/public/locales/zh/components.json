@@ -1,0 +1,78 @@
+{
+  "fileChangeBanner": {
+    "fileChanged": "文件已更改：",
+    "ruleChanged": "规则已更改",
+    "skillChanged": "技能已更改",
+    "agentChanged": "智能体已更改",
+    "dismiss": "×",
+    "directlyModified": "<1>{{assetName}}</1> 在 {{platform}} 里被直接修改",
+    "loading": "加载中…",
+    "collapse": "收起内容",
+    "viewContent": "查看当前内容",
+    "syncToPrism": "同步到 Prism",
+    "ignore": "忽略",
+    "modifiedIn": "在 {{platform}} 里被直接修改",
+    "currentContent": "当前文件内容（checksum: {{checksum}}）",
+    "vsRegistry": "vs Registry（checksum: {{checksum}}）"
+  },
+  "scopeBadge": {
+    "global": "全局",
+    "platformOnly": "平台独有",
+    "override": "覆盖"
+  },
+  "projectionPreview": {
+    "loading": "加载投影中…",
+    "noProjections": "暂无可用投影",
+    "usesGlobal": "（使用全局内容）"
+  },
+  "gitSyncPanel": {
+    "lastSync": "上次同步：",
+    "commitPlaceholder": "提交信息",
+    "commitPlaceholderDefault": "更新规则和技能",
+    "commitRequired": "提交信息不能为空",
+    "push": "⬆ 推送",
+    "pull": "⬇ 拉取",
+    "pushing": "推送中…",
+    "pulling": "拉取中…",
+    "pushAction": "推送"
+  },
+  "gitConflictResolver": {
+    "conflictsTitle": "⚠️ 检测到冲突（{{count}}）",
+    "assetTypes": {
+      "rule": "规则",
+      "skill": "技能",
+      "agent": "智能体",
+      "mcp": "MCP",
+      "hook": "钩子"
+    },
+    "resolutions": {
+      "keepLocal": "保留本地",
+      "keepRemote": "以远端为准",
+      "merge": "合并"
+    },
+    "applyBtn": "应用解决方案（{{resolved}}/{{total}}）",
+    "resolveAllFirst": "请先解决所有冲突",
+    "editMergedContent": "编辑合并后内容："
+  },
+  "gitSyncInitWizard": {
+    "configureRepo": "配置仓库",
+    "cloning": "克隆中…",
+    "publishToIde": "发布到 IDE",
+    "done": "完成",
+    "remoteUrlLabel": "远程地址",
+    "branchLabel": "分支",
+    "remoteUrlHint": "支持 GitHub / GitLab HTTPS 地址。私有仓库请使用 PAT token：",
+    "remoteUrlPlaceholder": "https://github.com/user/repo.git",
+    "branchPlaceholder": "main",
+    "cloneError": "❌ {{error}}",
+    "initializing": "正在初始化仓库并拉取资产…",
+    "cloneComplete": "✅ 克隆完成！",
+    "registryRebuilt": " 注册表已重建。",
+    "selectIdes": "选择要发布资产的 IDE：",
+    "claudeCode": "🤖 Claude Code",
+    "codebuddy": "🧠 Codebuddy",
+    "publishBtn": "🚀 发布到 IDE",
+    "publishing": "发布中…",
+    "allDone": "🎉 全部完成！已向您的 IDE 发布 {{count}} 个资产。Git 同步现已在本机启用。"
+  }
+}

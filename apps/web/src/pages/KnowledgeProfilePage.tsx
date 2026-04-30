@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Editor from '@monaco-editor/react'
 import { knowledgeApi } from '../api/knowledge'
 
@@ -7,6 +8,8 @@ interface KnowledgeProfilePageProps {
 }
 
 export function KnowledgeProfilePage({ onBack }: KnowledgeProfilePageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
   const [skillsInput, setSkillsInput] = useState('')
@@ -26,13 +29,13 @@ export function KnowledgeProfilePage({ onBack }: KnowledgeProfilePageProps) {
         setSkillsInput(profile.skills.join(', '))
         setBio(profile.bio)
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load profile')
+        setError(e instanceof Error ? e.message : t('knowledgeProfile.loadFailed'))
       } finally {
         setLoading(false)
       }
     }
     void fetchProfile()
-  }, [])
+  }, [t])
 
   async function handleSave() {
     setSaving(true)
@@ -51,13 +54,13 @@ export function KnowledgeProfilePage({ onBack }: KnowledgeProfilePageProps) {
       })
       onBack()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed')
+      setError(e instanceof Error ? e.message : t('knowledgeProfile.saveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="loading-state">Loading profile…</div>
+  if (loading) return <div className="loading-state">{t('knowledgeProfile.loading')}</div>
 
   return (
     <div className="editor-page">
@@ -67,7 +70,7 @@ export function KnowledgeProfilePage({ onBack }: KnowledgeProfilePageProps) {
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="Your Name"
+          placeholder={t('knowledgeProfile.namePlaceholder')}
           className="editor-toolbar-name"
           disabled={saving}
         />
@@ -75,7 +78,7 @@ export function KnowledgeProfilePage({ onBack }: KnowledgeProfilePageProps) {
           type="text"
           value={role}
           onChange={e => setRole(e.target.value)}
-          placeholder="Role / Title"
+          placeholder={t('knowledgeProfile.rolePlaceholder')}
           className="editor-toolbar-name"
           style={{ maxWidth: 220 }}
           disabled={saving}
@@ -89,14 +92,14 @@ export function KnowledgeProfilePage({ onBack }: KnowledgeProfilePageProps) {
             onClick={onBack}
             disabled={saving}
           >
-            Cancel
+            {tCommon('btn.cancel')}
           </button>
           <button
             className="btn btn-primary btn-sm"
             onClick={() => void handleSave()}
             disabled={saving}
           >
-            {saving ? 'Saving…' : 'Save Profile'}
+            {saving ? tCommon('status.saving') : t('knowledgeProfile.saveProfile')}
           </button>
         </div>
       </div>
@@ -107,7 +110,7 @@ export function KnowledgeProfilePage({ onBack }: KnowledgeProfilePageProps) {
           type="text"
           value={skillsInput}
           onChange={e => setSkillsInput(e.target.value)}
-          placeholder="Skills (comma-separated, e.g. typescript, react, rust)"
+          placeholder={t('knowledgeProfile.skillsPlaceholder')}
           className="editor-meta-input"
           disabled={saving}
         />

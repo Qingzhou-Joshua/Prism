@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { UnifiedHook, HookEventType, HookAction, HookCommand, HookHttp, HookPrompt, HookAgent } from '@prism/shared'
 import { hooksApi } from '../api/hooks.js'
 
@@ -205,6 +206,8 @@ function ActionEditor({
 }
 
 export function HookEditorPage({ platformId, onBack, initialHook }: HookEditorPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [draft, setDraft] = useState<DraftHook>(() => toDraft(initialHook))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -257,26 +260,26 @@ export function HookEditorPage({ platformId, onBack, initialHook }: HookEditorPa
       }
       onBack()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed')
+      setError(e instanceof Error ? e.message : t('hookEditor.saveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
-  const title = !initialHook ? 'New Hook' : `Edit Hook: ${initialHook.matcher}`
+  const title = !initialHook ? t('hookEditor.newTitle') : t('hookEditor.editTitle', { matcher: initialHook.matcher })
 
   return (
     <div className="rule-editor-page">
       <div className="rule-editor-header">
         <h2>{title}</h2>
         <div className="rule-editor-actions">
-          <button onClick={onBack} disabled={saving}>Cancel</button>
+          <button onClick={onBack} disabled={saving}>{tCommon('btn.cancel')}</button>
           <button
             onClick={() => void handleSave()}
             disabled={saving || !isValid()}
             className="btn-primary"
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? tCommon('status.saving') : tCommon('btn.save')}
           </button>
         </div>
       </div>
@@ -315,7 +318,7 @@ export function HookEditorPage({ platformId, onBack, initialHook }: HookEditorPa
             type="text"
             value={draft.description}
             onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Brief description of this hook"
+            placeholder={t('hookEditor.descPlaceholder')}
             style={inputStyle}
           />
         </label>
@@ -336,7 +339,7 @@ export function HookEditorPage({ platformId, onBack, initialHook }: HookEditorPa
                 fontFamily: 'inherit',
               }}
             >
-              + Add Action
+              {t('hookEditor.addAction')}
             </button>
           </div>
           {draft.actions.map((action, i) => (

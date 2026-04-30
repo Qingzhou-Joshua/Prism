@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { UnifiedCommand } from '@prism/shared'
 import { commandsApi } from '../api/commands'
 import { PlatformIcon } from '../components/PlatformIcon'
@@ -10,6 +11,8 @@ interface CommandsPageProps {
 }
 
 export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [commands, setCommands] = useState<UnifiedCommand[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +25,7 @@ export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
       const items = await commandsApi.list(platform)
       setCommands(items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load commands')
+      setError(e instanceof Error ? e.message : t('commands.loadingFailed'))
     } finally {
       setLoading(false)
     }
@@ -37,17 +40,17 @@ export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
       await commandsApi.delete(command.id, platform)
       setCommands(prev => prev.filter(c => c.id !== command.id))
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed')
+      alert(e instanceof Error ? e.message : t('commands.deleteFailed'))
     } finally {
       setDeletingId(null)
     }
   }
 
-  if (loading) return <div className="loading-state">Loading commands…</div>
+  if (loading) return <div className="loading-state">{tCommon('status.loading')}…</div>
   if (error) return (
     <div className="error-state">
       <span>⚠ {error}</span>
-      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Retry</button>
+      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
 
@@ -55,18 +58,18 @@ export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
     <div>
       <div className="page-header">
         <div>
-          <div className="page-title">Commands</div>
-          <div className="page-subtitle">{commands.length} command{commands.length !== 1 ? 's' : ''} managed</div>
+          <div className="page-title">{t('commands.title')}</div>
+          <div className="page-subtitle">{t('commands.count', { count: commands.length })}</div>
         </div>
-        <button className="btn btn-primary" onClick={() => onEdit(undefined)}>+ New Command</button>
+        <button className="btn btn-primary" onClick={() => onEdit(undefined)}>{t('commands.newBtn')}</button>
       </div>
 
       {commands.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">⌨️</div>
-          <div className="empty-state-title">No commands yet</div>
-          <div className="empty-state-desc">Create a command to define reusable slash command definitions.</div>
-          <button className="btn btn-primary" onClick={() => onEdit(undefined)}>+ New Command</button>
+          <div className="empty-state-title">{t('commands.empty')}</div>
+          <div className="empty-state-desc">{t('commands.emptyHint')}</div>
+          <button className="btn btn-primary" onClick={() => onEdit(undefined)}>{t('commands.newBtn')}</button>
         </div>
       )}
 
@@ -104,14 +107,14 @@ export function CommandsPage({ platform, onEdit }: CommandsPageProps) {
                     className="btn btn-ghost btn-sm"
                     onClick={(e) => { e.stopPropagation(); onEdit(command) }}
                   >
-                    Edit
+                    {tCommon('btn.edit')}
                   </button>
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={(e) => { e.stopPropagation(); void handleDelete(command) }}
                     disabled={deletingId === command.id}
                   >
-                    {deletingId === command.id ? '…' : 'Delete'}
+                    {deletingId === command.id ? '…' : tCommon('btn.delete')}
                   </button>
                 </div>
               </div>

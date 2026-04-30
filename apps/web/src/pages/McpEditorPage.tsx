@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { McpServer } from '@prism/shared'
 import { mcpApi } from '../api/mcp.js'
 import { PlatformIcon } from '../components/PlatformIcon'
@@ -54,6 +55,8 @@ const PLATFORM_COLORS: Record<string, string> = {
 const ALL_PLATFORMS = ['claude-code', 'codebuddy']
 
 export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [draft, setDraft] = useState<DraftServer>(() => toDraft(initialServer))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -131,13 +134,13 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
       }
       onBack()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed')
+      setError(e instanceof Error ? e.message : t('mcpEditor.saveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
-  const title = !initialServer ? 'New MCP Server' : `Edit: ${initialServer.name}`
+  const title = !initialServer ? t('mcpEditor.newTitle') : t('mcpEditor.editTitle', { name: initialServer.name })
   const projectionEntries = Object.entries(projections)
 
   return (
@@ -150,14 +153,14 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-ghost" onClick={onBack} disabled={saving}>
-            Cancel
+            {tCommon('btn.cancel')}
           </button>
           <button
             className="btn btn-primary"
             onClick={() => void handleSave()}
             disabled={saving || !draft.name.trim() || !draft.command.trim()}
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? tCommon('status.saving') : tCommon('btn.save')}
           </button>
         </div>
       </div>
@@ -208,7 +211,7 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
               className="form-input"
               value={draft.description}
               onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Brief description of what this MCP server provides"
+              placeholder={t('mcpEditor.descPlaceholder')}
             />
           </label>
 
@@ -278,7 +281,7 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
             <div className="projection-loading">Loading projections…</div>
           ) : projectionEntries.length === 0 ? (
             <div className="projection-empty">
-              {initialServer ? 'No projections available' : 'Save to see platform projections'}
+              {initialServer ? t('mcpEditor.noProjections') : t('mcpEditor.saveToSeeProjections')}
             </div>
           ) : (
             <div className="projection-preview">

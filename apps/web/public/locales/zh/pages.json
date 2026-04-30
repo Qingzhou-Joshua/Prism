@@ -1,0 +1,211 @@
+{
+  "rules": {
+    "title": "规则",
+    "count_one": "管理 {{count}} 条规则",
+    "count_other": "管理 {{count}} 条规则",
+    "newBtn": "+ 新建规则",
+    "empty": "暂无规则",
+    "emptyHint": "创建规则，或在扫描器标签页从平台导入。",
+    "loadingFailed": "加载规则失败"
+  },
+  "skills": {
+    "title": "技能",
+    "count_one": "管理 {{count}} 项技能",
+    "count_other": "管理 {{count}} 项技能",
+    "newBtn": "+ 新建技能",
+    "empty": "暂无技能",
+    "emptyHint": "创建技能以定义可复用的智能体能力。",
+    "loadingFailed": "加载技能失败"
+  },
+  "agents": {
+    "title": "智能体",
+    "count_one": "管理 {{count}} 个智能体",
+    "count_other": "管理 {{count}} 个智能体",
+    "newBtn": "+ 新建智能体",
+    "empty": "暂无智能体",
+    "emptyHint": "创建智能体以定义可复用的 AI 智能体配置。",
+    "loadingFailed": "加载智能体失败"
+  },
+  "mcp": {
+    "title": "MCP 服务器",
+    "count_one": "已配置 {{count}} 个服务器",
+    "count_other": "已配置 {{count}} 个服务器",
+    "newBtn": "+ 新建服务器",
+    "importBtn": "↓ 从 Claude Code 导入",
+    "importing": "导入中…",
+    "empty": "暂无 MCP 服务器",
+    "emptyHint": "手动添加服务器，或从现有平台配置导入。",
+    "envVars_one": "{{count}} 个环境变量",
+    "envVars_other": "{{count}} 个环境变量",
+    "noServersInClaude": "Claude Code 设置中未找到 MCP 服务器",
+    "importFailed": "导入失败",
+    "loadingFailed": "加载 MCP 服务器失败",
+    "deleteFailed": "删除失败"
+  },
+  "hooks": {
+    "title": "钩子",
+    "count_one": "已配置 {{count}} 个钩子",
+    "count_other": "已配置 {{count}} 个钩子",
+    "newBtn": "+ 新建钩子",
+    "empty": "暂无钩子",
+    "emptyHint": "创建钩子以在工具事件时自动运行命令。",
+    "noActions": "无操作",
+    "loadingFailed": "加载钩子失败",
+    "deleteFailed": "删除失败",
+    "actionScript": "$ {{cmd}}",
+    "actionPrompt": "提示词：{{text}}",
+    "actionAgent": "智能体：{{text}}",
+    "actionUnknown": "未知操作"
+  },
+  "commands": {
+    "title": "命令",
+    "count_one": "管理 {{count}} 条命令",
+    "count_other": "管理 {{count}} 条命令",
+    "newBtn": "+ 新建命令",
+    "empty": "暂无命令",
+    "emptyHint": "创建命令以定义可复用的斜杠命令。",
+    "loadingFailed": "加载命令失败",
+    "deleteFailed": "删除失败"
+  },
+  "conflicts": {
+    "title": "冲突",
+    "subtitle": "检测到跨平台资产冲突",
+    "refreshBtn": "↻ 刷新",
+    "empty": "未检测到冲突",
+    "emptyHint": "所有资产在各平台间保持一致。",
+    "count": "{{count}} 条冲突",
+    "loadingContent": "加载内容中…",
+    "empty_content": "（空）",
+    "mergeAsGlobal": "合并为全局版本",
+    "mergeHint": "编辑下方内容作为合并后的全局版本，确认后将写入所有目标平台的同名资产。",
+    "merging": "合并中…",
+    "confirmMerge": "确认合并",
+    "keepPlatform": "以 {{platform}} 为准",
+    "keepSeparate": "分开各自保留",
+    "resolving": "解决中…"
+  },
+  "knowledge": {
+    "title": "开发者档案",
+    "allDomains": "所有领域",
+    "filterPlaceholder": "按项目路径筛选…",
+    "count_one": "{{count}} 条",
+    "count_other": "{{count}} 条",
+    "empty": "暂无知识条目",
+    "emptyHint": "启用自动捕获，自动记录编码过程中的学习内容。",
+    "autoCaptureOn": "自动捕获已开启",
+    "configureAutoCapture": "配置自动捕获",
+    "editProfile": "编辑档案",
+    "viewEntry": "查看 ▸",
+    "generatedAssets": "已生成资产",
+    "generateProfileRule": "🪄 生成档案规则",
+    "generateProjectRule": "📁 生成项目规则",
+    "projectPathPlaceholder": "项目路径（可选）…",
+    "generate": "生成",
+    "noGeneratedAssets": "暂无生成的资产",
+    "noGeneratedHint": "使用上方按钮从知识库生成规则或技能。",
+    "notPublished": "未发布",
+    "loadingFailed": "加载知识数据失败",
+    "deleteFailed": "删除失败",
+    "generateProfileFailed": "生成档案规则失败",
+    "generateProjectFailed": "生成项目规则失败",
+    "publishFailed": "发布资产失败",
+    "autoCaptureToggleFailed": "切换自动捕获钩子失败"
+  },
+  "knowledgeProfile": {
+    "loading": "加载档案中…",
+    "saveFailed": "保存失败",
+    "saveProfile": "保存档案",
+    "namePlaceholder": "您的姓名",
+    "rolePlaceholder": "职位 / 头衔",
+    "skillsPlaceholder": "技能（逗号分隔，如 typescript, react, rust）",
+    "loadFailed": "加载档案失败"
+  },
+  "knowledgeEntry": {
+    "deleteConfirm": "确认删除该条目？",
+    "deleteEntry": "删除条目"
+  },
+  "gitSync": {
+    "title": "Git 同步",
+    "subtitle": "通过 Git 在多台机器间同步 Prism 资产",
+    "notConfigured": "Git 同步未配置",
+    "notConfiguredHint": "请在设置页面配置远程仓库。",
+    "pullSuccess": "拉取成功",
+    "pullFailed": "拉取失败",
+    "pushSuccess": "推送成功",
+    "pushFailed": "推送失败",
+    "pullWithResolutionsSuccess": "带解决方案的拉取完成",
+    "pullWithResolutionsFailed": "带解决方案的拉取失败",
+    "loadingFailed": "加载 Git 同步状态失败"
+  },
+  "settings": {
+    "title": "设置",
+    "loadingFailed": "加载 Git 同步配置失败",
+    "gitSync": "Git 同步",
+    "remoteUrl": "远程地址：",
+    "branch": "分支：",
+    "lastSync": "上次同步：",
+    "openGitSync": "打开 Git 同步 →",
+    "disconnect": "断开连接",
+    "gitSyncDescription": "Git 同步让您通过 Git 仓库在多台机器间同步 Prism 资产（规则、技能、智能体等）。连接远程仓库开始使用。",
+    "configureGitSync": "配置 Git 同步",
+    "remoteUrlLabel": "远程地址",
+    "branchLabel": "分支",
+    "saveFailed": "保存失败",
+    "disconnectConfirm": "确认断开 Git 同步连接？这不会删除远程仓库。",
+    "disconnectFailed": "断开 Git 同步失败"
+  },
+  "platforms": {
+    "loading": "加载平台中…",
+    "noDetected": "未检测到平台",
+    "retryScan": "重新扫描",
+    "connectionError": "连接错误：",
+    "retry": "重试"
+  },
+  "ruleEditor": {
+    "namePlaceholder": "规则名称…",
+    "platformOverrides": "平台覆盖",
+    "platformOverridesHint": "— 覆盖基础规则的平台专属内容",
+    "saveOverride": "保存覆盖",
+    "clearOverride": "清除覆盖",
+    "saveRule": "保存规则",
+    "saveFailed": "保存失败",
+    "deleteFailed": "删除失败：",
+    "clearFailed": "清除失败"
+  },
+  "skillEditor": {
+    "namePlaceholder": "技能名称…",
+    "triggerPlaceholder": "触发词（如 /myskill）",
+    "categoryPlaceholder": "分类（如 development）",
+    "saveSkill": "保存技能",
+    "saveFailed": "保存失败"
+  },
+  "agentEditor": {
+    "namePlaceholder": "智能体名称…",
+    "descPlaceholder": "描述（可选）",
+    "saveAgent": "保存智能体",
+    "saveFailed": "保存失败"
+  },
+  "mcpEditor": {
+    "newTitle": "新建 MCP 服务器",
+    "editTitle": "编辑：{{name}}",
+    "descPlaceholder": "简要描述该 MCP 服务器的功能",
+    "noProjections": "暂无投影",
+    "saveToSeeProjections": "保存后查看平台投影",
+    "saveFailed": "保存失败"
+  },
+  "hookEditor": {
+    "newTitle": "新建钩子",
+    "editTitle": "编辑钩子：{{matcher}}",
+    "descPlaceholder": "简要描述该钩子的功能",
+    "addAction": "+ 添加操作",
+    "saveFailed": "保存失败"
+  },
+  "commandEditor": {
+    "namePlaceholder": "命令名称…",
+    "descPlaceholder": "描述（可选）",
+    "tagsPlaceholder": "标签（逗号分隔，可选）",
+    "saveCommand": "保存命令",
+    "noProjections": "暂无投影。",
+    "saveFailed": "保存失败"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { API_BASE } from '../api/client'
 import type { WatcherChangeEvent } from '../hooks/useFileWatcher'
 
@@ -20,6 +21,7 @@ interface DiffContent {
 }
 
 export function FileChangeBanner({ changes, onDismiss }: FileChangeBannerProps) {
+  const { t } = useTranslation('components')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [diffMap, setDiffMap] = useState<Record<string, DiffContent>>({})
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -89,7 +91,7 @@ export function FileChangeBanner({ changes, onDismiss }: FileChangeBannerProps) 
               }}
             >
               <span style={{ flex: 1 }}>
-                ⚠ <strong>{change.assetName}</strong> 在 {platformLabel} 里被直接修改
+                ⚠ <strong>{change.assetName}</strong> {t('fileChangeBanner.modifiedIn', { platform: platformLabel })}
               </span>
               <button
                 className="btn btn-sm"
@@ -97,19 +99,19 @@ export function FileChangeBanner({ changes, onDismiss }: FileChangeBannerProps) 
                 disabled={isLoading}
                 style={{ minWidth: 100 }}
               >
-                {isLoading ? '加载中…' : isExpanded ? '收起内容' : '查看当前内容'}
+                {isLoading ? t('fileChangeBanner.loading') : isExpanded ? t('fileChangeBanner.collapse') : t('fileChangeBanner.viewContent')}
               </button>
               <button
                 className="btn btn-sm"
                 onClick={() => void handleSync(change.entryId)}
               >
-                同步到 Prism
+                {t('fileChangeBanner.syncToPrism')}
               </button>
               <button
                 className="btn btn-sm"
                 onClick={() => onDismiss(change.entryId)}
               >
-                忽略
+                {t('fileChangeBanner.ignore')}
               </button>
             </div>
 
@@ -130,10 +132,10 @@ export function FileChangeBanner({ changes, onDismiss }: FileChangeBannerProps) 
                 }}
               >
                 <div style={{ marginBottom: 6, color: '#ffcc02', fontFamily: 'sans-serif' }}>
-                  当前文件内容（checksum: {diff.currentChecksum.slice(0, 6)}）
+                  {t('fileChangeBanner.currentContent', { checksum: diff.currentChecksum.slice(0, 6) })}
                   {diff.registryChecksum && (
                     <span style={{ marginLeft: 12, color: '#ffd54f' }}>
-                      vs Registry（checksum: {diff.registryChecksum.slice(0, 6)}）
+                      {t('fileChangeBanner.vsRegistry', { checksum: diff.registryChecksum.slice(0, 6) })}
                     </span>
                   )}
                 </div>

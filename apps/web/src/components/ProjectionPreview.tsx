@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { RuleProjectionItem } from '../api/rules'
 
 interface ProjectionPreviewProps {
@@ -12,12 +13,13 @@ const PLATFORM_DOTS: Record<string, string> = {
 }
 
 export function ProjectionPreview({ projections, loading }: ProjectionPreviewProps) {
+  const { t } = useTranslation('components')
   const [activeTab, setActiveTab] = useState(0)
 
   if (loading) {
     return (
       <div className="proj-wrap">
-        <div className="proj-loading">Loading projections…</div>
+        <div className="proj-loading">{t('projectionPreview.loading')}</div>
       </div>
     )
   }
@@ -25,7 +27,7 @@ export function ProjectionPreview({ projections, loading }: ProjectionPreviewPro
   if (projections.length === 0) {
     return (
       <div className="proj-wrap">
-        <div className="proj-empty">No projections available</div>
+        <div className="proj-empty">{t('projectionPreview.noProjections')}</div>
       </div>
     )
   }
@@ -57,7 +59,7 @@ export function ProjectionPreview({ projections, loading }: ProjectionPreviewPro
         {current.content !== null ? (
           <pre className="proj-content">{current.content}</pre>
         ) : (
-          <div className="proj-empty-content">(uses global content)</div>
+          <div className="proj-empty-content">{t('projectionPreview.usesGlobal')}</div>
         )}
       </div>
     </div>

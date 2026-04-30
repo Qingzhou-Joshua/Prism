@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Editor from '@monaco-editor/react'
 import type { UnifiedCommand, PlatformId } from '@prism/shared'
 import { commandsApi } from '../api/commands'
@@ -37,6 +38,8 @@ function toDraft(command?: UnifiedCommand): DraftCommand {
 }
 
 export function CommandEditorPage({ command, onBack, platform }: CommandEditorPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [draft, setDraft] = useState<DraftCommand>(() => toDraft(command))
   const [applyGlobally, setApplyGlobally] = useState(
     () => (command?.targetPlatforms?.length ?? 0) === 0
@@ -118,7 +121,7 @@ export function CommandEditorPage({ command, onBack, platform }: CommandEditorPa
         onBack()
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed')
+      setError(e instanceof Error ? e.message : t('commandEditor.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -135,7 +138,7 @@ export function CommandEditorPage({ command, onBack, platform }: CommandEditorPa
           type="text"
           value={draft.name}
           onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="Command name…"
+          placeholder={t('commandEditor.namePlaceholder')}
           className="editor-toolbar-name"
         />
 
@@ -150,7 +153,7 @@ export function CommandEditorPage({ command, onBack, platform }: CommandEditorPa
               onChange={e => handleApplyGloballyToggle(e.target.checked)}
             />
             <PlatformIcon platformId="global" size={14} />
-            <span>All platforms</span>
+            <span>{tCommon('platform.allPlatforms')}</span>
           </label>
 
           {detectedPlatforms.map(platform => (
@@ -167,7 +170,7 @@ export function CommandEditorPage({ command, onBack, platform }: CommandEditorPa
           ))}
 
           {isInvalidPlatformState && (
-            <span className="toolbar-platform-warning">Select at least one</span>
+            <span className="toolbar-platform-warning">{tCommon('platform.selectAtLeastOne')}</span>
           )}
         </div>
 
@@ -175,14 +178,14 @@ export function CommandEditorPage({ command, onBack, platform }: CommandEditorPa
 
         <div className="editor-toolbar-actions">
           <button className="btn btn-ghost btn-sm" onClick={onBack} disabled={saving}>
-            Cancel
+            {tCommon('btn.cancel')}
           </button>
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
-            {saving ? 'Saving…' : 'Save Command'}
+            {saving ? tCommon('status.saving') : t('commandEditor.saveCommand')}
           </button>
         </div>
       </div>
@@ -193,14 +196,14 @@ export function CommandEditorPage({ command, onBack, platform }: CommandEditorPa
           type="text"
           value={draft.description}
           onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
-          placeholder="Description (optional)"
+          placeholder={t('commandEditor.descPlaceholder')}
           className="editor-meta-input"
         />
         <input
           type="text"
           value={draft.tags}
           onChange={e => setDraft(prev => ({ ...prev, tags: e.target.value }))}
-          placeholder="Tags (comma-separated, optional)"
+          placeholder={t('commandEditor.tagsPlaceholder')}
           className="editor-meta-input"
         />
       </div>
@@ -230,7 +233,7 @@ export function CommandEditorPage({ command, onBack, platform }: CommandEditorPa
           </div>
           {!projectionsLoading && projections.length === 0 && (
             <div style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
-              No projections available.
+              {t('commandEditor.noProjections')}
             </div>
           )}
           {projections.map(proj => (

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitSyncConfig, GitInitResult } from '@prism/shared'
 import { gitSyncApi } from '../api/git-sync.js'
 
@@ -22,6 +23,9 @@ const SPINNER_STYLE: React.CSSProperties = {
 }
 
 export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardProps) {
+  const { t } = useTranslation('components')
+  const tCommon = useTranslation('common').t
+
   const [step, setStep] = useState<Step>(1)
 
   // Step 1 fields
@@ -88,7 +92,7 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
       .map(([id]) => id)
 
     if (targets.length === 0) {
-      setPublishError('Please select at least one platform')
+      setPublishError(tCommon('platform.selectAtLeastOne'))
       return
     }
 
@@ -111,6 +115,13 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
   function handleDone() {
     if (completedConfig) onComplete(completedConfig)
     else onCancel()
+  }
+
+  const STEP_LABELS: Record<Step, string> = {
+    1: t('gitSyncInitWizard.configureRepo'),
+    2: t('gitSyncInitWizard.cloning'),
+    3: t('gitSyncInitWizard.publishToIde'),
+    4: t('gitSyncInitWizard.done'),
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -148,10 +159,7 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
           </div>
         ))}
         <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-          {step === 1 && 'Configure Repository'}
-          {step === 2 && 'Cloning…'}
-          {step === 3 && 'Publish to IDE'}
-          {step === 4 && 'Done'}
+          {STEP_LABELS[step]}
         </span>
       </div>
 
@@ -160,13 +168,13 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
         <div>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Remote URL <span style={{ color: 'var(--danger, #ef4444)' }}>*</span>
+              {t('gitSyncInitWizard.remoteUrlLabel')} <span style={{ color: 'var(--danger, #ef4444)' }}>*</span>
             </label>
             <input
               type="text"
               value={remoteUrl}
               onChange={(e) => setRemoteUrl(e.target.value)}
-              placeholder="https://github.com/user/repo.git"
+              placeholder={t('gitSyncInitWizard.remoteUrlPlaceholder')}
               className="editor-meta-input"
               style={{ width: '100%', boxSizing: 'border-box' }}
             />
@@ -176,20 +184,20 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
               </div>
             )}
             <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-              Supports GitHub / GitLab HTTPS URLs. For private repos, use a PAT token:
+              {t('gitSyncInitWizard.remoteUrlHint')}
               {' '}<code style={{ fontSize: 11 }}>https://user:TOKEN@github.com/...</code>
             </div>
           </div>
 
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
-              Branch
+              {t('gitSyncInitWizard.branchLabel')}
             </label>
             <input
               type="text"
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
-              placeholder="main"
+              placeholder={t('gitSyncInitWizard.branchPlaceholder')}
               className="editor-meta-input"
               style={{ width: 200 }}
             />
@@ -197,10 +205,10 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-primary btn-sm" onClick={() => void handleNext()}>
-              Next →
+              {tCommon('btn.next')} →
             </button>
             <button className="btn btn-ghost btn-sm" onClick={onCancel}>
-              Cancel
+              {tCommon('btn.cancel')}
             </button>
           </div>
         </div>
@@ -212,21 +220,21 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
           {cloneError ? (
             <div>
               <div style={{ color: 'var(--danger, #ef4444)', marginBottom: 12 }}>
-                ❌ {cloneError}
+                {t('gitSyncInitWizard.cloneError', { error: cloneError })}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-ghost btn-sm" onClick={() => setStep(1)}>
-                  ← Back
+                  {tCommon('btn.back')}
                 </button>
                 <button className="btn btn-ghost btn-sm" onClick={onCancel}>
-                  Cancel
+                  {tCommon('btn.cancel')}
                 </button>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)' }}>
               <span style={SPINNER_STYLE} />
-              <span>Initializing repository and pulling assets…</span>
+              <span>{t('gitSyncInitWizard.initializing')}</span>
             </div>
           )}
         </div>
@@ -236,9 +244,9 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
       {step === 3 && (
         <div>
           <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
-            ✅ Clone complete!
-            {cloneResult?.registryRebuilt && ' Registry rebuilt.'}
-            {' '}Select which IDEs to publish assets to:
+            {t('gitSyncInitWizard.cloneComplete')}
+            {cloneResult?.registryRebuilt && t('gitSyncInitWizard.registryRebuilt')}
+            {' '}{t('gitSyncInitWizard.selectIdes')}
           </div>
 
           <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -254,7 +262,7 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
                     setSelectedPlatforms((prev) => ({ ...prev, [id]: e.target.checked }))
                   }
                 />
-                {id === 'claude-code' ? '🤖 Claude Code' : '🧠 Codebuddy'}
+                {id === 'claude-code' ? t('gitSyncInitWizard.claudeCode') : t('gitSyncInitWizard.codebuddy')}
               </label>
             ))}
           </div>
@@ -271,14 +279,14 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
               onClick={() => void handlePublish()}
               disabled={publishing}
             >
-              {publishing ? <><span style={SPINNER_STYLE} />Publishing…</> : '🚀 Publish to IDE'}
+              {publishing ? <><span style={SPINNER_STYLE} />{t('gitSyncInitWizard.publishing')}</> : t('gitSyncInitWizard.publishBtn')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               onClick={handleDone}
               disabled={publishing}
             >
-              Skip
+              {tCommon('btn.skip')}
             </button>
           </div>
         </div>
@@ -288,11 +296,10 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
       {step === 4 && (
         <div>
           <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
-            🎉 All done! Published <strong>{publishedCount}</strong> asset(s) to your IDE(s).
-            Git Sync is now active on this machine.
+            {t('gitSyncInitWizard.allDone', { count: publishedCount })}
           </div>
           <button className="btn btn-primary btn-sm" onClick={handleDone}>
-            Done ✓
+            {t('gitSyncInitWizard.done')} ✓
           </button>
         </div>
       )}

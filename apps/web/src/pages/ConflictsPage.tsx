@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { API_BASE } from '../api/client'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -47,6 +48,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 // ── DiffViewer ────────────────────────────────────────────────────────────────
 
 function DiffViewer({ entries }: { entries: ConflictContentEntry[] }) {
+  const { t } = useTranslation('pages')
   return (
     <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
       {entries.map(({ entry, content }) => (
@@ -81,7 +83,7 @@ function DiffViewer({ entries }: { entries: ConflictContentEntry[] }) {
               lineHeight: 1.5,
             }}
           >
-            {content || '(empty)'}
+            {content || t('conflicts.empty_content')}
           </pre>
           <div
             style={{
@@ -111,6 +113,8 @@ interface MergeModalProps {
 }
 
 function MergeModal({ name, initialContent, loading, onConfirm, onClose }: MergeModalProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [content, setContent] = useState(initialContent)
 
   return (
@@ -142,10 +146,10 @@ function MergeModal({ name, initialContent, loading, onConfirm, onClose }: Merge
         }}
       >
         <div style={{ fontWeight: 600, fontSize: 15 }}>
-          合并为全局版本 — {name}
+          {t('conflicts.mergeAsGlobal')} — {name}
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          编辑下方内容作为合并后的全局版本，确认后将写入所有目标平台的同名资产。
+          {t('conflicts.mergeHint')}
         </div>
         <textarea
           value={content}
@@ -166,14 +170,14 @@ function MergeModal({ name, initialContent, loading, onConfirm, onClose }: Merge
         />
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button className="btn btn-sm" onClick={onClose} disabled={loading}>
-            取消
+            {tCommon('btn.cancel')}
           </button>
           <button
             className="btn btn-primary btn-sm"
             onClick={() => onConfirm(content)}
             disabled={loading}
           >
-            {loading ? '合并中…' : '确认合并'}
+            {loading ? t('conflicts.merging') : t('conflicts.confirmMerge')}
           </button>
         </div>
       </div>
@@ -188,6 +192,8 @@ interface ConflictsPageProps {
 }
 
 export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [conflicts, setConflicts] = useState<ConflictGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
@@ -332,7 +338,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  if (loading) return <div className="loading-state">Loading conflicts…</div>
+  if (loading) return <div className="loading-state">{tCommon('status.loading')}</div>
 
   return (
     <div>
@@ -340,7 +346,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
       <div className="page-header">
         <div>
           <div className="page-title">
-            Conflicts
+            {t('conflicts.title')}
             {conflicts.length > 0 && (
               <span
                 style={{
@@ -358,10 +364,10 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
               </span>
             )}
           </div>
-          <div className="page-subtitle">Cross-platform asset conflicts detected</div>
+          <div className="page-subtitle">{t('conflicts.subtitle')}</div>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={() => void load()}>
-          ↻ Refresh
+          {t('conflicts.refreshBtn')}
         </button>
       </div>
 
@@ -369,9 +375,9 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
       {conflicts.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">✅</div>
-          <div className="empty-state-title">No conflicts detected</div>
+          <div className="empty-state-title">{t('conflicts.empty')}</div>
           <div className="empty-state-desc">
-            All assets are consistent across platforms.
+            {t('conflicts.emptyHint')}
           </div>
         </div>
       )}
@@ -439,7 +445,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                       alignSelf: 'center',
                     }}
                   >
-                    {group.entries.length} conflicting entries
+                    {t('conflicts.count', { count: group.entries.length })}
                   </span>
                 </div>
 
@@ -455,7 +461,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                     {/* Content loading indicator */}
                     {isContentLoading && (
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 0' }}>
-                        Loading content…
+                        {t('conflicts.loadingContent')}
                       </div>
                     )}
 
@@ -474,7 +480,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                         alignItems: 'center',
                       }}
                     >
-                      {/* 合并为全局版本 — only shown when content is loaded */}
+                      {/* Merge as global — only shown when content is loaded */}
                       {loadedEntries && (
                         <button
                           className="btn btn-primary btn-sm"
@@ -487,11 +493,11 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                             })
                           }
                         >
-                          合并为全局版本
+                          {t('conflicts.mergeAsGlobal')}
                         </button>
                       )}
 
-                      {/* 以 {platform} 为准 — one button per entry */}
+                      {/* Keep platform — one button per entry */}
                       {group.entries.map(entry => (
                         <button
                           key={entry.id}
@@ -499,23 +505,23 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                           disabled={isResolving}
                           onClick={() => void handleKeepOne(group.key, entry.id)}
                         >
-                          以 {PLATFORM_LABELS[entry.platformId] ?? entry.platformId} 为准
+                          {t('conflicts.keepPlatform', { platform: PLATFORM_LABELS[entry.platformId] ?? entry.platformId })}
                         </button>
                       ))}
 
-                      {/* 分开各自保留 */}
+                      {/* Keep separate */}
                       <button
                         className="btn btn-sm"
                         disabled={isResolving}
                         onClick={() => void handleKeepBoth(group.key)}
                       >
-                        分开各自保留
+                        {t('conflicts.keepSeparate')}
                       </button>
 
                       {/* Resolving indicator */}
                       {isResolving && (
                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                          解决中…
+                          {t('conflicts.resolving')}
                         </span>
                       )}
                     </div>

@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "rules": "Rules",
+    "skills": "Skills",
+    "agents": "Agents",
+    "mcp": "MCP Servers",
+    "hooks": "Hooks",
+    "commands": "Commands",
+    "conflicts": "Conflicts",
+    "knowledge": "Knowledge",
+    "settings": "Settings",
+    "gitSync": "Git Sync"
+  },
+  "btn": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "← Back",
+    "retry": "Retry",
+    "publish": "Publish",
+    "new": "New",
+    "next": "Next →",
+    "skip": "Skip",
+    "done": "Done ✓",
+    "refresh": "↺ Refresh",
+    "back2knowledge": "← Back to Knowledge"
+  },
+  "status": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "idle": "Idle",
+    "synced": "Synced",
+    "error": "Error",
+    "pushing": "Pushing…",
+    "pulling": "Pulling…",
+    "conflictDetected": "Conflict Detected"
+  },
+  "platform": {
+    "allPlatforms": "All platforms",
+    "selectAtLeastOne": "Select at least one"
+  }
+}

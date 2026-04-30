@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import Editor from '@monaco-editor/react'
 import type { KnowledgeEntry } from '@prism/shared'
 
@@ -8,8 +9,11 @@ interface KnowledgeEntryDetailPageProps {
 }
 
 export function KnowledgeEntryDetailPage({ entry, onBack, onDelete }: KnowledgeEntryDetailPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
+
   function handleDelete() {
-    if (!window.confirm(`Delete this entry?\n\n"${entry.summary}"`)) return
+    if (!window.confirm(`${t('knowledgeEntry.deleteConfirm')}\n\n"${entry.summary}"`)) return
     onDelete()
   }
 
@@ -18,7 +22,7 @@ export function KnowledgeEntryDetailPage({ entry, onBack, onDelete }: KnowledgeE
       {/* ── Toolbar ── */}
       <div className="editor-toolbar">
         <button className="btn btn-ghost btn-sm" onClick={onBack}>
-          ← Back to Knowledge
+          {tCommon('btn.back2knowledge')}
         </button>
 
         <div className="editor-toolbar-divider" />
@@ -32,7 +36,7 @@ export function KnowledgeEntryDetailPage({ entry, onBack, onDelete }: KnowledgeE
 
         <div className="editor-toolbar-actions">
           <button className="btn btn-danger btn-sm" onClick={handleDelete}>
-            Delete Entry
+            {t('knowledgeEntry.deleteEntry')}
           </button>
         </div>
       </div>

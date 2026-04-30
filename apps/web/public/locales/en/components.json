@@ -1,0 +1,79 @@
+{
+  "fileChangeBanner": {
+    "fileChanged": "File changed:",
+    "ruleChanged": "Rule changed",
+    "skillChanged": "Skill changed",
+    "agentChanged": "Agent changed",
+    "dismiss": "×",
+    "directlyModified": "<1>{{assetName}}</1> was directly modified in {{platform}}",
+    "loading": "Loading…",
+    "collapse": "Collapse",
+    "viewContent": "View Content",
+    "syncToPrism": "Sync to Prism",
+    "ignore": "Ignore",
+    "modifiedIn": "was directly modified in {{platform}}",
+    "currentContent": "Current file content (checksum: {{checksum}})",
+    "vsRegistry": "vs Registry (checksum: {{checksum}})"
+  },
+  "scopeBadge": {
+    "global": "Global",
+    "platformOnly": "Platform Only",
+    "override": "Override"
+  },
+  "projectionPreview": {
+    "loading": "Loading projections…",
+    "noProjections": "No projections available",
+    "usesGlobal": "(uses global content)"
+  },
+  "gitSyncPanel": {
+    "lastSync": "Last sync: ",
+    "commitPlaceholder": "Commit message",
+    "commitPlaceholderDefault": "Update rules and skills",
+    "commitRequired": "Commit message is required",
+    "push": "⬆ Push",
+    "pull": "⬇ Pull",
+    "pushing": "Pushing…",
+    "pulling": "Pulling…",
+    "pushAction": "Push",
+    "pushAction": "Push"
+  },
+  "gitConflictResolver": {
+    "conflictsTitle": "⚠️ Conflicts detected ({{count}})",
+    "assetTypes": {
+      "rule": "Rule",
+      "skill": "Skill",
+      "agent": "Agent",
+      "mcp": "MCP",
+      "hook": "Hook"
+    },
+    "resolutions": {
+      "keepLocal": "Keep Local",
+      "keepRemote": "Keep Remote",
+      "merge": "Merge"
+    },
+    "applyBtn": "Apply Resolutions ({{resolved}}/{{total}})",
+    "resolveAllFirst": "Resolve all conflicts first",
+    "editMergedContent": "Edit merged content:"
+  },
+  "gitSyncInitWizard": {
+    "configureRepo": "Configure Repository",
+    "cloning": "Cloning…",
+    "publishToIde": "Publish to IDE",
+    "done": "Done",
+    "remoteUrlLabel": "Remote URL",
+    "branchLabel": "Branch",
+    "remoteUrlHint": "Supports GitHub / GitLab HTTPS URLs. For private repos, use a PAT token:",
+    "remoteUrlPlaceholder": "https://github.com/user/repo.git",
+    "branchPlaceholder": "main",
+    "cloneError": "❌ {{error}}",
+    "initializing": "Initializing repository and pulling assets…",
+    "cloneComplete": "✅ Clone complete!",
+    "registryRebuilt": " Registry rebuilt.",
+    "selectIdes": "Select which IDEs to publish assets to:",
+    "claudeCode": "🤖 Claude Code",
+    "codebuddy": "🧠 Codebuddy",
+    "publishBtn": "🚀 Publish to IDE",
+    "publishing": "Publishing…",
+    "allDone": "🎉 All done! Published {{count}} asset(s) to your IDE(s). Git Sync is now active on this machine."
+  }
+}

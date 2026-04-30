@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { KnowledgeEntry, DeveloperProfile, GeneratedAsset } from '@prism/shared'
 import { knowledgeApi } from '../api/knowledge'
 
@@ -8,6 +9,8 @@ interface KnowledgePageProps {
 }
 
 export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [profile, setProfile] = useState<DeveloperProfile | null>(null)
   const [entries, setEntries] = useState<KnowledgeEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,11 +58,11 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       setHookEnabled(hookStatus.enabled)
       setGeneratedAssets(generatedData)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load knowledge data')
+      setError(e instanceof Error ? e.message : t('knowledge.loadingFailed'))
     } finally {
       setLoading(false)
     }
-  }, [domainFilter, projectPathFilter])
+  }, [domainFilter, projectPathFilter, t])
 
   useEffect(() => { void load() }, [load])
 
@@ -74,20 +77,20 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
         setHookEnabled(true)
       }
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to toggle auto-capture hook')
+      alert(e instanceof Error ? e.message : t('knowledge.autoCaptureToggleFailed'))
     } finally {
       setHookLoading(false)
     }
   }
 
   async function handleDelete(entry: KnowledgeEntry) {
-    if (!window.confirm(`Delete this entry?\n\n"${entry.summary}"`)) return
+    if (!window.confirm(`${t('knowledgeEntry.deleteConfirm')}\n\n"${entry.summary}"`)) return
     setDeletingId(entry.id)
     try {
       await knowledgeApi.deleteEntry(entry.id)
       setEntries(prev => prev.filter(e => e.id !== entry.id))
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed')
+      alert(e instanceof Error ? e.message : t('knowledge.deleteFailed'))
     } finally {
       setDeletingId(null)
     }
@@ -103,7 +106,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
           : [asset, ...prev]
       )
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to generate profile rule')
+      alert(e instanceof Error ? e.message : t('knowledge.generateProfileFailed'))
     } finally {
       setGeneratingProfileRule(false)
     }
@@ -125,7 +128,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       setProjectRuleDomain('')
       setProjectRulePath('')
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to generate project rule')
+      alert(e instanceof Error ? e.message : t('knowledge.generateProjectFailed'))
     } finally {
       setGeneratingProjectRule(false)
     }
@@ -141,7 +144,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       })
       setGeneratedAssets(prev => prev.map(a => a.id === updated.id ? updated : a))
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to publish asset')
+      alert(e instanceof Error ? e.message : t('knowledge.publishFailed'))
     } finally {
       setPublishingId(null)
     }
@@ -154,7 +157,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       await knowledgeApi.deleteGenerated(asset.id)
       setGeneratedAssets(prev => prev.filter(a => a.id !== asset.id))
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed')
+      alert(e instanceof Error ? e.message : t('knowledge.deleteFailed'))
     } finally {
       setDeletingGeneratedId(null)
     }
@@ -171,11 +174,11 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
     }))
   }
 
-  if (loading) return <div className="loading-state">Loading knowledge…</div>
+  if (loading) return <div className="loading-state">{tCommon('status.loading')}</div>
   if (error) return (
     <div className="error-state">
       <span>⚠ {error}</span>
-      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Retry</button>
+      <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
 
@@ -184,7 +187,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       {/* ── Profile header bar ── */}
       <div className="page-header">
         <div>
-          <div className="page-title">Developer Profile</div>
+          <div className="page-title">{t('knowledge.title')}</div>
           {profile && (
             <div className="page-subtitle">
               {[profile.name, profile.role].filter(Boolean).join(' · ')}
@@ -213,10 +216,10 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
             {hookLoading ? (
               <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
             ) : hookEnabled ? '✓' : null}
-            {hookEnabled ? 'Auto-Capture ON' : 'Configure Auto-Capture'}
+            {hookEnabled ? t('knowledge.autoCaptureOn') : t('knowledge.configureAutoCapture')}
           </button>
           <button className="btn btn-primary btn-sm" onClick={onEditProfile}>
-            Edit Profile
+            {t('knowledge.editProfile')}
           </button>
         </div>
       </div>
@@ -229,7 +232,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
           onChange={e => setDomainFilter(e.target.value)}
           style={{ maxWidth: 200 }}
         >
-          <option value="">All domains</option>
+          <option value="">{t('knowledge.allDomains')}</option>
           {Array.from(new Set(entries.map(e => e.domain))).sort().map(d => (
             <option key={d} value={d}>{d}</option>
           ))}
@@ -237,13 +240,13 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
         <input
           type="text"
           className="editor-meta-input"
-          placeholder="Filter by project path…"
+          placeholder={t('knowledge.filterPlaceholder')}
           value={projectPathFilter}
           onChange={e => setProjectPathFilter(e.target.value)}
           style={{ maxWidth: 280 }}
         />
         <span style={{ color: 'var(--text-muted)', fontSize: 13, alignSelf: 'center', marginLeft: 4 }}>
-          {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+          {t('knowledge.count', { count: entries.length })}
         </span>
       </div>
 
@@ -251,9 +254,9 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       {entries.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🧠</div>
-          <div className="empty-state-title">No knowledge entries yet</div>
+          <div className="empty-state-title">{t('knowledge.empty')}</div>
           <div className="empty-state-desc">
-            Enable Auto-Capture to automatically record learnings from your coding sessions.
+            {t('knowledge.emptyHint')}
           </div>
         </div>
       )}
@@ -288,7 +291,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                     className="btn btn-ghost btn-sm"
                     onClick={() => onViewEntry(entry)}
                   >
-                    View ▸
+                    {t('knowledge.viewEntry')}
                   </button>
                   <button
                     className="btn btn-danger btn-sm"
@@ -307,7 +310,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       {/* ── Generated Assets ── */}
       <div style={{ marginTop: 32 }}>
         <div className="page-header" style={{ marginBottom: 12 }}>
-          <div className="page-title" style={{ fontSize: 16 }}>Generated Assets</div>
+          <div className="page-title" style={{ fontSize: 16 }}>{t('knowledge.generatedAssets')}</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               className="btn btn-primary btn-sm"
@@ -317,13 +320,13 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
               {generatingProfileRule ? (
                 <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite', marginRight: 4 }} />
               ) : null}
-              🪄 Generate Profile Rule
+              {t('knowledge.generateProfileRule')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setShowProjectRuleForm(v => !v)}
             >
-              📁 Generate Project Rule
+              {t('knowledge.generateProjectRule')}
             </button>
           </div>
         </div>
@@ -337,7 +340,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
               onChange={e => setProjectRuleDomain(e.target.value)}
               style={{ maxWidth: 180 }}
             >
-              <option value="">All domains</option>
+              <option value="">{t('knowledge.allDomains')}</option>
               {Array.from(new Set(entries.map(e => e.domain))).sort().map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
@@ -345,7 +348,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
             <input
               type="text"
               className="editor-meta-input"
-              placeholder="Project path (optional)…"
+              placeholder={t('knowledge.projectPathPlaceholder')}
               value={projectRulePath}
               onChange={e => setProjectRulePath(e.target.value)}
               style={{ maxWidth: 260 }}
@@ -358,13 +361,13 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
               {generatingProjectRule ? (
                 <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite', marginRight: 4 }} />
               ) : null}
-              Generate
+              {t('knowledge.generate')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => { setShowProjectRuleForm(false); setProjectRuleDomain(''); setProjectRulePath('') }}
             >
-              Cancel
+              {tCommon('btn.cancel')}
             </button>
           </div>
         )}
@@ -373,9 +376,9 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
         {generatedAssets.length === 0 && (
           <div className="empty-state">
             <div className="empty-state-icon">✨</div>
-            <div className="empty-state-title">No generated assets yet</div>
+            <div className="empty-state-title">{t('knowledge.noGeneratedAssets')}</div>
             <div className="empty-state-desc">
-              Use the buttons above to generate Rules or Skills from your knowledge.
+              {t('knowledge.noGeneratedHint')}
             </div>
           </div>
         )}
@@ -410,7 +413,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                         </span>
                       ))
                     ) : (
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Not published</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('knowledge.notPublished')}</span>
                     )}
                   </div>
 
@@ -440,7 +443,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                         onClick={() => void handlePublishGenerated(asset)}
                         disabled={publishingId === asset.id}
                       >
-                        {publishingId === asset.id ? '…' : 'Publish'}
+                        {publishingId === asset.id ? '…' : tCommon('btn.publish')}
                       </button>
                     </div>
 

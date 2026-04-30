@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { SyncStatus } from '@prism/shared'
 
 interface GitSyncPanelProps {
@@ -18,15 +19,6 @@ const STATUS_DOT_COLOR: Record<SyncStatus, string> = {
   'conflict-detected': '#f97316',
   synced: '#22c55e',
   error: '#ef4444',
-}
-
-const STATUS_LABEL: Record<SyncStatus, string> = {
-  idle: 'Idle',
-  pushing: 'Pushing…',
-  pulling: 'Pulling…',
-  'conflict-detected': 'Conflict Detected',
-  synced: 'Synced',
-  error: 'Error',
 }
 
 const SPINNER_STYLE: React.CSSProperties = {
@@ -59,11 +51,23 @@ export function GitSyncPanel({
   pushing,
   pulling,
 }: GitSyncPanelProps) {
+  const { t } = useTranslation('components')
+  const tCommon = useTranslation('common').t
   const [showCommitForm, setShowCommitForm] = useState(false)
   const [commitMessage, setCommitMessage] = useState('')
   const [commitError, setCommitError] = useState('')
 
   const isActive = pushing || pulling
+
+  // Map SyncStatus → common.status translation key
+  const STATUS_KEY: Record<SyncStatus, string> = {
+    idle: 'status.idle',
+    pushing: 'status.pushing',
+    pulling: 'status.pulling',
+    'conflict-detected': 'status.conflictDetected',
+    synced: 'status.synced',
+    error: 'status.error',
+  }
 
   function handlePushClick() {
     setShowCommitForm(true)
@@ -73,7 +77,7 @@ export function GitSyncPanel({
 
   function handlePushSubmit() {
     if (!commitMessage.trim()) {
-      setCommitError('Commit message is required')
+      setCommitError(t('gitSyncPanel.commitRequired'))
       return
     }
     setShowCommitForm(false)
@@ -100,7 +104,7 @@ export function GitSyncPanel({
         />
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           {isActive && <span style={SPINNER_STYLE} />}
-          {STATUS_LABEL[status]}
+          {tCommon(STATUS_KEY[status])}
         </span>
         {branch && (
           <span style={{
@@ -116,7 +120,7 @@ export function GitSyncPanel({
         )}
         {lastSyncAt && (
           <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
-            Last sync: {formatDate(lastSyncAt)}
+            {t('gitSyncPanel.lastSync')}{formatDate(lastSyncAt)}
           </span>
         )}
       </div>
@@ -128,14 +132,14 @@ export function GitSyncPanel({
           onClick={onPull}
           disabled={isActive}
         >
-          {pulling ? <><span style={SPINNER_STYLE} />Pulling…</> : '⬇ Pull'}
+          {pulling ? <><span style={SPINNER_STYLE} />{t('gitSyncPanel.pulling')}</> : t('gitSyncPanel.pull')}
         </button>
         <button
           className="btn btn-ghost btn-sm"
           onClick={handlePushClick}
           disabled={isActive || showCommitForm}
         >
-          {pushing ? <><span style={SPINNER_STYLE} />Pushing…</> : '⬆ Push'}
+          {pushing ? <><span style={SPINNER_STYLE} />{t('gitSyncPanel.pushing')}</> : t('gitSyncPanel.push')}
         </button>
       </div>
 
@@ -143,14 +147,14 @@ export function GitSyncPanel({
       {showCommitForm && (
         <div style={{ marginTop: 14, borderTop: '1px solid var(--border-default)', paddingTop: 14 }}>
           <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
-            Commit message
+            {t('gitSyncPanel.commitPlaceholder')}
           </label>
           <input
             type="text"
             value={commitMessage}
             onChange={(e) => setCommitMessage(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handlePushSubmit() }}
-            placeholder="Update rules and skills"
+            placeholder={t('gitSyncPanel.commitPlaceholderDefault')}
             className="editor-meta-input"
             style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8 }}
             autoFocus
@@ -162,10 +166,10 @@ export function GitSyncPanel({
           )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-primary btn-sm" onClick={handlePushSubmit}>
-              Push
+              {t('gitSyncPanel.pushAction')}
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowCommitForm(false)}>
-              Cancel
+              {tCommon('btn.cancel')}
             </button>
           </div>
         </div>

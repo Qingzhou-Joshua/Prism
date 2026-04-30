@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitConflict, GitConflictResolution, ConflictResolution } from '@prism/shared'
 
 interface GitConflictResolverProps {
@@ -7,21 +8,24 @@ interface GitConflictResolverProps {
   onCancel: () => void
 }
 
-const ASSET_TYPE_LABELS: Record<string, string> = {
-  rule: 'Rule',
-  skill: 'Skill',
-  agent: 'Agent',
-  mcp: 'MCP',
-  hook: 'Hook',
+const ASSET_TYPE_KEYS: Record<string, string> = {
+  rule: 'gitConflictResolver.assetTypes.rule',
+  skill: 'gitConflictResolver.assetTypes.skill',
+  agent: 'gitConflictResolver.assetTypes.agent',
+  mcp: 'gitConflictResolver.assetTypes.mcp',
+  hook: 'gitConflictResolver.assetTypes.hook',
 }
 
-const RESOLUTION_LABELS: Record<ConflictResolution, string> = {
-  'keep-local': 'Keep Local',
-  'keep-remote': 'Keep Remote',
-  'merge': 'Merge',
+const RESOLUTION_KEYS: Record<ConflictResolution, string> = {
+  'keep-local': 'gitConflictResolver.resolutions.keepLocal',
+  'keep-remote': 'gitConflictResolver.resolutions.keepRemote',
+  'merge': 'gitConflictResolver.resolutions.merge',
 }
 
 export function GitConflictResolver({ conflicts, onResolveAll, onCancel }: GitConflictResolverProps) {
+  const { t } = useTranslation('components')
+  const tCommon = useTranslation('common').t
+
   // Map of key → chosen resolution
   const [resolutions, setResolutions] = useState<Record<string, ConflictResolution>>({})
   // Map of key → merge textarea content
@@ -52,16 +56,17 @@ export function GitConflictResolver({ conflicts, onResolveAll, onCancel }: GitCo
     <div style={{ marginTop: 16 }}>
       <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontWeight: 600, fontSize: 14 }}>
-          ⚠️ Conflicts detected ({conflicts.length})
+          {t('gitConflictResolver.conflictsTitle', { count: conflicts.length })}
         </div>
         <button className="btn btn-ghost btn-sm" onClick={onCancel}>
-          Cancel
+          {tCommon('btn.cancel')}
         </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {conflicts.map((conflict) => {
           const chosen = resolutions[conflict.key]
+          const assetTypeKey = ASSET_TYPE_KEYS[conflict.type]
           return (
             <div
               key={conflict.key}
@@ -73,7 +78,7 @@ export function GitConflictResolver({ conflicts, onResolveAll, onCancel }: GitCo
                   className="badge badge-accent"
                   style={{ fontSize: 11 }}
                 >
-                  {ASSET_TYPE_LABELS[conflict.type] ?? conflict.type}
+                  {assetTypeKey ? t(assetTypeKey) : conflict.type}
                 </span>
                 <span style={{ fontWeight: 500, fontSize: 13 }}>
                   {conflict.name}
@@ -89,7 +94,7 @@ export function GitConflictResolver({ conflicts, onResolveAll, onCancel }: GitCo
                       borderRadius: 4,
                     }}
                   >
-                    → {RESOLUTION_LABELS[chosen]}
+                    → {t(RESOLUTION_KEYS[chosen])}
                   </span>
                 )}
               </div>
@@ -102,7 +107,7 @@ export function GitConflictResolver({ conflicts, onResolveAll, onCancel }: GitCo
                     className={`btn btn-sm ${chosen === res ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => setResolution(conflict.key, res)}
                   >
-                    {RESOLUTION_LABELS[res]}
+                    {t(RESOLUTION_KEYS[res])}
                   </button>
                 ))}
               </div>
@@ -111,7 +116,7 @@ export function GitConflictResolver({ conflicts, onResolveAll, onCancel }: GitCo
               {chosen === 'merge' && (
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
-                    Edit merged content:
+                    {t('gitConflictResolver.editMergedContent')}
                   </div>
                   <textarea
                     value={mergeContents[conflict.key] ?? ''}
@@ -144,12 +149,12 @@ export function GitConflictResolver({ conflicts, onResolveAll, onCancel }: GitCo
           className="btn btn-primary btn-sm"
           onClick={handleApply}
           disabled={!allResolved}
-          title={!allResolved ? 'Resolve all conflicts first' : undefined}
+          title={!allResolved ? t('gitConflictResolver.resolveAllFirst') : undefined}
         >
-          Apply Resolutions ({Object.keys(resolutions).length}/{conflicts.length})
+          {t('gitConflictResolver.applyBtn', { resolved: Object.keys(resolutions).length, total: conflicts.length })}
         </button>
         <button className="btn btn-ghost btn-sm" onClick={onCancel}>
-          Cancel
+          {tCommon('btn.cancel')}
         </button>
       </div>
     </div>

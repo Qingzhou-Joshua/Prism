@@ -1,0 +1,22 @@
+{
+  "required": "此字段为必填项",
+  "tooShort": "至少需要 {{min}} 个字符",
+  "tooLong": "不能超过 {{max}} 个字符",
+  "invalidUrl": "请输入有效的 URL",
+  "invalidGitUrl": "请输入有效的 Git 仓库地址（HTTPS）",
+  "duplicateName": "已存在同名{{type}}",
+  "saveFailed": "保存失败：{{error}}",
+  "loadFailed": "加载失败：{{error}}",
+  "deleteFailed": "删除失败：{{error}}",
+  "publishFailed": "发布失败：{{error}}",
+  "networkError": "网络错误，请检查您的网络连接。",
+  "serverError": "服务器错误，请稍后重试。",
+  "noName": "请输入名称",
+  "noContent": "内容不能为空",
+  "noTrigger": "请输入触发词",
+  "triggerFormat": "触发词必须以 / 开头",
+  "noMatcher": "请输入匹配模式",
+  "noActions": "请至少添加一个操作",
+  "noRemoteUrl": "请输入远程地址",
+  "noBranch": "请输入分支名称"
+}

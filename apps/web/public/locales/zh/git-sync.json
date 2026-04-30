@@ -1,0 +1,63 @@
+{
+  "status": {
+    "idle": "空闲",
+    "pushing": "推送中…",
+    "pulling": "拉取中…",
+    "conflictDetected": "检测到冲突",
+    "synced": "已同步",
+    "error": "错误"
+  },
+  "config": {
+    "notConfigured": "未配置",
+    "remoteUrl": "远程地址",
+    "branch": "分支",
+    "lastSync": "上次同步",
+    "configure": "配置",
+    "disconnect": "断开连接",
+    "save": "保存配置",
+    "saving": "保存中…"
+  },
+  "wizard": {
+    "title": "设置 Git 同步",
+    "steps": {
+      "configure": "配置仓库",
+      "clone": "克隆中…",
+      "publish": "发布到 IDE",
+      "done": "完成"
+    },
+    "remoteUrlLabel": "远程地址",
+    "remoteUrlHint": "支持 GitHub / GitLab HTTPS 地址。私有仓库请使用 PAT token：",
+    "branchLabel": "分支",
+    "cloneBtn": "克隆并初始化",
+    "cloneError": "❌ {{error}}",
+    "initializing": "正在初始化仓库并拉取资产…",
+    "cloneComplete": "✅ 克隆完成！",
+    "registryRebuilt": " 注册表已重建。",
+    "selectIdes": "选择要发布资产的 IDE：",
+    "publishBtn": "🚀 发布到 IDE",
+    "publishing": "发布中…",
+    "allDone": "🎉 全部完成！已向您的 IDE 发布 {{count}} 个资产。Git 同步现已在本机启用。",
+    "skip": "跳过",
+    "next": "下一步 →",
+    "done": "完成 ✓"
+  },
+  "conflicts": {
+    "title": "⚠️ 检测到冲突（{{count}}）",
+    "keepLocal": "保留本地",
+    "keepRemote": "以远端为准",
+    "merge": "合并",
+    "applyResolutions": "应用解决方案（{{resolved}}/{{total}}）",
+    "resolveAllFirst": "请先解决所有冲突",
+    "editMergedContent": "编辑合并后内容："
+  },
+  "operations": {
+    "pushSuccess": "推送成功",
+    "pushFailed": "推送失败",
+    "pullSuccess": "拉取成功",
+    "pullFailed": "拉取失败",
+    "pullWithResolutionsSuccess": "带解决方案的拉取完成",
+    "pullWithResolutionsFailed": "带解决方案的拉取失败",
+    "disconnectConfirm": "确认断开 Git 同步连接？这不会删除远程仓库。",
+    "disconnectFailed": "断开 Git 同步失败"
+  }
+}

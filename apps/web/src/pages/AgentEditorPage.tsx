@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Editor from '@monaco-editor/react'
 import type { UnifiedAgent, PlatformId } from '@prism/shared'
 import { agentsApi } from '../api/agents'
@@ -38,6 +39,8 @@ function toDraft(agent?: UnifiedAgent): DraftAgent {
 }
 
 export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platformId }: AgentEditorPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [draft, setDraft] = useState<DraftAgent>(() => toDraft(initialAgent))
   const [applyGlobally, setApplyGlobally] = useState(
     () => (initialAgent?.targetPlatforms?.length ?? 0) === 0
@@ -92,7 +95,7 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
       }
       onBack()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed')
+      setError(e instanceof Error ? e.message : t('agentEditor.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -109,7 +112,7 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
           type="text"
           value={draft.name}
           onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="Agent name…"
+          placeholder={t('agentEditor.namePlaceholder')}
           className="editor-toolbar-name"
         />
 
@@ -124,7 +127,7 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
               onChange={e => handleApplyGloballyToggle(e.target.checked)}
             />
             <PlatformIcon platformId="global" size={14} />
-            <span>All platforms</span>
+            <span>{tCommon('platform.allPlatforms')}</span>
           </label>
 
           {detectedPlatforms.map(platform => (
@@ -141,7 +144,7 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
           ))}
 
           {isInvalidPlatformState && (
-            <span className="toolbar-platform-warning">Select at least one</span>
+            <span className="toolbar-platform-warning">{tCommon('platform.selectAtLeastOne')}</span>
           )}
         </div>
 
@@ -149,14 +152,14 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
 
         <div className="editor-toolbar-actions">
           <button className="btn btn-ghost btn-sm" onClick={onBack} disabled={saving}>
-            Cancel
+            {tCommon('btn.cancel')}
           </button>
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
-            {saving ? 'Saving…' : 'Save Agent'}
+            {saving ? tCommon('status.saving') : t('agentEditor.saveAgent')}
           </button>
         </div>
       </div>
@@ -167,14 +170,14 @@ export function AgentEditorPage({ onBack, initialAgent, detectedPlatforms, platf
           type="text"
           value={draft.agentType}
           onChange={e => setDraft(prev => ({ ...prev, agentType: e.target.value }))}
-          placeholder="Agent type (e.g. general-purpose)"
+          placeholder={t('agentEditor.namePlaceholder')}
           className="editor-meta-input"
         />
         <input
           type="text"
           value={draft.description}
           onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
-          placeholder="Description (optional)"
+          placeholder={t('agentEditor.descPlaceholder')}
           className="editor-meta-input"
         />
       </div>

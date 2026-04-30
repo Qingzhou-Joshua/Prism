@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Editor from '@monaco-editor/react'
 import type { UnifiedRule } from '@prism/shared'
 import { rulesApi } from '../api/rules'
@@ -36,6 +37,8 @@ function toDraft(rule: UnifiedRule | null): DraftRule {
 }
 
 export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, platformId }: RuleEditorPageProps) {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [draft, setDraft] = useState<DraftRule>(() => toDraft(rule))
   const [applyGlobally, setApplyGlobally] = useState(
     () => (rule?.targetPlatforms?.length ?? 0) === 0
@@ -115,7 +118,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
           : await rulesApi.update(rule.id, dto, platformId)
       onSave(saved)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed')
+      setError(e instanceof Error ? e.message : t('ruleEditor.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -138,7 +141,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
     } catch (e) {
       setOverrideSaveError(prev => ({
         ...prev,
-        [pid]: e instanceof Error ? e.message : 'Save failed',
+        [pid]: e instanceof Error ? e.message : t('ruleEditor.saveFailed'),
       }))
     } finally {
       setOverrideSaving(prev => ({ ...prev, [pid]: false }))
@@ -158,7 +161,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
     } catch (e) {
       setOverrideSaveError(prev => ({
         ...prev,
-        [pid]: e instanceof Error ? e.message : 'Clear failed',
+        [pid]: e instanceof Error ? e.message : t('ruleEditor.clearFailed'),
       }))
     } finally {
       setOverrideSaving(prev => ({ ...prev, [pid]: false }))
@@ -176,7 +179,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
           type="text"
           value={draft.name}
           onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="Rule name…"
+          placeholder={t('ruleEditor.namePlaceholder')}
           className="editor-toolbar-name"
         />
 
@@ -191,7 +194,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
               onChange={e => handleApplyGloballyToggle(e.target.checked)}
             />
             <PlatformIcon platformId="global" size={14} />
-            <span>All platforms</span>
+            <span>{tCommon('platform.allPlatforms')}</span>
           </label>
 
           {detectedPlatforms.map(platform => (
@@ -208,7 +211,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
           ))}
 
           {isInvalidPlatformState && (
-            <span className="toolbar-platform-warning">Select at least one</span>
+            <span className="toolbar-platform-warning">{tCommon('platform.selectAtLeastOne')}</span>
           )}
         </div>
 
@@ -216,14 +219,14 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
 
         <div className="editor-toolbar-actions">
           <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>
-            Cancel
+            {tCommon('btn.cancel')}
           </button>
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || !draft.name.trim() || isInvalidPlatformState}
           >
-            {saving ? 'Saving…' : 'Save Rule'}
+            {saving ? tCommon('status.saving') : t('ruleEditor.saveRule')}
           </button>
         </div>
       </div>
@@ -271,9 +274,9 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
             }}
           >
             <span>{overridesExpanded ? '▼' : '▶'}</span>
-            Platform Overrides
+            {t('ruleEditor.platformOverrides')}
             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
-              — per-platform content that overrides the base rule
+              — {t('ruleEditor.platformOverridesHint')}
             </span>
           </button>
 
@@ -305,7 +308,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{pid}</span>
                     {overrideSaving[pid] && (
                       <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
-                        Saving…
+                        {tCommon('status.saving')}
                       </span>
                     )}
                   </div>
@@ -346,7 +349,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
                       onClick={() => void handleSaveOverride(pid)}
                       disabled={overrideSaving[pid]}
                     >
-                      {overrideSaving[pid] ? 'Saving…' : 'Save Override'}
+                      {overrideSaving[pid] ? tCommon('status.saving') : t('ruleEditor.saveOverride')}
                     </button>
                     {(overrideValues[pid] ?? '').length > 0 && (
                       <button
@@ -354,7 +357,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
                         onClick={() => void handleClearOverride(pid)}
                         disabled={overrideSaving[pid]}
                       >
-                        Clear Override
+                        {t('ruleEditor.clearOverride')}
                       </button>
                     )}
                     {overrideSaveError[pid] && (

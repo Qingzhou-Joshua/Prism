@@ -1,0 +1,63 @@
+{
+  "status": {
+    "idle": "Idle",
+    "pushing": "Pushing…",
+    "pulling": "Pulling…",
+    "conflictDetected": "Conflict Detected",
+    "synced": "Synced",
+    "error": "Error"
+  },
+  "config": {
+    "notConfigured": "Not configured",
+    "remoteUrl": "Remote URL",
+    "branch": "Branch",
+    "lastSync": "Last sync",
+    "configure": "Configure",
+    "disconnect": "Disconnect",
+    "save": "Save Configuration",
+    "saving": "Saving…"
+  },
+  "wizard": {
+    "title": "Set Up Git Sync",
+    "steps": {
+      "configure": "Configure Repository",
+      "clone": "Cloning…",
+      "publish": "Publish to IDE",
+      "done": "Done"
+    },
+    "remoteUrlLabel": "Remote URL",
+    "remoteUrlHint": "Supports GitHub / GitLab HTTPS URLs. For private repos, use a PAT token:",
+    "branchLabel": "Branch",
+    "cloneBtn": "Clone & Initialize",
+    "cloneError": "❌ {{error}}",
+    "initializing": "Initializing repository and pulling assets…",
+    "cloneComplete": "✅ Clone complete!",
+    "registryRebuilt": " Registry rebuilt.",
+    "selectIdes": "Select which IDEs to publish assets to:",
+    "publishBtn": "🚀 Publish to IDE",
+    "publishing": "Publishing…",
+    "allDone": "🎉 All done! Published {{count}} asset(s) to your IDE(s). Git Sync is now active on this machine.",
+    "skip": "Skip",
+    "next": "Next →",
+    "done": "Done ✓"
+  },
+  "conflicts": {
+    "title": "⚠️ Conflicts detected ({{count}})",
+    "keepLocal": "Keep Local",
+    "keepRemote": "Keep Remote",
+    "merge": "Merge",
+    "applyResolutions": "Apply Resolutions ({{resolved}}/{{total}})",
+    "resolveAllFirst": "Resolve all conflicts first",
+    "editMergedContent": "Edit merged content:"
+  },
+  "operations": {
+    "pushSuccess": "Push completed successfully",
+    "pushFailed": "Push failed",
+    "pullSuccess": "Pull completed successfully",
+    "pullFailed": "Pull failed",
+    "pullWithResolutionsSuccess": "Pull with resolutions completed",
+    "pullWithResolutionsFailed": "Pull with resolutions failed",
+    "disconnectConfirm": "Are you sure you want to disconnect Git Sync? This will not delete the remote repository.",
+    "disconnectFailed": "Failed to disconnect Git Sync"
+  }
+}

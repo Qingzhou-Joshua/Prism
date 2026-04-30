@@ -1,0 +1,211 @@
+{
+  "rules": {
+    "title": "Rules",
+    "count_one": "{{count}} rule managed",
+    "count_other": "{{count}} rules managed",
+    "newBtn": "+ New Rule",
+    "empty": "No rules yet",
+    "emptyHint": "Create a rule or import from a platform using the Scanner tab.",
+    "loadingFailed": "Failed to load rules"
+  },
+  "skills": {
+    "title": "Skills",
+    "count_one": "{{count}} skill managed",
+    "count_other": "{{count}} skills managed",
+    "newBtn": "+ New Skill",
+    "empty": "No skills yet",
+    "emptyHint": "Create a skill to define reusable agent capabilities.",
+    "loadingFailed": "Failed to load skills"
+  },
+  "agents": {
+    "title": "Agents",
+    "count_one": "{{count}} agent managed",
+    "count_other": "{{count}} agents managed",
+    "newBtn": "+ New Agent",
+    "empty": "No agents yet",
+    "emptyHint": "Create an agent to define reusable AI agent definitions.",
+    "loadingFailed": "Failed to load agents"
+  },
+  "mcp": {
+    "title": "MCP Servers",
+    "count_one": "{{count}} server configured",
+    "count_other": "{{count}} servers configured",
+    "newBtn": "+ New Server",
+    "importBtn": "↓ Import from Claude Code",
+    "importing": "Importing…",
+    "empty": "No MCP servers yet",
+    "emptyHint": "Add a server manually or import from an existing platform configuration.",
+    "envVars_one": "{{count}} env var",
+    "envVars_other": "{{count}} env vars",
+    "noServersInClaude": "No MCP servers found in Claude Code settings",
+    "importFailed": "Import failed",
+    "loadingFailed": "Failed to load MCP servers",
+    "deleteFailed": "Delete failed"
+  },
+  "hooks": {
+    "title": "Hooks",
+    "count_one": "{{count}} hook configured",
+    "count_other": "{{count}} hooks configured",
+    "newBtn": "+ New Hook",
+    "empty": "No hooks yet",
+    "emptyHint": "Create a hook to run commands automatically on tool events.",
+    "noActions": "No actions",
+    "loadingFailed": "Failed to load hooks",
+    "deleteFailed": "Delete failed",
+    "actionScript": "$ {{cmd}}",
+    "actionPrompt": "prompt: {{text}}",
+    "actionAgent": "agent: {{text}}",
+    "actionUnknown": "Unknown action"
+  },
+  "commands": {
+    "title": "Commands",
+    "count_one": "{{count}} command managed",
+    "count_other": "{{count}} commands managed",
+    "newBtn": "+ New Command",
+    "empty": "No commands yet",
+    "emptyHint": "Create a command to define reusable slash command definitions.",
+    "loadingFailed": "Failed to load commands",
+    "deleteFailed": "Delete failed"
+  },
+  "conflicts": {
+    "title": "Conflicts",
+    "subtitle": "Cross-platform asset conflicts detected",
+    "refreshBtn": "↻ Refresh",
+    "empty": "No conflicts detected",
+    "emptyHint": "All assets are consistent across platforms.",
+    "count": "{{count}} conflicting entries",
+    "loadingContent": "Loading content…",
+    "empty_content": "(empty)",
+    "mergeAsGlobal": "Merge as Global Version",
+    "mergeHint": "Edit the content below as the merged global version. After confirmation, it will be written to the same-named assets on all target platforms.",
+    "merging": "Merging…",
+    "confirmMerge": "Confirm Merge",
+    "keepPlatform": "Keep {{platform}} version",
+    "keepSeparate": "Keep separate",
+    "resolving": "Resolving…"
+  },
+  "knowledge": {
+    "title": "Developer Profile",
+    "allDomains": "All domains",
+    "filterPlaceholder": "Filter by project path…",
+    "count_one": "{{count}} entry",
+    "count_other": "{{count}} entries",
+    "empty": "No knowledge entries yet",
+    "emptyHint": "Enable Auto-Capture to automatically record learnings from your coding sessions.",
+    "autoCaptureOn": "Auto-Capture ON",
+    "configureAutoCapture": "Configure Auto-Capture",
+    "editProfile": "Edit Profile",
+    "viewEntry": "View ▸",
+    "generatedAssets": "Generated Assets",
+    "generateProfileRule": "🪄 Generate Profile Rule",
+    "generateProjectRule": "📁 Generate Project Rule",
+    "projectPathPlaceholder": "Project path (optional)…",
+    "generate": "Generate",
+    "noGeneratedAssets": "No generated assets yet",
+    "noGeneratedHint": "Use the buttons above to generate Rules or Skills from your knowledge.",
+    "notPublished": "Not published",
+    "loadingFailed": "Failed to load knowledge data",
+    "deleteFailed": "Delete failed",
+    "generateProfileFailed": "Failed to generate profile rule",
+    "generateProjectFailed": "Failed to generate project rule",
+    "publishFailed": "Failed to publish asset",
+    "autoCaptureToggleFailed": "Failed to toggle auto-capture hook"
+  },
+  "knowledgeProfile": {
+    "loading": "Loading profile…",
+    "saveFailed": "Save failed",
+    "saveProfile": "Save Profile",
+    "namePlaceholder": "Your Name",
+    "rolePlaceholder": "Role / Title",
+    "skillsPlaceholder": "Skills (comma-separated, e.g. typescript, react, rust)",
+    "loadFailed": "Failed to load profile"
+  },
+  "knowledgeEntry": {
+    "deleteConfirm": "Delete this entry?",
+    "deleteEntry": "Delete Entry"
+  },
+  "gitSync": {
+    "title": "Git Sync",
+    "subtitle": "Sync your Prism assets across machines via Git",
+    "notConfigured": "Git Sync not configured",
+    "notConfiguredHint": "Go to Settings to configure a remote repository.",
+    "pullSuccess": "Pull completed successfully",
+    "pullFailed": "Pull failed",
+    "pushSuccess": "Push completed successfully",
+    "pushFailed": "Push failed",
+    "pullWithResolutionsSuccess": "Pull with resolutions completed",
+    "pullWithResolutionsFailed": "Pull with resolutions failed",
+    "loadingFailed": "Failed to load Git Sync status"
+  },
+  "settings": {
+    "title": "Settings",
+    "loadingFailed": "Failed to load Git Sync config",
+    "gitSync": "Git Sync",
+    "remoteUrl": "Remote URL: ",
+    "branch": "Branch: ",
+    "lastSync": "Last sync: ",
+    "openGitSync": "Open Git Sync →",
+    "disconnect": "Disconnect",
+    "gitSyncDescription": "Git Sync lets you sync Prism assets (Rules, Skills, Agents, etc.) across multiple machines via a Git repository. Connect a remote repo to get started.",
+    "configureGitSync": "Configure Git Sync",
+    "remoteUrlLabel": "Remote URL",
+    "branchLabel": "Branch",
+    "saveFailed": "Failed to save",
+    "disconnectConfirm": "Are you sure you want to disconnect Git Sync? This will not delete the remote repository.",
+    "disconnectFailed": "Failed to disconnect Git Sync"
+  },
+  "platforms": {
+    "loading": "Loading platforms…",
+    "noDetected": "No platforms detected",
+    "retryScan": "Retry scan",
+    "connectionError": "Connection error:",
+    "retry": "Retry"
+  },
+  "ruleEditor": {
+    "namePlaceholder": "Rule name…",
+    "platformOverrides": "Platform Overrides",
+    "platformOverridesHint": "— per-platform content that overrides the base rule",
+    "saveOverride": "Save Override",
+    "clearOverride": "Clear Override",
+    "saveRule": "Save Rule",
+    "saveFailed": "Save failed",
+    "deleteFailed": "Delete failed: ",
+    "clearFailed": "Clear failed"
+  },
+  "skillEditor": {
+    "namePlaceholder": "Skill name…",
+    "triggerPlaceholder": "Trigger (e.g. /myskill)",
+    "categoryPlaceholder": "Category (e.g. development)",
+    "saveSkill": "Save Skill",
+    "saveFailed": "Save failed"
+  },
+  "agentEditor": {
+    "namePlaceholder": "Agent name…",
+    "descPlaceholder": "Description (optional)",
+    "saveAgent": "Save Agent",
+    "saveFailed": "Save failed"
+  },
+  "mcpEditor": {
+    "newTitle": "New MCP Server",
+    "editTitle": "Edit: {{name}}",
+    "descPlaceholder": "Brief description of what this MCP server provides",
+    "noProjections": "No projections available",
+    "saveToSeeProjections": "Save to see platform projections",
+    "saveFailed": "Save failed"
+  },
+  "hookEditor": {
+    "newTitle": "New Hook",
+    "editTitle": "Edit Hook: {{matcher}}",
+    "descPlaceholder": "Brief description of this hook",
+    "addAction": "+ Add Action",
+    "saveFailed": "Save failed"
+  },
+  "commandEditor": {
+    "namePlaceholder": "Command name…",
+    "descPlaceholder": "Description (optional)",
+    "tagsPlaceholder": "Tags (comma-separated, optional)",
+    "saveCommand": "Save Command",
+    "noProjections": "No projections available.",
+    "saveFailed": "Save failed"
+  }
+}

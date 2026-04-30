@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { SyncStatus, GitConflict, GitConflictResolution, GitSyncConfig } from '@prism/shared'
 import { gitSyncApi } from '../api/git-sync.js'
 import { GitSyncPanel } from '../components/GitSyncPanel.js'
 import { GitConflictResolver } from '../components/GitConflictResolver.js'
 
 export function GitSyncPage() {
+  const { t } = useTranslation('pages')
+  const tCommon = useTranslation('common').t
   const [config, setConfig] = useState<GitSyncConfig | null>(null)
   const [status, setStatus] = useState<SyncStatus>('idle')
   const [lastSyncAt, setLastSyncAt] = useState<string | undefined>()
@@ -36,11 +39,11 @@ export function GitSyncPage() {
       setLastSyncAt(statusResult.lastSyncAt)
       setMessage(statusResult.message)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load Git Sync status')
+      setError(e instanceof Error ? e.message : t('gitSync.loadingFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { void load() }, [load])
 
@@ -72,14 +75,14 @@ export function GitSyncPage() {
       if (result.success) {
         setStatus('synced')
         setLastSyncAt(new Date().toISOString())
-        setOpSuccess(result.message ?? 'Pull completed successfully')
+        setOpSuccess(result.message ?? t('gitSync.pullSuccess'))
       } else {
         setStatus('error')
-        setOpError(result.message ?? 'Pull failed')
+        setOpError(result.message ?? t('gitSync.pullFailed'))
       }
     } catch (e) {
       setStatus('error')
-      setOpError(e instanceof Error ? e.message : 'Pull failed')
+      setOpError(e instanceof Error ? e.message : t('gitSync.pullFailed'))
     } finally {
       setPulling(false)
     }
@@ -96,14 +99,14 @@ export function GitSyncPage() {
       if (result.success) {
         setStatus('synced')
         setLastSyncAt(new Date().toISOString())
-        setOpSuccess(result.message ?? 'Push completed successfully')
+        setOpSuccess(result.message ?? t('gitSync.pushSuccess'))
       } else {
         setStatus('error')
-        setOpError(result.message ?? 'Push failed')
+        setOpError(result.message ?? t('gitSync.pushFailed'))
       }
     } catch (e) {
       setStatus('error')
-      setOpError(e instanceof Error ? e.message : 'Push failed')
+      setOpError(e instanceof Error ? e.message : t('gitSync.pushFailed'))
     } finally {
       setPushing(false)
     }
@@ -121,15 +124,15 @@ export function GitSyncPage() {
       if (result.success) {
         setStatus('synced')
         setLastSyncAt(new Date().toISOString())
-        setOpSuccess(result.message ?? 'Pull with resolutions completed')
+        setOpSuccess(result.message ?? t('gitSync.pullWithResolutionsSuccess'))
         setConflicts([])
       } else {
         setStatus('error')
-        setOpError(result.message ?? 'Pull with resolutions failed')
+        setOpError(result.message ?? t('gitSync.pullWithResolutionsFailed'))
       }
     } catch (e) {
       setStatus('error')
-      setOpError(e instanceof Error ? e.message : 'Pull failed')
+      setOpError(e instanceof Error ? e.message : t('gitSync.pullFailed'))
     } finally {
       setPulling(false)
     }
@@ -141,9 +144,9 @@ export function GitSyncPage() {
     <div>
       <div className="page-header">
         <div>
-          <div className="page-title">Git Sync</div>
+          <div className="page-title">{t('gitSync.title')}</div>
           <div className="page-subtitle">
-            Sync your Prism assets across machines via Git
+            {t('gitSync.subtitle')}
           </div>
         </div>
         <button
@@ -151,11 +154,11 @@ export function GitSyncPage() {
           onClick={() => void load()}
           disabled={loading}
         >
-          {loading ? '…' : '↺ Refresh'}
+          {loading ? '…' : tCommon('btn.refresh')}
         </button>
       </div>
 
-      {loading && <div className="loading-state">Loading…</div>}
+      {loading && <div className="loading-state">{tCommon('status.loading')}</div>}
 
       {error && (
         <div className="error-state" style={{ marginBottom: 12 }}>
@@ -166,9 +169,9 @@ export function GitSyncPage() {
       {!loading && !config && (
         <div className="empty-state">
           <div className="empty-state-icon">🔄</div>
-          <div className="empty-state-title">Git Sync not configured</div>
+          <div className="empty-state-title">{t('gitSync.notConfigured')}</div>
           <div className="empty-state-desc">
-            Go to Settings to configure a remote repository.
+            {t('gitSync.notConfiguredHint')}
           </div>
         </div>
       )}

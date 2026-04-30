@@ -2304,3 +2304,75 @@ code {
     overflow: visible;
   }
 }
+
+/* ============================================================
+   LANGUAGE TOGGLE
+   ============================================================ */
+.lang-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-width: 36px;
+  padding: 0 8px;
+  border: 1px solid rgba(242, 241, 237, 0.15);
+  border-radius: var(--radius-md);
+  background: rgba(242, 241, 237, 0.06);
+  color: rgba(242, 241, 237, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast),
+              border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.lang-toggle:hover {
+  background: rgba(242, 241, 237, 0.1);
+  color: #f2f1ed;
+  border-color: rgba(242, 241, 237, 0.25);
+}
+
+/* ============================================================
+   CHINESE LANGUAGE LAYOUT ADAPTATION  (:lang(zh))
+   Set via document.documentElement.lang in i18n/index.ts
+   ============================================================ */
+
+/* Chinese font stack — better CJK rendering */
+:lang(zh) body {
+  font-family: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'Hiragino Sans GB',
+               system-ui, -apple-system, sans-serif;
+}
+
+/* Widen sidebar slightly — Chinese nav labels are wider */
+:lang(zh) .app-sidebar {
+  width: 236px;
+}
+
+/* Sidebar nav item: allow text to breathe a bit */
+:lang(zh) .sidebar-nav-item {
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+/* Buttons: ensure Chinese text isn't clipped */
+:lang(zh) .btn {
+  min-width: 52px;
+  letter-spacing: 0;
+}
+
+/* Platform tabs: Chinese display names may be longer */
+:lang(zh) .platform-tab {
+  letter-spacing: 0;
+}
+
+/* Headings: tighten letter-spacing for CJK (default -0.025em looks odd) */
+:lang(zh) h1,
+:lang(zh) h2,
+:lang(zh) h3,
+:lang(zh) h4,
+:lang(zh) h5,
+:lang(zh) h6 {
+  letter-spacing: 0;
+}
