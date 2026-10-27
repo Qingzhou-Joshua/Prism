@@ -14,7 +14,9 @@
     "vitest": "^4.1.4"
   },
   "dependencies": {
+    "@prism/shared": "workspace:*",
+    "jsonc-parser": "^3.3.1",
     "nanoid": "^5.1.7",
-    "@prism/shared": "workspace:*"
+    "smol-toml": "^1.9.1"
   }
 }

@@ -4,26 +4,26 @@ import type { UnifiedAgent, CreateAgentDto, UpdateAgentDto, ImportedAgent } from
 import type { AgentStore } from './store.js'
 import { agentFileName } from '../publish/platform-paths.js'
 import { parseAgentFile } from './parse.js'
-import { fileNameToId, extractMetaTimes } from '../utils/dir-store-utils.js'
+import { fileNameToId, extractMetaTimes, renderWithFrontMatter } from '../utils/dir-store-utils.js'
 
 /**
- * Serialise an agent to front-matter + content markdown.
- * Name is persisted in the front matter so it survives across store instances.
+ * Serialise an agent to front-matter + content markdown, merging into the
+ * existing file's front matter (`original`) so native fields survive.
  */
-function serialise(agent: UnifiedAgent): string {
-  const lines: string[] = ['---']
-  lines.push(`name: ${agent.name}`)
-  if (agent.description) lines.push(`description: ${agent.description}`)
-  if (agent.model) lines.push(`model: ${agent.model}`)
-  if (agent.tools && agent.tools.length > 0) {
-    lines.push('tools:')
-    for (const tool of agent.tools) lines.push(`  - ${tool}`)
-  }
-  lines.push(`createdAt: ${agent.createdAt}`)
-  lines.push(`updatedAt: ${agent.updatedAt}`)
-  lines.push('---')
-  lines.push(agent.content)
-  return lines.join('\n')
+function serialise(agent: UnifiedAgent, original: string | null = null): string {
+  return renderWithFrontMatter(
+    original,
+    [
+      ['name', agent.name],
+      ['description', agent.description],
+      ['model', agent.model],
+      ['tools', agent.tools],
+      ['createdAt', agent.createdAt],
+      ['updatedAt', agent.updatedAt],
+    ],
+    agent.content,
+    ['createdAt', 'updatedAt'],
+  )
 }
 
 export class DirAgentStore implements AgentStore {
@@ -92,7 +92,7 @@ export class DirAgentStore implements AgentStore {
 
   async update(id: string, dto: UpdateAgentDto): Promise<UnifiedAgent | null> {
     const existing = await this.get(id)
-    if (!existing) return null
+    if (!existing?.filePath) return null
 
     const now = new Date().toISOString()
     const updated: UnifiedAgent = {
@@ -107,17 +107,15 @@ export class DirAgentStore implements AgentStore {
       updatedAt: now,
     }
 
-    // Agent filename is based on display name in front matter; file is always agentFileName(existing.name)
-    const fileName = agentFileName(existing.name)
-    await writeFile(join(this.dirPath, fileName), serialise(updated), 'utf-8')
+    const original = await readFile(existing.filePath!, 'utf-8')
+    await writeFile(existing.filePath!, serialise(updated, original), 'utf-8')
     return updated
   }
 
   async delete(id: string): Promise<boolean> {
     const existing = await this.get(id)
-    if (!existing) return false
-    const fileName = agentFileName(existing.name)
-    await unlink(join(this.dirPath, fileName))
+    if (!existing?.filePath) return false
+    await unlink(existing.filePath)
     return true
   }
 

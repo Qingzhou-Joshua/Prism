@@ -9,7 +9,8 @@
     "conflicts": "冲突",
     "knowledge": "知识库",
     "settings": "设置",
-    "gitSync": "Git 同步"
+    "gitSync": "Git 同步",
+    "plugins": "插件"
   },
   "btn": {
     "save": "保存",
@@ -24,7 +25,8 @@
     "skip": "跳过",
     "done": "完成 ✓",
     "refresh": "↺ 刷新",
-    "back2knowledge": "← 返回知识库"
+    "back2knowledge": "← 返回知识库",
+    "close": "关闭"
   },
   "status": {
     "loading": "加载中…",
@@ -41,5 +43,27 @@
   "platform": {
     "allPlatforms": "所有平台",
     "selectAtLeastOne": "请至少选择一个"
+  },
+  "list": {
+    "search": "搜索名称或描述…",
+    "noDescription": "暂无描述",
+    "noMatch": "没有匹配「{{query}}」的结果"
+  },
+  "sources": {
+    "filter": "来源筛选",
+    "all": "全部",
+    "mine": "我的",
+    "mineTitle": "我的 {{type}}",
+    "editable": "可编辑",
+    "readOnly": "只读",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "showDisabled": "显示已禁用插件（{{count}}）",
+    "showAll": "查看全部 {{count}} 个",
+    "showLess": "收起",
+    "fromPlugin": "来自插件 {{name}}",
+    "sameName": "同名",
+    "sameNameHint": "你的资产中有同名项；插件内容按插件命名空间加载，二者不会互相覆盖",
+    "viewPlugin": "查看插件"
   }
 }

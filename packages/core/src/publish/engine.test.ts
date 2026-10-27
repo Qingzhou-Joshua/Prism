@@ -322,7 +322,7 @@ describe('PublishEngine', () => {
     expect(revision.files).toHaveLength(0)
   })
 
-  it('skips platforms that do not support skills (getPlatformSkillsDir throws)', async () => {
+  it('skips platforms that do not support skills (getPlatformSkillsDir returns null)', async () => {
     const prismDir = await makeTmp()
     const platformDir = await makeTmp()
 
@@ -342,7 +342,7 @@ describe('PublishEngine', () => {
       makeSkillStore([SKILL_1]),
       (platformId) => {
         if (platformId === 'claude-code') return platformDir
-        throw new Error(`Platform ${platformId} does not support skills`)
+        return null
       },
     )
 

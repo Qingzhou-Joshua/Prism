@@ -7,7 +7,8 @@ import { selectPlatform, goToPage } from './helpers/navigate.js'
 /** Navigate to Conflicts page under Claude Code. */
 async function goToConflicts(page: Parameters<typeof goToPage>[0]) {
   await selectPlatform(page, 'Claude Code')
-  await goToPage(page, 'Conflicts')
+  // Conflicts lives in the header's global nav (not the per-platform sidebar)
+  await page.locator('.global-nav-btn', { hasText: 'Conflicts' }).click()
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -19,7 +20,7 @@ test.describe('Conflicts Page', () => {
     await selectPlatform(page, 'Claude Code')
 
     // The nav item should be visible in the sidebar
-    const conflictsNav = page.locator('.sidebar-nav-item', { hasText: 'Conflicts' })
+    const conflictsNav = page.locator('.global-nav-btn', { hasText: 'Conflicts' })
     await expect(conflictsNav).toBeVisible({ timeout: 8000 })
 
     // Click it
@@ -68,12 +69,12 @@ test.describe('Conflicts Page', () => {
     await selectPlatform(page, 'Claude Code')
 
     // Wait for the sidebar to render
-    const conflictsNav = page.locator('.sidebar-nav-item', { hasText: 'Conflicts' })
+    const conflictsNav = page.locator('.global-nav-btn', { hasText: 'Conflicts' })
     await expect(conflictsNav).toBeVisible({ timeout: 8000 })
 
     // The badge span has inline style background: rgb(191, 48, 48) (#bf3030)
     // It is only rendered when conflictCount > 0, so it should NOT exist
-    const badge = conflictsNav.locator('span[style*="#bf3030"], span[style*="rgb(191, 48, 48)"]')
+    const badge = conflictsNav.locator('.global-nav-badge')
     expect(await badge.count()).toBe(0)
 
     console.log('✓ Sidebar Conflicts nav item shows no red badge when registry is empty')
@@ -136,35 +137,30 @@ test.describe('Conflicts Page', () => {
     const firstCard = grid.locator('.item-card').first()
     await expect(firstCard).toBeVisible()
 
-    // Initially collapsed — chevron should be ▶
-    const chevron = firstCard.locator('span', { hasText: '▶' })
+    // Initially collapsed
+    const chevron = firstCard.locator('[data-chevron="closed"]')
     await expect(chevron).toBeVisible()
 
     // Click the card header row to expand
     const headerRow = firstCard.locator('div').first()
     await headerRow.click()
 
-    // Chevron should now show ▼
-    const chevronExpanded = firstCard.locator('span', { hasText: '▼' })
+    // Chevron should now be expanded
+    const chevronExpanded = firstCard.locator('[data-chevron="open"]')
     await expect(chevronExpanded).toBeVisible({ timeout: 5000 })
 
-    // Entry details should appear: filePath (monospace text) is visible
-    // The expanded section contains entry.filePath and "checksum: <8chars>…"
-    const checksumText = firstCard.locator('span', { hasText: 'checksum:' })
-    await expect(checksumText.first()).toBeVisible({ timeout: 5000 })
-
-    // filePath text is also visible (monospace div inside card)
-    const expectedFilePath = conflicts[0].entries[0].filePath
-    await expect(firstCard.locator(`text=${expectedFilePath}`)).toBeVisible()
+    // The expanded section shows a side-by-side diff: one <pre> per conflicting entry
+    const diffPanes = firstCard.locator('pre')
+    await expect(diffPanes.first()).toBeVisible({ timeout: 5000 })
 
     // Click again to collapse
     await headerRow.click()
 
-    // Chevron goes back to ▶
-    await expect(firstCard.locator('span', { hasText: '▶' })).toBeVisible({ timeout: 5000 })
+    // Chevron goes back to collapsed
+    await expect(firstCard.locator('[data-chevron="closed"]')).toBeVisible({ timeout: 5000 })
 
-    // Checksum text is gone
-    await expect(checksumText.first()).not.toBeVisible({ timeout: 5000 })
+    // Diff panes are gone
+    await expect(diffPanes).toHaveCount(0, { timeout: 5000 })
 
     console.log(`✓ Conflict card expand/collapse works (tested on "${conflicts[0].name}")`)
   })
@@ -189,14 +185,12 @@ test.describe('Conflicts Page', () => {
     // Allow time for the App-level conflict count fetch to resolve
     await page.waitForResponse((resp) => resp.url().includes('/registry/conflicts'), { timeout: 8000 }).catch(() => {/* may already be loaded */})
 
-    const conflictsNav = page.locator('.sidebar-nav-item', { hasText: 'Conflicts' })
+    const conflictsNav = page.locator('.global-nav-btn', { hasText: 'Conflicts' })
     await expect(conflictsNav).toBeVisible({ timeout: 8000 })
 
     // Badge span has inline style background: #bf3030 (rendered as rgb by browser)
     // Playwright matches style attribute substrings, so we check for the partial value
-    const badge = conflictsNav.locator('span').filter({
-      has: page.locator('xpath=self::span[contains(@style,"bf3030") or contains(@style,"191, 48, 48")]'),
-    })
+    const badge = conflictsNav.locator('.global-nav-badge')
 
     // Fallback: if XPath filter doesn't match (browser normalises to rgb), check any span with number text
     const badgeCount = await badge.count()

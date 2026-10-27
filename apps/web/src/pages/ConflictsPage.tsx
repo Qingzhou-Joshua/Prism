@@ -1,3 +1,5 @@
+import { PixelIcon } from '../components/PixelIcon'
+import { platformLabel } from '../constants/platforms'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { API_BASE } from '../api/client'
@@ -9,7 +11,7 @@ interface RegistryEntry {
   type: 'rule' | 'skill' | 'agent' | 'mcp' | 'hook'
   name: string
   filePath: string
-  platformId: 'claude-code' | 'codebuddy' | 'openclaw'
+  platformId: string
   scope: string
   tags: string[]
   targetPlatforms: string[]
@@ -36,13 +38,9 @@ interface ConflictContentEntry {
 const PLATFORM_COLORS: Record<string, string> = {
   'claude-code': '#7c5cbf',
   'codebuddy':   '#1a7abf',
-  'openclaw':    '#bf6c1a',
-}
-
-const PLATFORM_LABELS: Record<string, string> = {
-  'claude-code': 'Claude Code',
-  'codebuddy':   'Codebuddy',
-  'openclaw':    'OpenClaw',
+  'cursor':      '#3a3a3a',
+  'codex':       '#10a37f',
+  'opencode':    '#bf6c1a',
 }
 
 // ── DiffViewer ────────────────────────────────────────────────────────────────
@@ -60,12 +58,12 @@ function DiffViewer({ entries }: { entries: ConflictContentEntry[] }) {
               borderRadius: 4,
               fontSize: 11,
               fontWeight: 500,
-              background: PLATFORM_COLORS[entry.platformId] ?? '#555',
+              background: (PLATFORM_COLORS[entry.platformId] ?? PLATFORM_COLORS[entry.platformId.startsWith('claude-code') ? 'claude-code' : ''] ?? '#555'),
               color: '#fff',
               marginBottom: 6,
             }}
           >
-            {PLATFORM_LABELS[entry.platformId] ?? entry.platformId}
+            {platformLabel(entry.platformId)}
           </div>
           <pre
             style={{
@@ -374,7 +372,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
       {/* Empty state */}
       {conflicts.length === 0 && (
         <div className="empty-state">
-          <div className="empty-state-icon">✅</div>
+          <div className="empty-state-icon"><PixelIcon name="check" size={32} /></div>
           <div className="empty-state-title">{t('conflicts.empty')}</div>
           <div className="empty-state-desc">
             {t('conflicts.emptyHint')}
@@ -412,8 +410,8 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                   >
                     {group.type}
                   </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                    {isExpanded ? '▼' : '▶'}
+                  <span style={{ color: 'var(--text-muted)', display: 'inline-flex' }} data-chevron={isExpanded ? 'open' : 'closed'}>
+                    <PixelIcon name={isExpanded ? 'chevron-down' : 'chevron-right'} size={12} />
                   </span>
                 </div>
 
@@ -430,11 +428,11 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                         borderRadius: 4,
                         fontSize: 11,
                         fontWeight: 500,
-                        background: PLATFORM_COLORS[pid] ?? '#555',
+                        background: (PLATFORM_COLORS[pid] ?? PLATFORM_COLORS[pid.startsWith('claude-code') ? 'claude-code' : ''] ?? '#555'),
                         color: '#fff',
                       }}
                     >
-                      {PLATFORM_LABELS[pid] ?? pid}
+                      {platformLabel(pid)}
                     </span>
                   ))}
                   <span
@@ -505,7 +503,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
                           disabled={isResolving}
                           onClick={() => void handleKeepOne(group.key, entry.id)}
                         >
-                          {t('conflicts.keepPlatform', { platform: PLATFORM_LABELS[entry.platformId] ?? entry.platformId })}
+                          {t('conflicts.keepPlatform', { platform: platformLabel(entry.platformId) })}
                         </button>
                       ))}
 
@@ -540,7 +538,7 @@ export function ConflictsPage({ onClose: _onClose }: ConflictsPageProps) {
           initialContent={mergeModal.entries
             .map(
               ({ entry, content }) =>
-                `// === ${PLATFORM_LABELS[entry.platformId] ?? entry.platformId} ===\n${content}`
+                `// === ${platformLabel(entry.platformId)} ===\n${content}`
             )
             .join('\n\n')}
           loading={mergingKey === mergeModal.key}

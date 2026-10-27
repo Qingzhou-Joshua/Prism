@@ -1,10 +1,10 @@
 import type { FastifyInstance } from 'fastify'
+import { pickStore, platformIdsWith, resolvePlatformId } from './platform-store.js'
 import type { RuleStore, RegistryStore } from '@prism/core'
 import { projectRule, ruleToEntry } from '@prism/core'
 import type { CreateRuleDto, UpdateRuleDto } from '@prism/shared'
 import type { PlatformId } from '@prism/shared'
 
-const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 
 const createRuleSchema = {
   body: {
@@ -35,21 +35,13 @@ const updateRuleSchema = {
   },
 }
 
-const VALID_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
-
-function getStorePlatformId(platform: unknown): PlatformId | undefined {
-  const id = typeof platform === 'string' ? platform : 'claude-code'
-  return VALID_PLATFORM_IDS.includes(id as PlatformId) ? (id as PlatformId) : 'claude-code'
-}
-
 export async function registerRulesRoutes(
   app: FastifyInstance,
   stores: Map<string, RuleStore>,
   registryStore?: RegistryStore,
 ): Promise<void> {
   function getStore(platform: unknown): RuleStore {
-    const id = typeof platform === 'string' ? platform : 'claude-code'
-    return stores.get(id) ?? stores.get('claude-code')!
+    return pickStore(stores, platform)
   }
 
   // GET /rules
@@ -62,7 +54,7 @@ export async function registerRulesRoutes(
   app.post<{ Body: CreateRuleDto; Querystring: { platform?: string } }>('/rules', { schema: createRuleSchema }, async (request, reply) => {
     const rule = await getStore(request.query.platform).create(request.body)
     if (registryStore) {
-      const platformId = getStorePlatformId(request.query.platform)
+      const platformId = resolvePlatformId(request.query.platform)
       if (platformId) registryStore.upsert(ruleToEntry(rule, platformId)).catch(err => app.log.warn({ err }, 'registry upsert failed'))
     }
     reply.code(201)
@@ -90,7 +82,7 @@ export async function registerRulesRoutes(
         return { error: 'Rule not found' }
       }
       if (registryStore) {
-        const platformId = getStorePlatformId(request.query.platform)
+        const platformId = resolvePlatformId(request.query.platform)
         if (platformId) registryStore.upsert(ruleToEntry(rule, platformId)).catch(err => app.log.warn({ err }, 'registry upsert failed'))
       }
       return rule
@@ -120,7 +112,7 @@ export async function registerRulesRoutes(
         reply.code(404)
         return { error: 'Rule not found' }
       }
-      const projections = ALL_PLATFORM_IDS.map((platformId) =>
+      const projections = platformIdsWith('rulesDir').map((platformId) =>
         projectRule(rule, platformId),
       )
       return { projections }

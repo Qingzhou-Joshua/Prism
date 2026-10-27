@@ -1,3 +1,4 @@
+import { PixelIcon } from '../components/PixelIcon'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GitSyncConfig } from '@prism/shared'
@@ -137,7 +138,7 @@ export function SettingsPage({ onNavigateToGitSync }: SettingsPageProps) {
           {/* Git Sync section */}
           <div className="item-card" style={{ padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <span style={{ fontSize: 18 }}>🔄</span>
+              <PixelIcon name="refresh" size={18} />
               <span style={{ fontWeight: 600, fontSize: 15 }}>{t('settings.gitSync')}</span>
               {/* Status badge */}
               {config ? (

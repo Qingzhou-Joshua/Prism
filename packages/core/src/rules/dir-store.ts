@@ -1,45 +1,41 @@
-import { readdir, readFile, writeFile, unlink, rename, mkdir } from 'node:fs/promises'
-import { join, basename } from 'node:path'
+import { readdir, readFile, writeFile, unlink, rename, mkdir, access } from 'node:fs/promises'
+import { join, basename, extname } from 'node:path'
 import type { UnifiedRule, CreateRuleDto, UpdateRuleDto } from '@prism/shared'
+import { ConflictError } from '@prism/shared'
 import type { RuleStore } from './store.js'
 import { ruleFileName } from '../publish/platform-paths.js'
-import { fileNameToId } from '../utils/dir-store-utils.js'
+import { fileNameToId, renderWithFrontMatter } from '../utils/dir-store-utils.js'
+
+const RULE_PRISM_ONLY_KEYS = ['name', 'scope', 'tags', 'targetPlatforms', 'platformOverrides', 'createdAt', 'updatedAt']
 
 /**
- * Serialise a rule to front-matter + content markdown.
- *
- * The display name is persisted in the front matter so it survives across
- * store instances (the file basename is always kebab-case).
+ * Serialise a rule to front-matter + content markdown, merging into the
+ * file's existing front matter (`original`) so native fields survive.
  */
-function serialise(rule: UnifiedRule): string {
-  const lines: string[] = ['---']
-  lines.push(`name: ${rule.name}`)
-  lines.push(`scope: ${rule.scope}`)
-  if (rule.tags.length > 0) {
-    lines.push('tags:')
-    for (const tag of rule.tags) lines.push(`  - ${tag}`)
-  }
-  if ((rule.targetPlatforms ?? []).length > 0) {
-    lines.push('targetPlatforms:')
-    for (const pid of rule.targetPlatforms) lines.push(`  - ${pid}`)
-  }
+function serialise(rule: UnifiedRule, original: string | null = null): string {
   const overrideEntries = Object.entries(rule.platformOverrides ?? {})
-  if (overrideEntries.length > 0) {
-    lines.push('platformOverrides:')
-    for (const [platformId, override] of overrideEntries) {
-      lines.push(`  ${platformId}:`)
-      if (override && typeof override.content === 'string') {
-        // Escape multi-line content as a quoted scalar if needed
-        const escaped = override.content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
-        lines.push(`    content: "${escaped}"`)
-      }
+  const overrideLines: string[] = []
+  for (const [platformId, override] of overrideEntries) {
+    overrideLines.push(`  ${platformId}:`)
+    if (override && typeof override.content === 'string') {
+      const escaped = override.content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+      overrideLines.push(`    content: "${escaped}"`)
     }
   }
-  lines.push(`createdAt: ${rule.createdAt}`)
-  lines.push(`updatedAt: ${rule.updatedAt}`)
-  lines.push('---')
-  lines.push(rule.content)
-  return lines.join('\n')
+  return renderWithFrontMatter(
+    original,
+    [
+      ['name', rule.name],
+      ['scope', rule.scope],
+      ['tags', rule.tags],
+      ['targetPlatforms', rule.targetPlatforms ?? []],
+      ['platformOverrides', overrideLines.length > 0 ? { raw: overrideLines } : undefined],
+      ['createdAt', rule.createdAt],
+      ['updatedAt', rule.updatedAt],
+    ],
+    rule.content,
+    RULE_PRISM_ONLY_KEYS,
+  )
 }
 
 /**
@@ -161,7 +157,14 @@ function parseYamlBlock(block: string): Record<string, unknown> {
 }
 
 export class DirRuleStore implements RuleStore {
-  constructor(private readonly dirPath: string) {}
+  /**
+   * @param dirPath  rules directory
+   * @param ext      extension for newly created rule files (existing files keep theirs)
+   */
+  constructor(
+    private readonly dirPath: string,
+    private readonly ext: '.md' | '.mdc' = '.md',
+  ) {}
 
   async list(): Promise<UnifiedRule[]> {
     let entries
@@ -194,7 +197,14 @@ export class DirRuleStore implements RuleStore {
   async create(dto: CreateRuleDto): Promise<UnifiedRule> {
     await mkdir(this.dirPath, { recursive: true })
     const now = new Date().toISOString()
-    const fileName = ruleFileName(dto.name)
+    const fileName = ruleFileName(dto.name, this.ext)
+    const filePath = join(this.dirPath, fileName)
+    try {
+      await access(filePath)
+      throw new ConflictError(`Rule file ${fileName} already exists`)
+    } catch (err) {
+      if (err instanceof ConflictError) throw err
+    }
     const rule: UnifiedRule = {
       id: fileNameToId(fileName),
       name: dto.name,
@@ -206,22 +216,23 @@ export class DirRuleStore implements RuleStore {
       createdAt: now,
       updatedAt: now,
     }
-    await writeFile(join(this.dirPath, fileName), serialise(rule), 'utf-8')
-    return rule
+    await writeFile(filePath, serialise(rule), 'utf-8')
+    return { ...rule, filePath }
   }
 
   async update(id: string, dto: UpdateRuleDto): Promise<UnifiedRule | null> {
     const existing = await this.get(id)
-    if (!existing) return null
+    if (!existing || !existing.filePath) return null
 
-    const updatedName = dto.name ?? existing.name
-    const newFileName = ruleFileName(updatedName)
-    const oldFileName = existing.filePath ? basename(existing.filePath) : ruleFileName(existing.name)
+    const oldFileName = basename(existing.filePath)
+    const oldExt = extname(oldFileName) as '.md' | '.mdc'
+    const renamed = dto.name !== undefined && dto.name !== existing.name
+    const newFileName = renamed ? ruleFileName(dto.name!, oldExt) : oldFileName
     const now = new Date().toISOString()
 
     const updated: UnifiedRule = {
       ...existing,
-      name: updatedName,
+      name: dto.name ?? existing.name,
       content: dto.content ?? existing.content,
       scope: dto.scope ?? existing.scope,
       tags: dto.tags ?? existing.tags,
@@ -229,21 +240,21 @@ export class DirRuleStore implements RuleStore {
       platformOverrides: dto.platformOverrides ?? existing.platformOverrides,
       updatedAt: now,
       id: fileNameToId(newFileName),
+      filePath: join(this.dirPath, newFileName),
     }
 
-    if (oldFileName !== newFileName) {
-      await rename(join(this.dirPath, oldFileName), join(this.dirPath, newFileName))
+    const original = await readFile(existing.filePath, 'utf-8')
+    if (newFileName !== oldFileName) {
+      await rename(existing.filePath, updated.filePath!)
     }
-
-    await writeFile(join(this.dirPath, newFileName), serialise(updated), 'utf-8')
+    await writeFile(updated.filePath!, serialise(updated, original), 'utf-8')
     return updated
   }
 
   async delete(id: string): Promise<boolean> {
     const existing = await this.get(id)
-    if (!existing) return false
-    const filePath = existing.filePath ?? join(this.dirPath, ruleFileName(existing.name))
-    await unlink(filePath)
+    if (!existing?.filePath) return false
+    await unlink(existing.filePath)
     return true
   }
 }

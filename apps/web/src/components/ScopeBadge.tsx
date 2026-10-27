@@ -23,7 +23,7 @@ export function ScopeBadge({ scope }: ScopeBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${className}`}
+      className={`inline-flex items-center shrink-0 whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium border ${className}`}
     >
       {t(labelKey)}
     </span>

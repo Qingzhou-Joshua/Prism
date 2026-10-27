@@ -31,7 +31,7 @@ async function selectClaudeCode(page: Page) {
   // Wait for platform tabs to appear (not the loading spinner)
   await expect(page.locator('.platform-tab').first()).toBeVisible({ timeout: 10000 })
   // Click Claude Code tab
-  const claudeTab = page.locator('.platform-tab', { hasText: 'Claude Code' })
+  const claudeTab = page.locator('.platform-tab', { hasText: 'Claude Code' }).first()
   await expect(claudeTab).toBeVisible()
   await claudeTab.click()
 }
@@ -104,20 +104,17 @@ test.describe('Hooks Management', () => {
 
     // Initially expanded — items should be visible
     await expect(firstItems).toBeVisible()
-    const chevronBefore = await firstHeader.locator('.hooks-event-chevron').textContent()
-    expect(chevronBefore).toBe('▼')
+    await expect(firstHeader.locator('.hooks-event-chevron')).toHaveAttribute('data-chevron', 'open')
 
     // Click to collapse — items container is removed from DOM
     await firstHeader.click()
     await expect(firstItems).not.toBeAttached({ timeout: 5000 })
-    const chevronCollapsed = await firstHeader.locator('.hooks-event-chevron').textContent()
-    expect(chevronCollapsed).toBe('▶')
+    await expect(firstHeader.locator('.hooks-event-chevron')).toHaveAttribute('data-chevron', 'closed')
 
     // Click to expand again
     await firstHeader.click()
     await expect(firstItems).toBeVisible({ timeout: 5000 })
-    const chevronExpanded = await firstHeader.locator('.hooks-event-chevron').textContent()
-    expect(chevronExpanded).toBe('▼')
+    await expect(firstHeader.locator('.hooks-event-chevron')).toHaveAttribute('data-chevron', 'open')
 
     console.log('✓ Collapse/expand works correctly')
   })

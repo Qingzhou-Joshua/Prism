@@ -15,7 +15,7 @@ test.describe('Group A: 基础连通性', () => {
     console.log(`✓ /health 响应 200，body: ${JSON.stringify(body)}`)
   })
 
-  test('A-2. GET /platforms 返回包含 claude-code、codebuddy、openclaw 的数组', async ({
+  test('A-2. GET /platforms 返回已发现的平台数组（不含 openclaw）', async ({
     request,
   }) => {
     const res = await request.get(`${API_BASE}/platforms`)
@@ -35,11 +35,9 @@ test.describe('Group A: 基础连通性', () => {
     const ids = platforms.map((p) => (p.id ?? p.platformId ?? '') as string)
     console.log(`✓ /platforms 返回 ${platforms.length} 个平台: ${ids.join(', ')}`)
 
-    // 连通性测试只验证核心平台，openclaw 的注册状态由 v1-features.spec.ts B-1 负责
-    expect(ids).toContain('claude-code')
-    expect(ids).toContain('codebuddy')
-
-    console.log('✓ claude-code / codebuddy 均已注册')
+    // 平台由本机目录动态发现；至少有一个 Claude Code 实例，且 OpenClaw 已移除
+    expect(ids.some((id) => id.startsWith('claude-code'))).toBe(true)
+    expect(ids).not.toContain('openclaw')
   })
 
   test('A-3. 浏览器能打开 http://localhost:5173，标题包含 "Prism"', async ({ page }) => {
@@ -65,7 +63,7 @@ test.describe('Group A: 基础连通性', () => {
     expect(tabCount).toBeGreaterThanOrEqual(1)
 
     // Claude Code tab 必须存在
-    const claudeTab = page.locator('.platform-tab', { hasText: 'Claude Code' })
+    const claudeTab = page.locator('.platform-tab', { hasText: 'Claude Code' }).first()
     await expect(claudeTab).toBeVisible()
 
     console.log(`✓ 平台 tabs 已渲染（共 ${tabCount} 个），Claude Code tab 可见`)
@@ -74,8 +72,8 @@ test.describe('Group A: 基础连通性', () => {
   test('A-5. 选中 Claude Code 后侧边栏显示所有核心导航项', async ({ page }) => {
     await selectPlatform(page, 'Claude Code')
 
-    // 这 6 项是 Claude Code 平台的核心功能导航
-    const expectedSections = ['Rules', 'Skills', 'Agents', 'MCP Servers', 'Hooks', 'Conflicts']
+    // Claude Code 平台的核心功能导航（Conflicts 等全局页在顶栏，不在侧边栏）
+    const expectedSections = ['Rules', 'Skills', 'Agents', 'MCP Servers', 'Plugins', 'Hooks', 'Commands']
 
     for (const section of expectedSections) {
       const navItem = page.locator('.sidebar-nav-item', { hasText: section })

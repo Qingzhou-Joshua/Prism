@@ -31,16 +31,21 @@
     "count_one": "{{count}} server configured",
     "count_other": "{{count}} servers configured",
     "newBtn": "+ New Server",
-    "importBtn": "↓ Import from Claude Code",
+    "importBtn": "↓ Import from platform",
     "importing": "Importing…",
     "empty": "No MCP servers yet",
     "emptyHint": "Add a server manually or import from an existing platform configuration.",
     "envVars_one": "{{count}} env var",
     "envVars_other": "{{count}} env vars",
-    "noServersInClaude": "No MCP servers found in Claude Code settings",
     "importFailed": "Import failed",
     "loadingFailed": "Failed to load MCP servers",
-    "deleteFailed": "Delete failed"
+    "deleteFailed": "Delete failed",
+    "importFrom": "Import from {{name}}",
+    "noServersInSource": "No MCP servers found in {{name}}",
+    "imported": "Imported {{count}} server(s)",
+    "configFile": "Config file: {{path}}",
+    "disabled": "Disabled",
+    "confirmDelete": "Delete MCP server \"{{name}}\" from the config file?"
   },
   "hooks": {
     "title": "Hooks",
@@ -191,7 +196,13 @@
     "descPlaceholder": "Brief description of what this MCP server provides",
     "noProjections": "No projections available",
     "saveToSeeProjections": "Save to see platform projections",
-    "saveFailed": "Save failed"
+    "saveFailed": "Save failed",
+    "transport": "Transport",
+    "url": "URL",
+    "headers": "Headers",
+    "enabled": "Enabled",
+    "writesTo": "Saving writes directly to {{path}}",
+    "commandOrUrlRequired": "Name and a command (stdio) or URL (http/sse) are required"
   },
   "hookEditor": {
     "newTitle": "New Hook",
@@ -207,5 +218,21 @@
     "saveCommand": "Save Command",
     "noProjections": "No projections available.",
     "saveFailed": "Save failed"
+  },
+  "plugins": {
+    "title": "Plugins",
+    "count_one": "{{count}} plugin installed",
+    "count_other": "{{count}} plugins installed",
+    "enabledCount": "{{count}} enabled",
+    "empty": "No plugins installed",
+    "emptyHint": "Plugins are installed via each tool's own CLI or marketplace; Prism lists them and toggles them on/off.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "readOnly": "This platform has no per-plugin enable flag",
+    "toggleFailed": "Toggle failed",
+    "loadingFailed": "Failed to load plugins",
+    "search": "Search plugins…",
+    "confirmDisable": "Disabling \"{{name}}\" stops loading its {{impact}}. Disable it?",
+    "noAssets": "No skills, agents, commands, MCP servers or hooks"
   }
 }

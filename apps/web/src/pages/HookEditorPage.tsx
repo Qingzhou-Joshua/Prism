@@ -1,3 +1,4 @@
+import { PixelIcon } from '../components/PixelIcon'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UnifiedHook, HookEventType, HookAction, HookCommand, HookHttp, HookPrompt, HookAgent } from '@prism/shared'
@@ -111,7 +112,7 @@ function ActionEditor({
               fontFamily: 'inherit',
             }}
           >
-            ✕
+            <PixelIcon name="close" size={12} />
           </button>
         )}
       </div>

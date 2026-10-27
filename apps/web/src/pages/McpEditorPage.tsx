@@ -1,136 +1,141 @@
+import { PixelIcon } from '../components/PixelIcon'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { McpServer } from '@prism/shared'
-import { mcpApi } from '../api/mcp.js'
-import { PlatformIcon } from '../components/PlatformIcon'
-import { PLATFORM_LABELS } from '../constants/platforms.js'
+import type { McpServer, McpTransport } from '@prism/shared'
+import { mcpApi, type McpProjection } from '../api/mcp.js'
+import { platformLabel } from '../constants/platforms.js'
 
-interface EnvEntry {
+interface KvEntry {
   key: string
   value: string
 }
 
 interface McpEditorPageProps {
+  platformId: string
+  configPath?: string
   onBack: () => void
   initialServer?: McpServer
 }
 
 interface DraftServer {
   name: string
+  type: McpTransport
   command: string
+  /** One argument per line — args may contain spaces. */
   argsText: string
-  description: string
-  targetPlatforms: string[]
-  envEntries: EnvEntry[]
+  url: string
+  enabled: boolean
+  envEntries: KvEntry[]
+  headerEntries: KvEntry[]
+}
+
+const toEntries = (rec?: Record<string, string>): KvEntry[] =>
+  rec ? Object.entries(rec).map(([key, value]) => ({ key, value })) : []
+
+const fromEntries = (entries: KvEntry[]): Record<string, string> | undefined => {
+  const valid = entries.filter(e => e.key.trim())
+  return valid.length > 0 ? Object.fromEntries(valid.map(e => [e.key.trim(), e.value])) : undefined
 }
 
 function toDraft(server?: McpServer): DraftServer {
-  if (!server) {
-    return {
-      name: '',
-      command: '',
-      argsText: '',
-      description: '',
-      targetPlatforms: ['claude-code'],
-      envEntries: [],
-    }
-  }
   return {
-    name: server.name,
-    command: server.command,
-    argsText: server.args.join(' '),
-    description: server.description ?? '',
-    targetPlatforms: server.targetPlatforms as string[],
-    envEntries: server.env
-      ? Object.entries(server.env).map(([key, value]) => ({ key, value }))
-      : [],
+    name: server?.name ?? '',
+    type: server?.type ?? 'stdio',
+    command: server?.command ?? '',
+    argsText: (server?.args ?? []).join('\n'),
+    url: server?.url ?? '',
+    enabled: server?.enabled !== false,
+    envEntries: toEntries(server?.env),
+    headerEntries: toEntries(server?.headers),
   }
 }
 
-const PLATFORM_COLORS: Record<string, string> = {
-  'claude-code': '#cc785c',
-  'codebuddy': '#7b1fa2',
+function KvEditor({
+  label,
+  entries,
+  onChange,
+}: {
+  label: string
+  entries: KvEntry[]
+  onChange: (next: KvEntry[]) => void
+}) {
+  return (
+    <div className="form-label">
+      <div className="mcp-env-header">
+        <span className="form-label-text">{label}</span>
+        <button className="btn btn-ghost btn-sm" onClick={() => onChange([...entries, { key: '', value: '' }])}>+ Add</button>
+      </div>
+      {entries.length > 0 && (
+        <div className="mcp-env-list">
+          {entries.map((entry, i) => (
+            <div key={i} className="mcp-env-row">
+              <input
+                className="form-input form-input-mono mcp-env-key"
+                value={entry.key}
+                onChange={e => onChange(entries.map((x, idx) => (idx === i ? { ...x, key: e.target.value } : x)))}
+                placeholder="KEY"
+              />
+              <input
+                className="form-input form-input-mono mcp-env-value"
+                value={entry.value}
+                onChange={e => onChange(entries.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))}
+                placeholder="value"
+              />
+              <button className="btn btn-danger btn-sm" onClick={() => onChange(entries.filter((_, idx) => idx !== i))}><PixelIcon name="close" size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
-const ALL_PLATFORMS = ['claude-code', 'codebuddy']
-
-export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
+export function McpEditorPage({ platformId, configPath, onBack, initialServer }: McpEditorPageProps) {
   const { t } = useTranslation('pages')
   const tCommon = useTranslation('common').t
   const [draft, setDraft] = useState<DraftServer>(() => toDraft(initialServer))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [projections, setProjections] = useState<Record<string, unknown>>({})
-  const [projectionsLoading, setProjectionsLoading] = useState(false)
-
-  useEffect(() => {
-    setProjections({})
-    if (!initialServer) return
-    let cancelled = false
-    setProjectionsLoading(true)
-    mcpApi
-      .projections(initialServer.id)
-      .then(data => { if (!cancelled) setProjections(data) })
-      .catch(() => { if (!cancelled) setProjections({}) })
-      .finally(() => { if (!cancelled) setProjectionsLoading(false) })
-    return () => { cancelled = true }
-  }, [initialServer?.id])
+  const [projections, setProjections] = useState<McpProjection[]>([])
 
   useEffect(() => {
     setDraft(toDraft(initialServer))
-  }, [initialServer?.id])
+    setProjections([])
+    if (!initialServer) return
+    let cancelled = false
+    mcpApi
+      .projections(initialServer.id, platformId)
+      .then(data => { if (!cancelled) setProjections(data) })
+      .catch(() => { if (!cancelled) setProjections([]) })
+    return () => { cancelled = true }
+  }, [initialServer?.id, platformId])
 
-  function togglePlatform(platformId: string) {
-    setDraft(prev => ({
-      ...prev,
-      targetPlatforms: prev.targetPlatforms.includes(platformId)
-        ? prev.targetPlatforms.filter(p => p !== platformId)
-        : [...prev.targetPlatforms, platformId],
-    }))
-  }
-
-  function addEnvEntry() {
-    setDraft(prev => ({ ...prev, envEntries: [...prev.envEntries, { key: '', value: '' }] }))
-  }
-
-  function removeEnvEntry(i: number) {
-    setDraft(prev => ({ ...prev, envEntries: prev.envEntries.filter((_, idx) => idx !== i) }))
-  }
-
-  function updateEnvEntry(i: number, field: 'key' | 'value', val: string) {
-    setDraft(prev => ({
-      ...prev,
-      envEntries: prev.envEntries.map((e, idx) => idx === i ? { ...e, [field]: val } : e),
-    }))
-  }
+  const isRemote = draft.type !== 'stdio'
+  const valid = draft.name.trim() !== '' && (isRemote ? draft.url.trim() !== '' : draft.command.trim() !== '')
 
   async function handleSave() {
-    if (!draft.name.trim() || !draft.command.trim()) {
-      setError('Name and command are required')
+    if (!valid) {
+      setError(t('mcpEditor.commandOrUrlRequired'))
       return
     }
     setSaving(true)
     setError(null)
     try {
-      const args = draft.argsText.trim() ? draft.argsText.trim().split(/\s+/) : []
-      const validEnvEntries = draft.envEntries.filter(e => e.key.trim())
-      const env = validEnvEntries.length > 0
-        ? Object.fromEntries(validEnvEntries.map(e => [e.key.trim(), e.value]))
-        : undefined
-
       const dto = {
         name: draft.name.trim(),
-        command: draft.command.trim(),
-        args,
-        description: draft.description.trim() || undefined,
-        env,
-        targetPlatforms: draft.targetPlatforms as import('@prism/shared').McpServer['targetPlatforms'],
+        type: draft.type,
+        command: isRemote ? '' : draft.command.trim(),
+        args: isRemote ? [] : draft.argsText.split('\n').map(a => a.trim()).filter(Boolean),
+        env: isRemote ? undefined : fromEntries(draft.envEntries),
+        url: isRemote ? draft.url.trim() : undefined,
+        headers: isRemote ? fromEntries(draft.headerEntries) : undefined,
+        enabled: draft.enabled,
+        targetPlatforms: [platformId],
       }
-
       if (!initialServer) {
-        await mcpApi.create(dto)
+        await mcpApi.create(dto, platformId)
       } else {
-        await mcpApi.update(initialServer.id, dto)
+        await mcpApi.update(initialServer.id, dto, platformId)
       }
       onBack()
     } catch (e) {
@@ -141,25 +146,23 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
   }
 
   const title = !initialServer ? t('mcpEditor.newTitle') : t('mcpEditor.editTitle', { name: initialServer.name })
-  const projectionEntries = Object.entries(projections)
+  const writesTo = initialServer?.filePath ?? configPath
 
   return (
     <div className="editor-page">
-      {/* Header */}
       <div className="page-header">
         <div>
           <div className="page-title">{title}</div>
-          <div className="page-subtitle">MCP Server</div>
+          <div className="page-subtitle">
+            MCP Server · {platformLabel(platformId)}
+            {writesTo && <> · <code style={{ fontSize: 11 }}>{t('mcpEditor.writesTo', { path: writesTo })}</code></>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-ghost" onClick={onBack} disabled={saving}>
             {tCommon('btn.cancel')}
           </button>
-          <button
-            className="btn btn-primary"
-            onClick={() => void handleSave()}
-            disabled={saving || !draft.name.trim() || !draft.command.trim()}
-          >
+          <button className="btn btn-primary" onClick={() => void handleSave()} disabled={saving || !valid}>
             {saving ? tCommon('status.saving') : tCommon('btn.save')}
           </button>
         </div>
@@ -168,9 +171,7 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
       {error && <div className="rule-editor-error">{error}</div>}
 
       <div className="rule-editor-body">
-        {/* ── Form ─────────────────────────────────────────────── */}
         <div className="rule-editor-form">
-
           <label className="form-label">
             <span className="form-label-text">Name <span className="form-required">*</span></span>
             <input
@@ -182,119 +183,93 @@ export function McpEditorPage({ onBack, initialServer }: McpEditorPageProps) {
             />
           </label>
 
-          <label className="form-label">
-            <span className="form-label-text">Command <span className="form-required">*</span></span>
-            <input
-              type="text"
-              className="form-input form-input-mono"
-              value={draft.command}
-              onChange={e => setDraft(prev => ({ ...prev, command: e.target.value }))}
-              placeholder="e.g. npx"
-            />
-          </label>
-
-          <label className="form-label">
-            <span className="form-label-text">Args <span className="form-hint">(space-separated)</span></span>
-            <input
-              type="text"
-              className="form-input form-input-mono"
-              value={draft.argsText}
-              onChange={e => setDraft(prev => ({ ...prev, argsText: e.target.value }))}
-              placeholder="e.g. -y @upstash/context7-mcp"
-            />
-          </label>
-
-          <label className="form-label">
-            <span className="form-label-text">Description <span className="form-hint">(optional)</span></span>
-            <input
-              type="text"
-              className="form-input"
-              value={draft.description}
-              onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
-              placeholder={t('mcpEditor.descPlaceholder')}
-            />
-          </label>
-
-          {/* Target Platforms */}
           <div className="form-label">
-            <span className="form-label-text">Target Platforms</span>
-            <div className="mcp-platform-list">
-              {ALL_PLATFORMS.map(platformId => (
-                <label key={platformId} className="mcp-platform-item">
+            <span className="form-label-text">{t('mcpEditor.transport')}</span>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {(['stdio', 'http', 'sse'] as const).map(tp => (
+                <label key={tp} style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 13 }}>
                   <input
-                    type="checkbox"
-                    checked={draft.targetPlatforms.includes(platformId)}
-                    onChange={() => togglePlatform(platformId)}
+                    type="radio"
+                    name="mcp-transport"
+                    checked={draft.type === tp}
+                    onChange={() => setDraft(prev => ({ ...prev, type: tp }))}
                   />
-                  <PlatformIcon platformId={platformId} size={14} />
-                  <span
-                    className="mcp-platform-label"
-                    style={{ color: PLATFORM_COLORS[platformId] ?? 'var(--text-primary)' }}
-                  >
-                    {PLATFORM_LABELS[platformId as keyof typeof PLATFORM_LABELS] ?? platformId}
-                  </span>
+                  {tp}
                 </label>
               ))}
+              <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 13, marginLeft: 'auto' }}>
+                <input
+                  type="checkbox"
+                  checked={draft.enabled}
+                  onChange={e => setDraft(prev => ({ ...prev, enabled: e.target.checked }))}
+                />
+                {t('mcpEditor.enabled')}
+              </label>
             </div>
           </div>
 
-          {/* Environment Variables */}
-          <div className="form-label">
-            <div className="mcp-env-header">
-              <span className="form-label-text">Environment Variables</span>
-              <button className="btn btn-ghost btn-sm" onClick={addEnvEntry}>+ Add</button>
-            </div>
-            {draft.envEntries.length === 0 ? (
-              <div className="mcp-env-empty">No environment variables configured</div>
-            ) : (
-              <div className="mcp-env-list">
-                {draft.envEntries.map((entry, i) => (
-                  <div key={i} className="mcp-env-row">
-                    <input
-                      className="form-input form-input-mono mcp-env-key"
-                      value={entry.key}
-                      onChange={e => updateEnvEntry(i, 'key', e.target.value)}
-                      placeholder="KEY"
-                    />
-                    <input
-                      className="form-input form-input-mono mcp-env-value"
-                      value={entry.value}
-                      onChange={e => updateEnvEntry(i, 'value', e.target.value)}
-                      placeholder="value"
-                    />
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => removeEnvEntry(i)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {isRemote ? (
+            <>
+              <label className="form-label">
+                <span className="form-label-text">{t('mcpEditor.url')} <span className="form-required">*</span></span>
+                <input
+                  type="text"
+                  className="form-input form-input-mono"
+                  value={draft.url}
+                  onChange={e => setDraft(prev => ({ ...prev, url: e.target.value }))}
+                  placeholder="https://example.com/mcp"
+                />
+              </label>
+              <KvEditor
+                label={t('mcpEditor.headers')}
+                entries={draft.headerEntries}
+                onChange={headerEntries => setDraft(prev => ({ ...prev, headerEntries }))}
+              />
+            </>
+          ) : (
+            <>
+              <label className="form-label">
+                <span className="form-label-text">Command <span className="form-required">*</span></span>
+                <input
+                  type="text"
+                  className="form-input form-input-mono"
+                  value={draft.command}
+                  onChange={e => setDraft(prev => ({ ...prev, command: e.target.value }))}
+                  placeholder="e.g. npx"
+                />
+              </label>
+              <label className="form-label">
+                <span className="form-label-text">Args <span className="form-hint">(one per line)</span></span>
+                <textarea
+                  className="form-input form-input-mono"
+                  rows={4}
+                  value={draft.argsText}
+                  onChange={e => setDraft(prev => ({ ...prev, argsText: e.target.value }))}
+                  placeholder={'-y\n@upstash/context7-mcp'}
+                />
+              </label>
+              <KvEditor
+                label="Environment Variables"
+                entries={draft.envEntries}
+                onChange={envEntries => setDraft(prev => ({ ...prev, envEntries }))}
+              />
+            </>
+          )}
         </div>
 
-        {/* ── Projection Preview ───────────────────────────────── */}
         <div className="rule-editor-preview">
-          {projectionsLoading ? (
-            <div className="projection-loading">Loading projections…</div>
-          ) : projectionEntries.length === 0 ? (
+          {projections.length === 0 ? (
             <div className="projection-empty">
               {initialServer ? t('mcpEditor.noProjections') : t('mcpEditor.saveToSeeProjections')}
             </div>
           ) : (
             <div className="projection-preview">
               <h3>Platform Projections</h3>
-              {projectionEntries.map(([platformId, proj]) => (
-                <div
-                  key={platformId}
-                  className="projection-card"
-                  style={{ borderLeft: `4px solid ${PLATFORM_COLORS[platformId] ?? '#888'}` }}
-                >
-                  <div className="projection-platform">{platformId}</div>
+              {projections.map(proj => (
+                <div key={proj.platformId} className="projection-card">
+                  <div className="projection-platform">{platformLabel(proj.platformId)}</div>
                   <pre className="projection-content">
-                    {JSON.stringify(proj, null, 2)}
+                    {JSON.stringify({ [proj.key]: proj.config }, null, 2)}
                   </pre>
                 </div>
               ))}

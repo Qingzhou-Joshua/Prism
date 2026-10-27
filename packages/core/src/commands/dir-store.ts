@@ -4,28 +4,26 @@ import type { UnifiedCommand, CreateCommandDto, UpdateCommandDto, PlatformId } f
 import type { CommandStore } from './store.js'
 import { commandFileName } from '../publish/platform-paths.js'
 import { parseCommandFile } from './parse.js'
-import { fileNameToId, extractMetaTimes } from '../utils/dir-store-utils.js'
+import { fileNameToId, extractMetaTimes, renderWithFrontMatter } from '../utils/dir-store-utils.js'
 
 /**
- * Serialise a command to front-matter + content markdown.
+ * Serialise a command to front-matter + content markdown, merging into the
+ * existing file's front matter (`original`) so native fields survive.
  */
-function serialise(command: UnifiedCommand): string {
-  const lines: string[] = ['---']
-  lines.push(`name: ${command.name}`)
-  if (command.description) lines.push(`description: ${command.description}`)
-  if (command.tags && command.tags.length > 0) {
-    lines.push('tags:')
-    for (const tag of command.tags) lines.push(`  - ${tag}`)
-  }
-  if (command.targetPlatforms && command.targetPlatforms.length > 0) {
-    lines.push('targetPlatforms:')
-    for (const p of command.targetPlatforms) lines.push(`  - ${p}`)
-  }
-  lines.push(`createdAt: ${command.createdAt}`)
-  lines.push(`updatedAt: ${command.updatedAt}`)
-  lines.push('---')
-  lines.push(command.content)
-  return lines.join('\n')
+function serialise(command: UnifiedCommand, original: string | null = null): string {
+  return renderWithFrontMatter(
+    original,
+    [
+      ['name', command.name],
+      ['description', command.description],
+      ['tags', command.tags],
+      ['targetPlatforms', command.targetPlatforms],
+      ['createdAt', command.createdAt],
+      ['updatedAt', command.updatedAt],
+    ],
+    command.content,
+    ['name', 'tags', 'targetPlatforms', 'createdAt', 'updatedAt'],
+  )
 }
 
 export class DirCommandStore implements CommandStore {
@@ -91,7 +89,7 @@ export class DirCommandStore implements CommandStore {
 
   async update(id: string, dto: UpdateCommandDto): Promise<UnifiedCommand | null> {
     const existing = await this.get(id)
-    if (!existing) return null
+    if (!existing?.filePath) return null
 
     const now = new Date().toISOString()
     const updated: UnifiedCommand = {
@@ -104,12 +102,13 @@ export class DirCommandStore implements CommandStore {
       updatedAt: now,
     }
 
-    const oldFileName = commandFileName(existing.name)
-    const newFileName = commandFileName(dto.name ?? existing.name)
-    const oldPath = join(this.dirPath, oldFileName)
+    const oldPath = existing.filePath!
+    const oldFileName = basename(oldPath)
+    const newFileName = dto.name !== undefined && dto.name !== existing.name ? commandFileName(dto.name) : oldFileName
     const newPath = join(this.dirPath, newFileName)
 
-    await writeFile(newPath, serialise(updated), 'utf-8')
+    const original = await readFile(oldPath, 'utf-8')
+    await writeFile(newPath, serialise(updated, original), 'utf-8')
 
     // Remove old file if name changed
     if (oldFileName !== newFileName) {
@@ -125,9 +124,8 @@ export class DirCommandStore implements CommandStore {
 
   async delete(id: string): Promise<boolean> {
     const existing = await this.get(id)
-    if (!existing) return false
-    const fileName = commandFileName(existing.name)
-    await unlink(join(this.dirPath, fileName))
+    if (!existing?.filePath) return false
+    await unlink(existing.filePath)
     return true
   }
 }

@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify'
+import { pickStore, platformIdsWith, resolvePlatformId } from './platform-store.js'
 import type { CommandStore } from '@prism/core'
 import { getPlatformCommandsDir, commandFileName } from '@prism/core'
 import type { CreateCommandDto, UpdateCommandDto, PlatformId } from '@prism/shared'
 
-const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 
 const createCommandSchema = {
   body: {
@@ -37,8 +37,7 @@ export async function registerCommandsRoutes(
   stores: Map<string, CommandStore>,
 ): Promise<void> {
   function getStore(platform: unknown): CommandStore {
-    const id = typeof platform === 'string' ? platform : 'claude-code'
-    return stores.get(id) ?? stores.get('claude-code')!
+    return pickStore(stores, platform)
   }
 
   // GET /commands
@@ -102,8 +101,8 @@ export async function registerCommandsRoutes(
       const projections: Array<{ platformId: string; fileName: string; content: string }> = []
       // Filter to only the platforms this command targets (empty = all platforms)
       const targetIds = command.targetPlatforms.length > 0
-        ? ALL_PLATFORM_IDS.filter(id => command.targetPlatforms.includes(id))
-        : ALL_PLATFORM_IDS
+        ? platformIdsWith('commandsDir').filter(id => command.targetPlatforms.includes(id))
+        : platformIdsWith('commandsDir')
       for (const platformId of targetIds) {
         projections.push({
           platformId,

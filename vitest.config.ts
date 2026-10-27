@@ -5,9 +5,6 @@ export default defineConfig({
     projects: [
       'packages/shared/vitest.config.ts',
       'packages/core/vitest.config.ts',
-      'packages/adapters/adapter-openclaw/vitest.config.ts',
-      'packages/adapters/adapter-codebuddy/vitest.config.ts',
-      'packages/adapters/adapter-claude-code/vitest.config.ts',
       'packages/server/vitest.config.ts',
     ],
   },

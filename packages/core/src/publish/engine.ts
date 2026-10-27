@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, writeFile, stat, cp } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { homedir } from 'node:os'
 import { nanoid } from 'nanoid'
 import type { PlatformId, Revision, PublishedFile } from '@prism/shared'
@@ -9,9 +9,10 @@ import type { ProfileStore } from '../profiles/store.js'
 import type { SkillStore } from '../skills/store.js'
 import type { AgentStore } from '../agents/store.js'
 import type { McpStore } from '../mcp/store.js'
+import type { NativeMcpStore } from '../mcp/native-store.js'
 import type { HookStore } from '../hooks/store.js'
 import type { CommandStore } from '../commands/store.js'
-import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName, getPlatformMcpSettingsPath, getPlatformCommandsDir, commandFileName } from './platform-paths.js'
+import { getPlatformRulesDir, ruleFileName, getPlatformSkillsDir, skillFileName, getPlatformAgentsDir, agentFileName, getPlatformCommandsDir, commandFileName } from './platform-paths.js'
 import { projectRule } from '../rules/project.js'
 
 export class PublishEngine {
@@ -19,16 +20,17 @@ export class PublishEngine {
     private readonly ruleStore: RuleStore,
     private readonly profileStore: ProfileStore,
     private readonly prismDir: string = join(homedir(), '.prism'),
-    private readonly getPlatformDir: (platformId: PlatformId) => string = getPlatformRulesDir,
+    private readonly getPlatformDir: (platformId: PlatformId) => string | null = getPlatformRulesDir,
     private readonly skillStore: SkillStore | null = null,
-    private readonly getSkillsDir: (platformId: PlatformId) => string = getPlatformSkillsDir,
+    private readonly getSkillsDir: (platformId: PlatformId) => string | null = getPlatformSkillsDir,
     private readonly agentStore: AgentStore | null = null,
     private readonly getAgentsDir: (platformId: PlatformId) => string | null = getPlatformAgentsDir,
     private readonly mcpStore: McpStore | null = null,
-    private readonly getMcpSettingsPath: (platformId: PlatformId) => string | null = getPlatformMcpSettingsPath,
+    /** Native MCP store of the target platform (writes in that platform's own format). */
+    private readonly getMcpTargetStore: (platformId: PlatformId) => NativeMcpStore | null = () => null,
     private readonly hookStores: Map<string, HookStore> | null = null,
     private readonly commandStore: CommandStore | null = null,
-    private readonly getCommandsDir: (platformId: PlatformId) => string = getPlatformCommandsDir,
+    private readonly getCommandsDir: (platformId: PlatformId) => string | null = getPlatformCommandsDir,
     /** Optional callback to suppress file-watcher false positives for Prism-initiated writes. */
     private readonly suppressWatchPath?: (filePath: string) => void,
   ) {}
@@ -52,6 +54,7 @@ export class PublishEngine {
         if (projection.hidden || projection.content === null) continue
 
         const platformDir = this.getPlatformDir(platformId)
+        if (!platformDir) continue
         const fileName = ruleFileName(rule.name)
         const targetPath = join(platformDir, fileName)
 
@@ -88,13 +91,9 @@ export class PublishEngine {
           const skill = await this.skillStore.get(skillId)
           if (!skill) continue
 
-          let skillsDir: string
-          try {
-            skillsDir = this.getSkillsDir(platformId)
-          } catch {
-            // Platform does not support skills — skip
-            continue
-          }
+          const skillsDir = this.getSkillsDir(platformId)
+          // Platform does not support skills — skip
+          if (!skillsDir) continue
 
           const dirName = skillFileName(skill.name)
           const skillDir = join(skillsDir, dirName)
@@ -169,7 +168,7 @@ export class PublishEngine {
         }
       }
 
-      // Merge MCP server entries into platform settings.json
+      // Merge MCP server entries into the platform's native MCP config
       if (this.mcpStore) {
         for (const mcpServerId of (profile.mcpServerIds ?? [])) {
           const server = await this.mcpStore.findById(mcpServerId)
@@ -178,49 +177,33 @@ export class PublishEngine {
           // Only publish to platforms this server targets
           if (!server.targetPlatforms.includes(platformId)) continue
 
-          const settingsPath = this.getMcpSettingsPath(platformId)
-          if (!settingsPath) continue
+          const target = this.getMcpTargetStore(platformId)
+          if (!target) continue
+          const settingsPath = target.filePath
 
-          // Read existing settings.json (or empty object if missing/invalid)
-          let settingsObj: Record<string, unknown> = {}
           let isNew = true
           let backupPath: string | undefined
-
           try {
             await stat(settingsPath)
             isNew = false
-            // Backup existing file
             const backupDir = join(this.prismDir, 'backups', revisionId, `${platformId}-mcp`)
             await mkdir(backupDir, { recursive: true })
-            backupPath = join(backupDir, 'settings.json')
+            backupPath = join(backupDir, basename(settingsPath))
             await copyFile(settingsPath, backupPath)
-            // Read contents
-            const raw = await readFile(settingsPath, 'utf-8')
-            try {
-              settingsObj = JSON.parse(raw) as Record<string, unknown>
-            } catch {
-              // Corrupted JSON — start fresh but keep backup
-              settingsObj = {}
-            }
           } catch {
-            // File does not exist — isNew stays true, settingsObj stays {}
+            // File does not exist — isNew stays true
           }
 
-          // Merge mcpServers key
-          if (!settingsObj.mcpServers || typeof settingsObj.mcpServers !== 'object') {
-            settingsObj.mcpServers = {}
-          }
-          const mcpServers = settingsObj.mcpServers as Record<string, unknown>
-          mcpServers[server.name] = {
+          this.suppressWatchPath?.(settingsPath)
+          await target.importServers([{
+            name: server.name,
             command: server.command,
             args: server.args,
             ...(server.env ? { env: server.env } : {}),
-          }
-
-          // Ensure parent directory exists and write back
-          await mkdir(join(settingsPath, '..'), { recursive: true })
-          this.suppressWatchPath?.(settingsPath)
-          await writeFile(settingsPath, JSON.stringify(settingsObj, null, 2), 'utf-8')
+            ...(server.type ? { type: server.type } : {}),
+            ...(server.url ? { url: server.url } : {}),
+            ...(server.headers ? { headers: server.headers } : {}),
+          }])
 
           publishedFiles.push({
             platformId,
@@ -263,6 +246,7 @@ export class PublishEngine {
           if (command.targetPlatforms.length > 0 && !command.targetPlatforms.includes(platformId)) continue
 
           const commandsDir = this.getCommandsDir(platformId)
+          if (!commandsDir) continue
           const fileName = commandFileName(command.name)
           const targetPath = join(commandsDir, fileName)
 

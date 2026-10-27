@@ -67,48 +67,43 @@ function overridesToggle(page: Parameters<typeof navigateTo>[0]) {
 
 test.describe('Group D UI: Platform Overrides 面板', () => {
 
-  test('1. 面板展开/收起 — 点击按钮后 ▶ 变 ▼', async ({ page }) => {
+  test('1. 面板展开/收起 — 点击按钮后箭头由收起变为展开', async ({ page }) => {
     await openFirstRule(page)
 
     const toggle = overridesToggle(page)
     await expect(toggle).toBeVisible({ timeout: 5000 })
 
-    // 初始状态：收起，显示 ▶
-    const chevron = toggle.locator('span').first()
-    await expect(chevron).toHaveText('▶')
+    // 初始状态：收起
+    const chevron = toggle.locator('[data-chevron]')
+    await expect(chevron).toHaveAttribute('data-chevron', 'closed')
 
     // 点击展开
     await toggle.click()
 
-    // 展开后：chevron 变 ▼
-    await expect(chevron).toHaveText('▼', { timeout: 3000 })
+    // 展开后：chevron 为展开态
+    await expect(chevron).toHaveAttribute('data-chevron', 'open', { timeout: 3000 })
 
-    // 面板内容可见（至少 claude-code 子标题出现）
-    await expect(page.locator('span', { hasText: 'claude-code' }).first()).toBeVisible({
+    // 面板内容可见（至少 Claude Code 子标题出现）
+    await expect(page.locator('span', { hasText: 'Claude Code' }).first()).toBeVisible({
       timeout: 5000,
     })
 
     console.log('✓ Platform Overrides 面板展开：▶ → ▼')
   })
 
-  test('2. 展开后正确显示 3 个平台区块', async ({ page }) => {
+  test('2. 展开后为每个支持 rules 的平台显示区块', async ({ page }) => {
     await openFirstRule(page)
 
     // 展开面板
     await overridesToggle(page).click()
 
-    // 等待 claude-code 子标题出现（面板渲染完毕的信号）
-    await expect(page.locator('span', { hasText: 'claude-code' }).first()).toBeVisible({
-      timeout: 5000,
-    })
-
-    // 断言 3 个平台 id 都出现在平台子标题 span 中
-    const platformIds = ['claude-code', 'codebuddy', 'openclaw'] as const
-    for (const pid of platformIds) {
-      await expect(page.locator('span', { hasText: pid }).first()).toBeVisible({ timeout: 3000 })
+    // 每个支持 rules 的已发现平台都有一个区块（按 displayName 显示）
+    const res = await page.request.get('http://localhost:3001/platforms')
+    const { items } = (await res.json()) as { items: Array<{ displayName: string; detected: boolean; capabilities: { rules: boolean } }> }
+    for (const p of items.filter((x) => x.detected && x.capabilities.rules)) {
+      await expect(page.locator('span', { hasText: p.displayName }).first()).toBeVisible({ timeout: 5000 })
     }
-
-    console.log('✓ 3 个平台区块均已显示：claude-code, codebuddy, openclaw')
+    await expect(page.locator('span', { hasText: /openclaw/i })).toHaveCount(0)
   })
 
   test('3. Save Override 按钮在各平台区块内存在且可用', async ({ page }) => {
@@ -116,16 +111,19 @@ test.describe('Group D UI: Platform Overrides 面板', () => {
 
     // 展开面板
     await overridesToggle(page).click()
-    await expect(page.locator('span', { hasText: 'claude-code' }).first()).toBeVisible({
+    await expect(page.locator('span', { hasText: 'Claude Code' }).first()).toBeVisible({
       timeout: 5000,
     })
 
-    // 应有 3 个 "Save Override" 按钮（每平台各一个）
+    // 每个支持 rules 的已发现平台各一个 "Save Override" 按钮
+    const res = await page.request.get('http://localhost:3001/platforms')
+    const { items } = (await res.json()) as { items: Array<{ detected: boolean; capabilities: { rules: boolean } }> }
+    const expected = items.filter((p) => p.detected && p.capabilities.rules).length
     const saveButtons = page.locator('button', { hasText: 'Save Override' })
     await expect(saveButtons.first()).toBeVisible({ timeout: 5000 })
 
     const buttonCount = await saveButtons.count()
-    expect(buttonCount).toBe(3)
+    expect(buttonCount).toBe(expected)
 
     // 全部为 enabled 状态
     for (let i = 0; i < buttonCount; i++) {
@@ -139,18 +137,18 @@ test.describe('Group D UI: Platform Overrides 面板', () => {
     await openFirstRule(page)
 
     const toggle = overridesToggle(page)
-    const chevron = toggle.locator('span').first()
+    const chevron = toggle.locator('[data-chevron]')
 
     // 先展开
     await toggle.click()
-    await expect(chevron).toHaveText('▼', { timeout: 3000 })
-    await expect(page.locator('span', { hasText: 'claude-code' }).first()).toBeVisible({
+    await expect(chevron).toHaveAttribute('data-chevron', 'open', { timeout: 3000 })
+    await expect(page.locator('span', { hasText: 'Claude Code' }).first()).toBeVisible({
       timeout: 5000,
     })
 
     // 再次点击 → 收起
     await toggle.click()
-    await expect(chevron).toHaveText('▶', { timeout: 3000 })
+    await expect(chevron).toHaveAttribute('data-chevron', 'closed', { timeout: 3000 })
 
     // Save Override 按钮应从视图中消失（panel 被 React 条件渲染移除）
     await expect(page.locator('button', { hasText: 'Save Override' }).first()).not.toBeVisible({

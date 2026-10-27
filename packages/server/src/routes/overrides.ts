@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify'
+import { getPlatformInstance } from '@prism/core'
 import type { OverrideStore } from '@prism/core'
 import type { PlatformId, AssetType } from '@prism/shared'
 
-const VALID_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy', 'openclaw']
 const VALID_ASSET_TYPES: AssetType[] = ['rule', 'skill', 'agent', 'mcp', 'hook']
 
 interface OverrideParams {
@@ -23,7 +23,7 @@ interface OverrideBody {
 function validatePlatformId(
   platformId: string,
 ): { valid: true; value: PlatformId } | { valid: false } {
-  if (VALID_PLATFORM_IDS.includes(platformId as PlatformId)) {
+  if (getPlatformInstance(platformId)) {
     return { valid: true, value: platformId as PlatformId }
   }
   return { valid: false }

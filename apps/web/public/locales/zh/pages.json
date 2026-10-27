@@ -31,16 +31,21 @@
     "count_one": "已配置 {{count}} 个服务器",
     "count_other": "已配置 {{count}} 个服务器",
     "newBtn": "+ 新建服务器",
-    "importBtn": "↓ 从 Claude Code 导入",
+    "importBtn": "↓ 从其他平台导入",
     "importing": "导入中…",
     "empty": "暂无 MCP 服务器",
     "emptyHint": "手动添加服务器，或从现有平台配置导入。",
     "envVars_one": "{{count}} 个环境变量",
     "envVars_other": "{{count}} 个环境变量",
-    "noServersInClaude": "Claude Code 设置中未找到 MCP 服务器",
     "importFailed": "导入失败",
     "loadingFailed": "加载 MCP 服务器失败",
-    "deleteFailed": "删除失败"
+    "deleteFailed": "删除失败",
+    "importFrom": "从 {{name}} 导入",
+    "noServersInSource": "{{name}} 中未找到 MCP 服务器",
+    "imported": "已导入 {{count}} 个服务器",
+    "configFile": "配置文件：{{path}}",
+    "disabled": "已禁用",
+    "confirmDelete": "从配置文件中删除 MCP 服务器 \"{{name}}\"？"
   },
   "hooks": {
     "title": "钩子",
@@ -191,7 +196,13 @@
     "descPlaceholder": "简要描述该 MCP 服务器的功能",
     "noProjections": "暂无投影",
     "saveToSeeProjections": "保存后查看平台投影",
-    "saveFailed": "保存失败"
+    "saveFailed": "保存失败",
+    "transport": "传输方式",
+    "url": "URL",
+    "headers": "请求头",
+    "enabled": "启用",
+    "writesTo": "保存将直接写入 {{path}}",
+    "commandOrUrlRequired": "名称以及命令(stdio)或 URL(http/sse) 为必填项"
   },
   "hookEditor": {
     "newTitle": "新建钩子",
@@ -207,5 +218,21 @@
     "saveCommand": "保存命令",
     "noProjections": "暂无投影。",
     "saveFailed": "保存失败"
+  },
+  "plugins": {
+    "title": "插件",
+    "count_one": "已安装 {{count}} 个插件",
+    "count_other": "已安装 {{count}} 个插件",
+    "enabledCount": "{{count}} 个已启用",
+    "empty": "暂无已安装插件",
+    "emptyHint": "插件通过各工具自身的 CLI 或市场安装，Prism 负责查看和启用/禁用。",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "readOnly": "该平台不支持单独启用/禁用",
+    "toggleFailed": "切换失败",
+    "loadingFailed": "加载插件失败",
+    "search": "搜索插件…",
+    "confirmDisable": "禁用插件「{{name}}」后，它提供的 {{impact}} 将不再加载。确定禁用？",
+    "noAssets": "未包含 skill / agent / command / MCP / hook"
   }
 }

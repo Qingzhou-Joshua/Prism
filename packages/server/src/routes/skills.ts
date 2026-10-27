@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify'
+import { pickStore, platformIdsWith, resolvePlatformId } from './platform-store.js'
 import type { SkillStore } from '@prism/core'
-import { getPlatformSkillsDir, skillFileName } from '@prism/core'
+import { skillFileName } from '@prism/core'
 import type { CreateSkillDto, UpdateSkillDto, PlatformId } from '@prism/shared'
 
-const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
 
 const createSkillSchema = {
   body: {
@@ -45,8 +45,7 @@ export async function registerSkillsRoutes(
   stores: Map<string, SkillStore>,
 ): Promise<void> {
   function getStore(platform: unknown): SkillStore {
-    const id = typeof platform === 'string' ? platform : 'claude-code'
-    return stores.get(id) ?? stores.get('claude-code')!
+    return pickStore(stores, platform)
   }
 
   // GET /skills
@@ -107,20 +106,12 @@ export async function registerSkillsRoutes(
         return { error: 'Skill not found' }
       }
 
-      // Only include platforms that support skills (getPlatformSkillsDir won't throw)
-      const projections: Array<{ platformId: string; fileName: string; content: string }> = []
-      for (const platformId of ALL_PLATFORM_IDS) {
-        try {
-          getPlatformSkillsDir(platformId)
-          projections.push({
-            platformId,
-            fileName: skillFileName(skill.name),
-            content: skill.content,
-          })
-        } catch {
-          // Platform does not support skills — skip
-        }
-      }
+      // Only include platforms that support skills
+      const projections = platformIdsWith('skillsDir').map(platformId => ({
+        platformId,
+        fileName: skillFileName(skill.name),
+        content: skill.content,
+      }))
 
       return { projections }
     },

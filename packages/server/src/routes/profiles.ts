@@ -3,14 +3,9 @@ import { join } from 'node:path'
 import type { FastifyInstance } from 'fastify'
 import type { ProfileStore } from '@prism/core'
 import type { RuleStore } from '@prism/core'
-import { projectRule, getPlatformRulesDir, ruleFileName } from '@prism/core'
+import { projectRule, getPlatformRulesDir, getPlatformInstance, ruleFileName } from '@prism/core'
 import type { CreateProfileDto, UpdateProfileDto, PublishPreviewFile, PlatformId } from '@prism/shared'
 
-const PLATFORM_DISPLAY_NAMES: Record<PlatformId, string> = {
-  'claude-code': 'Claude Code',
-  'codebuddy': 'CodeBuddy',
-  'openclaw': 'OpenClaw',
-}
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -128,15 +123,16 @@ export async function registerProfileRoutes(
 
       // Build preview files: cross-join rules × targetPlatforms
       const files: PublishPreviewFile[] = await Promise.all(
-        profile.targetPlatforms.flatMap((platformId) =>
+        profile.targetPlatforms.filter(id => getPlatformRulesDir(id) !== null).flatMap((platformId) =>
           rules.map(async (rule) => {
             const projection = projectRule(rule, platformId)
-            const fileName = ruleFileName(rule.name)
-            const filePath = join(getPlatformRulesDir(platformId), fileName)
+            const instance = getPlatformInstance(platformId)!
+            const fileName = ruleFileName(rule.name, instance.ruleExt)
+            const filePath = join(instance.rulesDir!, fileName)
             const exists = await fileExists(filePath)
             return {
               platformId,
-              platformDisplayName: PLATFORM_DISPLAY_NAMES[platformId],
+              platformDisplayName: instance.displayName,
               ruleId: rule.id,
               ruleName: rule.name,
               fileName,

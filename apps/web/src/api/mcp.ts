@@ -1,65 +1,68 @@
-import type { McpServer, CreateMcpServerDto, UpdateMcpServerDto } from '@prism/shared'
+import type { McpServer, CreateMcpServerDto, UpdateMcpServerDto, ImportedMcpServer } from '@prism/shared'
 import { request } from './client.js'
 
-export interface McpScanResult {
-  name: string
-  command: string
-  args: string[]
-  env?: Record<string, string>
+function platformQuery(platform?: string): string {
+  return platform ? `?platform=${encodeURIComponent(platform)}` : ''
+}
+
+export interface McpProjection {
+  platformId: string
+  key: string
+  config: Record<string, unknown>
 }
 
 export const mcpApi = {
-  list(): Promise<McpServer[]> {
-    return request<{ items: McpServer[] }>('/mcp').then(r => r?.items ?? [])
+  list(platform?: string): Promise<McpServer[]> {
+    return request<{ items: McpServer[] }>(`/mcp${platformQuery(platform)}`).then(r => r?.items ?? [])
   },
 
-  async get(id: string): Promise<McpServer | null> {
+  async get(id: string, platform?: string): Promise<McpServer | null> {
     try {
-      return await request<McpServer>(`/mcp/${id}`)
+      return await request<McpServer>(`/mcp/${encodeURIComponent(id)}${platformQuery(platform)}`)
     } catch (e) {
       if (e instanceof Error && e.message.startsWith('HTTP 404')) return null
       throw e
     }
   },
 
-  create(dto: CreateMcpServerDto): Promise<McpServer> {
-    return request<McpServer>('/mcp', {
+  create(dto: CreateMcpServerDto, platform?: string): Promise<McpServer> {
+    return request<McpServer>(`/mcp${platformQuery(platform)}`, {
       method: 'POST',
       body: JSON.stringify(dto),
     }).then(r => r!)
   },
 
-  update(id: string, dto: UpdateMcpServerDto): Promise<McpServer> {
-    return request<McpServer>(`/mcp/${id}`, {
+  update(id: string, dto: UpdateMcpServerDto, platform?: string): Promise<McpServer> {
+    return request<McpServer>(`/mcp/${encodeURIComponent(id)}${platformQuery(platform)}`, {
       method: 'PUT',
       body: JSON.stringify(dto),
     }).then(r => r!)
   },
 
-  delete(id: string): Promise<void> {
-    return request<null>(`/mcp/${id}`, { method: 'DELETE' }).then(() => undefined)
+  delete(id: string, platform?: string): Promise<void> {
+    return request<null>(`/mcp/${encodeURIComponent(id)}${platformQuery(platform)}`, { method: 'DELETE' }).then(() => undefined)
   },
 
-  projections(id: string): Promise<Record<string, unknown>> {
-    return request<{ projections: Record<string, unknown> }>(`/mcp/${id}/projections`).then(
-      r => r?.projections ?? {},
+  projections(id: string, platform?: string): Promise<McpProjection[]> {
+    return request<{ projections: McpProjection[] }>(`/mcp/${encodeURIComponent(id)}/projections${platformQuery(platform)}`).then(
+      r => r?.projections ?? [],
     )
   },
 
-  scanPlatform(platformId: string): Promise<McpScanResult[]> {
-    return request<{ servers: McpScanResult[] }>(`/platforms/${platformId}/mcp/scan`).then(
+  scanPlatform(sourcePlatformId: string): Promise<ImportedMcpServer[]> {
+    return request<{ servers: ImportedMcpServer[] }>(`/platforms/${sourcePlatformId}/mcp/scan`).then(
       r => r?.servers ?? [],
     )
   },
 
+  /** Copy all servers from `sourcePlatformId` into `targetPlatform`'s config. */
   importFromPlatform(
-    platformId: string,
+    sourcePlatformId: string,
+    targetPlatform?: string,
   ): Promise<{ imported: number; items: McpServer[] }> {
     return request<{ imported: number; items: McpServer[] }>(
-      `/platforms/${platformId}/mcp/import`,
-      {
-        method: 'POST',
-      },
+      `/platforms/${sourcePlatformId}/mcp/import${platformQuery(targetPlatform)}`,
+      { method: 'POST' },
     ).then(r => r ?? { imported: 0, items: [] })
   },
 }

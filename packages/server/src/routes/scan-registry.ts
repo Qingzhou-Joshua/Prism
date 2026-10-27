@@ -5,9 +5,9 @@ import type { FileWatcher } from '@prism/core'
 import type { PlatformId } from '@prism/shared'
 
 interface PlatformStores {
-  rules: DirRuleStore
-  skills: DirSkillStore
-  agents: DirAgentStore
+  rules?: DirRuleStore
+  skills?: DirSkillStore
+  agents?: DirAgentStore
 }
 
 export async function registerScanRegistryRoute(
@@ -24,9 +24,9 @@ export async function registerScanRegistryRoute(
     for (const [platformId, stores] of platformStores) {
       try {
         const [rules, skills, agents] = await Promise.all([
-          stores.rules.list(),
-          stores.skills.list(),
-          stores.agents.list(),
+          stores.rules?.list() ?? [],
+          stores.skills?.list() ?? [],
+          stores.agents?.list() ?? [],
           // TODO(v1.2): index mcp servers from settings.json mcpServers field
           // TODO(v1.2): index hooks from settings.json hooks field
         ])

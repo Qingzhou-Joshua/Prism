@@ -1,6 +1,8 @@
+import { PixelIcon } from './components/PixelIcon'
+import type { PixelIconName } from './components/pixel-icons'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook, UnifiedCommand, KnowledgeEntry } from '@prism/shared'
+import type { AssetSummary, UnifiedRule, UnifiedSkill, UnifiedAgent, McpServer, UnifiedHook, UnifiedCommand, KnowledgeEntry } from '@prism/shared'
 import { PlatformIcon } from './components/PlatformIcon'
 import { useFileWatcher } from './hooks/useFileWatcher'
 import { FileChangeBanner } from './components/FileChangeBanner'
@@ -12,6 +14,8 @@ import { AgentsPage } from './pages/AgentsPage'
 import { AgentEditorPage } from './pages/AgentEditorPage'
 import { McpPage } from './pages/McpPage.js'
 import { McpEditorPage } from './pages/McpEditorPage.js'
+import { PluginsPage } from './pages/PluginsPage.js'
+import { registerDiscoveredPlatforms } from './constants/platforms.js'
 import { HooksPage } from './pages/HooksPage'
 import { HookEditorPage } from './pages/HookEditorPage'
 import { CommandsPage } from './pages/CommandsPage'
@@ -23,6 +27,7 @@ import { KnowledgeEntryDetailPage } from './pages/KnowledgeEntryDetailPage'
 import { SettingsPage } from './pages/SettingsPage.js'
 import { GitSyncPage } from './pages/GitSyncPage.js'
 import { knowledgeApi } from './api/knowledge'
+import { pluginsApi } from './api/plugins'
 import { API_BASE } from './api/client'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +42,7 @@ type Page =
   | { view: 'agents-editor'; agent?: UnifiedAgent }
   | { view: 'mcp-list' }
   | { view: 'mcp-editor'; server?: McpServer }
+  | { view: 'plugins-list' }
   | { view: 'hooks-list' }
   | { view: 'hooks-editor'; hook?: UnifiedHook }
   | { view: 'commands-list' }
@@ -48,7 +54,7 @@ type Page =
   | { view: 'settings' }
   | { view: 'git-sync' }
 
-type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'hooks' | 'commands' | 'conflicts' | 'knowledge' | 'settings' | 'git-sync'
+type Capability = 'rules' | 'skills' | 'agents' | 'mcp' | 'plugins' | 'hooks' | 'commands' | 'conflicts' | 'knowledge' | 'settings' | 'git-sync'
 
 type Theme = 'dark' | 'light'
 
@@ -57,6 +63,7 @@ interface PlatformCapabilities {
   skills?: boolean
   agents?: boolean
   mcp?: boolean
+  plugins?: boolean
   hooks?: boolean
   commands?: boolean
   conflicts?: boolean
@@ -75,6 +82,7 @@ interface PlatformScanResult {
   skillsDir?: string
   agentsDir?: string
   commandsDir?: string
+  mcpConfigPath?: string
 }
 
 // ── Capability config ─────────────────────────────────────────────────────────
@@ -85,6 +93,7 @@ const CAPABILITY_DEFAULT_PAGES: Record<Capability, Page> = {
   skills: { view: 'skills-list' },
   agents: { view: 'agents-list' },
   mcp: { view: 'mcp-list' },
+  plugins: { view: 'plugins-list' },
   hooks: { view: 'hooks-list' },
   commands: { view: 'commands-list' },
   conflicts: { view: 'conflicts-list' },
@@ -94,13 +103,15 @@ const CAPABILITY_DEFAULT_PAGES: Record<Capability, Page> = {
 }
 
 type GlobalCapability = 'conflicts' | 'knowledge' | 'git-sync' | 'settings'
-const GLOBAL_CAPS: GlobalCapability[] = ['conflicts', 'knowledge', 'git-sync', 'settings']
+// Knowledge is hidden from the nav for now (capture pipeline needs rework); its page is still routable.
+const GLOBAL_CAPS: GlobalCapability[] = ['conflicts', 'git-sync', 'settings']
+const GLOBAL_PAGE_CAPS: Capability[] = ['conflicts', 'knowledge', 'git-sync', 'settings']
 
-const CAPABILITY_ICONS: Record<GlobalCapability, string> = {
-  conflicts: '⚠️',
-  knowledge: '🧠',
-  'git-sync': '⇅',
-  settings: '⚙',
+const CAPABILITY_ICONS: Record<GlobalCapability, PixelIconName> = {
+  conflicts: 'warning',
+  knowledge: 'book',
+  'git-sync': 'sync',
+  settings: 'settings',
 }
 
 function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
@@ -109,6 +120,7 @@ function getPlatformCapabilities(platform: PlatformScanResult): Capability[] {
   if (platform.capabilities.skills) caps.push('skills')
   if (platform.capabilities.agents) caps.push('agents')
   if (platform.capabilities.mcp) caps.push('mcp')
+  if (platform.capabilities.plugins) caps.push('plugins')
   if (platform.capabilities.hooks) caps.push('hooks')
   if (platform.capabilities.commands) caps.push('commands')
   return caps
@@ -129,6 +141,8 @@ function getActiveCapability(page: Page): Capability {
     case 'mcp-list':
     case 'mcp-editor':
       return 'mcp'
+    case 'plugins-list':
+      return 'plugins'
     case 'hooks-list':
     case 'hooks-editor':
       return 'hooks'
@@ -174,27 +188,11 @@ function applyTheme(theme: Theme) {
 }
 
 function SunIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="1" x2="12" y2="3" />
-      <line x1="12" y1="21" x2="12" y2="23" />
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-      <line x1="1" y1="12" x2="3" y2="12" />
-      <line x1="21" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-    </svg>
-  )
+  return <PixelIcon name="sun" size={14} />
 }
 
 function MoonIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  )
+  return <PixelIcon name="moon" size={14} />
 }
 
 function GlobalNavBar({
@@ -219,7 +217,7 @@ function GlobalNavBar({
             onClick={() => onNavigate(cap)}
             aria-label={t(`nav.${capKey}`)}
           >
-            <span className="global-nav-icon">{CAPABILITY_ICONS[cap]}</span>
+            <span className="global-nav-icon"><PixelIcon name={CAPABILITY_ICONS[cap]} size={14} /></span>
             <span className="global-nav-label">{t(`nav.${capKey}`)}</span>
             {cap === 'conflicts' && conflictCount > 0 && (
               <span className="global-nav-badge">{conflictCount}</span>
@@ -228,6 +226,18 @@ function GlobalNavBar({
         )
       })}
     </div>
+  )
+}
+
+function SidebarCount({ summary, cap }: { summary: AssetSummary | null; cap: Capability }) {
+  const own = summary?.own[cap as keyof AssetSummary['own']]
+  const fromPlugins = summary?.plugins[cap as keyof AssetSummary['plugins']]
+  if (own === undefined && !fromPlugins) return null
+  return (
+    <span className="sidebar-nav-count">
+      {own ?? 0}
+      {fromPlugins ? <span title="plugins"> +{fromPlugins}</span> : null}
+    </span>
   )
 }
 
@@ -310,6 +320,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/platforms`)
       if (!res.ok) throw new Error(`Server returned ${res.status} ${res.statusText}`)
       const json: { items: PlatformScanResult[] } = await res.json()
+      registerDiscoveredPlatforms(json.items)
       setPlatforms(json.items)
     } catch (err) {
       setPlatformsError(
@@ -341,18 +352,41 @@ export default function App() {
   const [page, setPage] = useState<Page>({ view: 'rules-list' })
 
   const activeCapability = getActiveCapability(page)
-  const isGlobalPage = (GLOBAL_CAPS as Capability[]).includes(activeCapability)
+  const isGlobalPage = GLOBAL_PAGE_CAPS.includes(activeCapability)
 
   const navigateTo = useCallback((cap: Capability) => {
     setPage(CAPABILITY_DEFAULT_PAGES[cap])
   }, [])
 
+  const capabilities = selectedPlatform ? getPlatformCapabilities(selectedPlatform) : []
+
+  // Keep the current page valid for the selected platform (e.g. Codex has no rules)
+  useEffect(() => {
+    if (!selectedPlatform || isGlobalPage) return
+    if (capabilities.length > 0 && !capabilities.includes(activeCapability)) {
+      setPage(CAPABILITY_DEFAULT_PAGES[capabilities[0]])
+    }
+  }, [selectedPlatform, isGlobalPage, capabilities, activeCapability])
+
   const handlePlatformSelect = useCallback((id: string) => {
     setSelectedPlatformId(id)
-    setPage({ view: 'rules-list' })
-  }, [])
+    const next = platforms.find(p => p.id === id)
+    const caps = next ? getPlatformCapabilities(next) : []
+    setPage(CAPABILITY_DEFAULT_PAGES[caps[0] ?? 'rules'])
+  }, [platforms])
 
-  const capabilities = selectedPlatform ? getPlatformCapabilities(selectedPlatform) : []
+  const mcpImportSources = detectedPlatforms.filter(p => p.capabilities.mcp && p.id !== selectedPlatformId)
+
+  // Own vs plugin asset counts for the sidebar (refreshed on platform/page change)
+  const [assetSummary, setAssetSummary] = useState<AssetSummary | null>(null)
+  useEffect(() => {
+    if (!selectedPlatformId) return
+    let cancelled = false
+    pluginsApi.summary(selectedPlatformId)
+      .then(s => { if (!cancelled) setAssetSummary(s) })
+      .catch(() => { if (!cancelled) setAssetSummary(null) })
+    return () => { cancelled = true }
+  }, [selectedPlatformId, page.view])
 
   // File watcher
   const { changes, dismissChange } = useFileWatcher()
@@ -365,7 +399,7 @@ export default function App() {
       <header className="app-header">
         {/* Logo */}
         <div className="app-logo">
-          <img src="/favicon.png" alt="Prism" className="logo-img" />
+          <PixelIcon name="prism" size={32} title="Prism" className="logo-img" color="var(--header-text)" />
           <span className="logo-text">Prism</span>
         </div>
 
@@ -445,6 +479,7 @@ export default function App() {
                     onClick={() => navigateTo(cap)}
                   >
                     {t(`nav.${capKey}`)}
+                    <SidebarCount summary={assetSummary} cap={cap} />
                   </button>
                 )
               })}
@@ -565,15 +600,26 @@ export default function App() {
             {/* MCP */}
             {page.view === 'mcp-list' && (
               <McpPage
+                key={selectedPlatformId ?? 'none'}
+                platformId={selectedPlatformId ?? 'claude-code'}
+                importSources={mcpImportSources}
+                configPath={selectedPlatform?.mcpConfigPath}
                 onEdit={(server) => setPage({ view: 'mcp-editor', server })}
                 onNew={() => setPage({ view: 'mcp-editor' })}
               />
             )}
             {page.view === 'mcp-editor' && (
               <McpEditorPage
+                platformId={selectedPlatformId ?? 'claude-code'}
+                configPath={selectedPlatform?.mcpConfigPath}
                 initialServer={page.server}
                 onBack={() => setPage({ view: 'mcp-list' })}
               />
+            )}
+
+            {/* Plugins */}
+            {page.view === 'plugins-list' && (
+              <PluginsPage key={selectedPlatformId ?? 'none'} platformId={selectedPlatformId ?? 'claude-code'} />
             )}
 
             {/* Hooks */}

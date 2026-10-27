@@ -1,8 +1,10 @@
+import { AssetSources } from '../components/AssetSources'
+import { PixelIcon } from '../components/PixelIcon'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UnifiedHook, HookEventType } from '@prism/shared'
 import { hooksApi } from '../api/hooks'
-import { MotionCard, FadeIn } from '../components/MotionCard'
+import { FadeIn } from '../components/MotionCard'
 
 interface HooksPageProps {
   platformId: string
@@ -83,7 +85,7 @@ export function HooksPage({ platformId, onEdit, onNew }: HooksPageProps) {
   if (loading) return <div className="loading-state">{tCommon('status.loading')}…</div>
   if (error) return (
     <div className="error-state">
-      <span>⚠ {error}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><PixelIcon name="warning" size={14} /> {error}</span>
       <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
@@ -112,67 +114,76 @@ export function HooksPage({ platformId, onEdit, onNew }: HooksPageProps) {
       </div>
       </FadeIn>
 
-      {hooks.length === 0 && (
-        <FadeIn delay={0.1}>
-        <div className="empty-state">
-          <div className="empty-state-icon">🪝</div>
-          <div className="empty-state-title">{t('hooks.empty')}</div>
-          <div className="empty-state-desc">{t('hooks.emptyHint')}</div>
-          <button className="btn btn-primary" onClick={onNew}>{t('hooks.newBtn')}</button>
-        </div>
-        </FadeIn>
-      )}
+      <AssetSources
+        platformId={platformId}
+        type="hooks"
+        typeLabel={t('hooks.title')}
+        query=""
+        ownCount={hooks.length}
+        ownMatchCount={hooks.length}
+      >
+        {hooks.length === 0 && (
+          <FadeIn delay={0.1}>
+          <div className="empty-state">
+            <div className="empty-state-icon"><PixelIcon name="hook" size={32} /></div>
+            <div className="empty-state-title">{t('hooks.empty')}</div>
+            <div className="empty-state-desc">{t('hooks.emptyHint')}</div>
+            <button className="btn btn-primary" onClick={onNew}>{t('hooks.newBtn')}</button>
+          </div>
+          </FadeIn>
+        )}
 
-      {orderedKeys.map(eventType => {
-        const items = grouped.get(eventType)!
-        const isCollapsed = collapsed.has(eventType)
-        return (
-          <div key={eventType} className="hooks-event-group">
-            <button
-              className="hooks-event-header"
-              onClick={() => toggleCollapse(eventType)}
-            >
-              <span className="hooks-event-chevron">{isCollapsed ? '▶' : '▼'}</span>
-              <span className="hooks-event-type">{eventType}</span>
-              <span className="hooks-event-count">{items.length}</span>
-            </button>
+        {orderedKeys.map(eventType => {
+          const items = grouped.get(eventType)!
+          const isCollapsed = collapsed.has(eventType)
+          return (
+            <div key={eventType} className="hooks-event-group">
+              <button
+                className="hooks-event-header"
+                onClick={() => toggleCollapse(eventType)}
+              >
+                <span className="hooks-event-chevron" data-chevron={isCollapsed ? 'closed' : 'open'}><PixelIcon name={!isCollapsed ? 'chevron-down' : 'chevron-right'} size={12} /></span>
+                <span className="hooks-event-type">{eventType}</span>
+                <span className="hooks-event-count">{items.length}</span>
+              </button>
 
-            {!isCollapsed && (
-              <div className="hooks-event-items">
-                {items.map((hook, i) => (
-                  <MotionCard
-                    key={hook.id}
-                    index={i}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => onEdit(hook)}
-                  >
-                    <div className="item-card-name hooks-matcher">{hook.matcher}</div>
-                    {hook.description && (
-                      <div className="item-card-filepath">{hook.description}</div>
-                    )}
-                    <div className="hooks-action-preview">{actionSummary(hook, t)}</div>
-                    {hook.actions.length > 1 && (
-                      <div className="hooks-action-more">+{hook.actions.length - 1} more action{hook.actions.length > 2 ? 's' : ''}</div>
-                    )}
-                    <div className="item-card-footer">
-                      <span className="item-card-date">{new Date(hook.updatedAt).toLocaleDateString()}</span>
-                      <div className="item-card-actions">
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={(e) => { e.stopPropagation(); void handleDelete(hook) }}
-                          disabled={deletingId === hook.id}
-                        >
-                          {deletingId === hook.id ? '…' : tCommon('btn.delete')}
-                        </button>
+              {!isCollapsed && (
+                <div className="hooks-event-items">
+                  {items.map(hook => (
+                    <div
+                      key={hook.id}
+                      className="item-card"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => onEdit(hook)}
+                    >
+                      <div className="item-card-name hooks-matcher">{hook.matcher}</div>
+                      {hook.description && (
+                        <div className="item-card-filepath">{hook.description}</div>
+                      )}
+                      <div className="hooks-action-preview">{actionSummary(hook, t)}</div>
+                      {hook.actions.length > 1 && (
+                        <div className="hooks-action-more">+{hook.actions.length - 1} more action{hook.actions.length > 2 ? 's' : ''}</div>
+                      )}
+                      <div className="item-card-footer">
+                        <span className="item-card-date">{new Date(hook.updatedAt).toLocaleDateString()}</span>
+                        <div className="item-card-actions">
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={(e) => { e.stopPropagation(); void handleDelete(hook) }}
+                            disabled={deletingId === hook.id}
+                          >
+                            {deletingId === hook.id ? '…' : tCommon('btn.delete')}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </MotionCard>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })}
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </AssetSources>
     </div>
   )
 }

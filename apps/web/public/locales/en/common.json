@@ -9,7 +9,8 @@
     "conflicts": "Conflicts",
     "knowledge": "Knowledge",
     "settings": "Settings",
-    "gitSync": "Git Sync"
+    "gitSync": "Git Sync",
+    "plugins": "Plugins"
   },
   "btn": {
     "save": "Save",
@@ -24,7 +25,8 @@
     "skip": "Skip",
     "done": "Done ✓",
     "refresh": "↺ Refresh",
-    "back2knowledge": "← Back to Knowledge"
+    "back2knowledge": "← Back to Knowledge",
+    "close": "Close"
   },
   "status": {
     "loading": "Loading…",
@@ -41,5 +43,27 @@
   "platform": {
     "allPlatforms": "All platforms",
     "selectAtLeastOne": "Select at least one"
+  },
+  "list": {
+    "search": "Search name or description…",
+    "noDescription": "No description",
+    "noMatch": "No results for “{{query}}”"
+  },
+  "sources": {
+    "filter": "Filter by source",
+    "all": "All",
+    "mine": "Mine",
+    "mineTitle": "My {{type}}",
+    "editable": "Editable",
+    "readOnly": "Read-only",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "showDisabled": "Show disabled plugins ({{count}})",
+    "showAll": "Show all {{count}}",
+    "showLess": "Show less",
+    "fromPlugin": "From plugin {{name}}",
+    "sameName": "Same name",
+    "sameNameHint": "You have an asset with the same name; plugin assets load under the plugin namespace, so neither overrides the other",
+    "viewPlugin": "View plugin"
   }
 }

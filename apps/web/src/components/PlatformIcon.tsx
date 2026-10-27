@@ -1,11 +1,23 @@
-const PLATFORM_ICON_SRC: Record<string, string> = {
-  'claude-code': '/icons/ic_claude.png',
-  'claude':      '/icons/ic_claude.png',
-  'codebuddy':   '/icons/ic_codebuddy.png',
+import { PixelIcon } from './PixelIcon'
+import type { PixelIconName } from './pixel-icons'
+
+const PLATFORM_PIXEL_ICON: Record<string, PixelIconName> = {
+  'claude-code': 'claude',
+  claude: 'claude',
+  codebuddy: 'codebuddy',
+  cursor: 'cursor',
+  codex: 'codex',
+  opencode: 'opencode',
 }
 
 const PLATFORM_DOT_COLOR: Record<string, string> = {
   'global': '#4ecdc4',
+}
+
+/** Instance ids like `claude-code-tclaude` share their kind's icon. */
+function kindOf(platformId: string): string {
+  if (platformId.startsWith('claude-code')) return 'claude-code'
+  return platformId
 }
 
 interface PlatformIconProps {
@@ -16,18 +28,9 @@ interface PlatformIconProps {
 }
 
 export function PlatformIcon({ platformId, size = 16, style, className }: PlatformIconProps) {
-  const src = PLATFORM_ICON_SRC[platformId]
-  if (src) {
-    return (
-      <img
-        src={src}
-        width={size}
-        height={size}
-        alt={platformId}
-        className={className}
-        style={{ objectFit: 'contain', borderRadius: 3, flexShrink: 0, display: 'block', ...style }}
-      />
-    )
+  const icon = PLATFORM_PIXEL_ICON[kindOf(platformId)]
+  if (icon) {
+    return <PixelIcon name={icon} size={size} title={platformId} className={className} style={style} />
   }
 
   const bg = PLATFORM_DOT_COLOR[platformId] ?? '#888'

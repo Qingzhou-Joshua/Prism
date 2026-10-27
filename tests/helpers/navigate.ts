@@ -6,7 +6,7 @@ import { expect } from '@playwright/test'
 export async function selectPlatform(page: Page, platformName: string): Promise<void> {
   await page.goto('/')
   await expect(page.locator('.platform-tab').first()).toBeVisible({ timeout: 10000 })
-  const tab = page.locator('.platform-tab', { hasText: platformName })
+  const tab = page.locator('.platform-tab', { hasText: platformName }).first()
   await expect(tab).toBeVisible()
   await tab.click()
 }

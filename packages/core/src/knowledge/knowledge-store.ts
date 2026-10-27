@@ -511,10 +511,9 @@ export class KnowledgeStore {
   private getPlatformAssetDir(platformId: string, assetType: 'rule' | 'skill'): string {
     // platformId 对应 PlatformId，但此处接受 string 保持灵活性
     // 使用 platform-paths.ts 的辅助函数确定目录
-    if (assetType === 'rule') {
-      return getPlatformRulesDir(platformId as Parameters<typeof getPlatformRulesDir>[0])
-    }
-    return getPlatformSkillsDir(platformId as Parameters<typeof getPlatformSkillsDir>[0])
+    const dir = assetType === 'rule' ? getPlatformRulesDir(platformId) : getPlatformSkillsDir(platformId)
+    if (!dir) throw new Error(`Platform ${platformId} does not support ${assetType}s`)
+    return dir
   }
 
   async publishGeneratedAsset(assetId: string, dto: PublishGeneratedAssetDto): Promise<GeneratedAsset> {

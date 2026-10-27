@@ -1,3 +1,5 @@
+import { PixelIcon } from '../components/PixelIcon'
+import { discoveredPlatformIds, platformLabel } from '../constants/platforms'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import Editor from '@monaco-editor/react'
@@ -48,9 +50,10 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
 
   // Platform Overrides state
   const [overridesExpanded, setOverridesExpanded] = useState(false)
-  const [overrideValues, setOverrideValues] = useState<Record<string, string>>({
-    'claude-code': '', 'codebuddy': '', 'openclaw': '',
-  })
+  const overridePlatforms = discoveredPlatformIds('rules')
+  const [overrideValues, setOverrideValues] = useState<Record<string, string>>(
+    () => Object.fromEntries(overridePlatforms.map(pid => [pid, ''])),
+  )
   const [overrideSaving, setOverrideSaving] = useState<Record<string, boolean>>({})
   const [overrideSaveError, setOverrideSaveError] = useState<Record<string, string | null>>({})
 
@@ -66,7 +69,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
   // Load platform overrides when the panel is expanded
   useEffect(() => {
     if (!rule || !overridesExpanded) return
-    const platforms = ['claude-code', 'codebuddy', 'openclaw'] as const
+    const platforms = overridePlatforms
     void Promise.all(
       platforms.map(async (pid) => {
         try {
@@ -273,7 +276,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
               textAlign: 'left',
             }}
           >
-            <span>{overridesExpanded ? '▼' : '▶'}</span>
+            <span style={{ display: 'inline-flex' }} data-chevron={overridesExpanded ? 'open' : 'closed'}><PixelIcon name={overridesExpanded ? 'chevron-down' : 'chevron-right'} size={12} /></span>
             {t('ruleEditor.platformOverrides')}
             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
               — {t('ruleEditor.platformOverridesHint')}
@@ -283,7 +286,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
           {/* Expanded panel */}
           {overridesExpanded && (
             <div style={{ padding: '0 16px 16px' }}>
-              {(['claude-code', 'codebuddy', 'openclaw'] as const).map(pid => (
+              {overridePlatforms.map(pid => (
                 <div
                   key={pid}
                   style={{
@@ -305,7 +308,7 @@ export function RuleEditorPage({ rule, onSave, onCancel, detectedPlatforms, plat
                     }}
                   >
                     <PlatformIcon platformId={pid} size={14} />
-                    <span style={{ fontSize: 13, fontWeight: 500 }}>{pid}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>{platformLabel(pid)}</span>
                     {overrideSaving[pid] && (
                       <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
                         {tCommon('status.saving')}

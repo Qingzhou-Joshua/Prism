@@ -156,3 +156,24 @@ describe('DirRuleStore', () => {
     expect(found!.content).toBe('persisted')
   })
 })
+
+describe('DirRuleStore — native file safety', () => {
+  it('keeps native front matter and the .mdc extension when editing', async () => {
+    const { mkdtemp, writeFile: wf, readFile: rf, readdir: rd, rm: rmrf } = await import('node:fs/promises')
+    const { tmpdir: td } = await import('node:os')
+    const { join: j } = await import('node:path')
+    const d = await mkdtemp(j(td(), 'prism-rule-native-'))
+    try {
+      await wf(j(d, 'KUIKLY.mdc'), '---\ndescription: Kuikly rules\nglobs: "**/*.kt"\nalwaysApply: false\n---\nold body\n')
+      const store = new DirRuleStore(d, '.mdc')
+      const [rule] = await store.list()
+      await store.update(rule.id, { content: 'new body' })
+
+      expect(await rd(d)).toEqual(['KUIKLY.mdc'])
+      const text = await rf(j(d, 'KUIKLY.mdc'), 'utf-8')
+      expect(text).toBe('---\ndescription: Kuikly rules\nglobs: "**/*.kt"\nalwaysApply: false\n---\nnew body')
+    } finally {
+      await rmrf(d, { recursive: true, force: true })
+    }
+  })
+})

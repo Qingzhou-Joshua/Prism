@@ -1,3 +1,5 @@
+import { PixelIcon } from './PixelIcon'
+import { platformLabel as platformLabelOf } from '../constants/platforms'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { API_BASE } from '../api/client'
@@ -8,11 +10,6 @@ interface FileChangeBannerProps {
   onDismiss: (entryId: string) => void
 }
 
-const PLATFORM_LABELS: Record<string, string> = {
-  'claude-code': 'Claude Code',
-  'codebuddy': 'Codebuddy',
-  'openclaw': 'OpenClaw',
-}
 
 interface DiffContent {
   currentContent: string
@@ -73,7 +70,7 @@ export function FileChangeBanner({ changes, onDismiss }: FileChangeBannerProps) 
       }}
     >
       {changes.map((change) => {
-        const platformLabel = PLATFORM_LABELS[change.platformId] ?? change.platformId
+        const label = platformLabelOf(change.platformId)
         const isExpanded = expandedId === change.entryId
         const diff = diffMap[change.entryId]
         const isLoading = loadingId === change.entryId
@@ -91,7 +88,7 @@ export function FileChangeBanner({ changes, onDismiss }: FileChangeBannerProps) 
               }}
             >
               <span style={{ flex: 1 }}>
-                ⚠ <strong>{change.assetName}</strong> {t('fileChangeBanner.modifiedIn', { platform: platformLabel })}
+                <PixelIcon name="warning" size={13} /> <strong>{change.assetName}</strong> {t('fileChangeBanner.modifiedIn', { platform: label })}
               </span>
               <button
                 className="btn btn-sm"

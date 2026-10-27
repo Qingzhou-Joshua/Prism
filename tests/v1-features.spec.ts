@@ -10,7 +10,7 @@ import { selectPlatform as _selectPlatform, goToPage as _goToPage } from './help
 async function selectPlatform(page: Page, platformName: string): Promise<boolean> {
   await page.goto('/')
   await expect(page.locator('.platform-tab').first()).toBeVisible({ timeout: 10000 })
-  const tab = page.locator('.platform-tab', { hasText: platformName })
+  const tab = page.locator('.platform-tab', { hasText: platformName }).first()
   if ((await tab.count()) === 0) {
     console.warn(`⚠ 平台 tab "${platformName}" 不存在，跳过后续断言`)
     return false
@@ -44,33 +44,19 @@ void _goToPage
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Group B: v1.0 新功能验证', () => {
-  test('B-1. OpenClaw tab 已注册并在平台列表中显示', async ({ page, request }) => {
-    // 先通过 API 验证 openclaw 是否在 /platforms 响应中
+  test('B-1. 平台按通配符发现，所有 Claude 配置目录都作为 Claude Code 实例出现', async ({ page, request }) => {
     const res = await request.get(`${API_BASE}/platforms`)
     expect(res.status()).toBe(200)
+    const { items } = (await res.json()) as { items: Array<{ id: string; kind?: string; displayName: string }> }
 
-    const body = await res.json()
-    const platforms: Array<{ id: string; displayName?: string }> = Array.isArray(body)
-      ? body
-      : (body.platforms ?? body.items ?? [])
+    expect(items.some((p) => p.id === 'openclaw')).toBe(false)
+    const claude = items.filter((p) => p.kind === 'claude-code')
+    expect(claude.length).toBeGreaterThanOrEqual(1)
 
-    const openclawEntry = platforms.find((p) => p.id === 'openclaw')
-    if (!openclawEntry) {
-      // v1.0 修复项：若仍未注册，让 test 明确失败并给出提示
-      throw new Error(
-        '❌ openclaw 平台未在 /platforms 中注册。请检查 server/src/index.ts 是否已注册 adapter-openclaw。',
-      )
-    }
-    console.log('✓ /platforms API 包含 openclaw:', JSON.stringify(openclawEntry))
-
-    // 再验证浏览器 UI 中的 tab
     await page.goto('/')
-    await expect(page.locator('.platform-tab').first()).toBeVisible({ timeout: 10000 })
-
-    const openclawTab = page.locator('.platform-tab', { hasText: /openclaw/i })
-    await expect(openclawTab).toBeVisible({ timeout: 5000 })
-
-    console.log('✓ OpenClaw tab 在 UI 中可见（v1.0 修复：adapter-openclaw 已注册）')
+    for (const p of items) {
+      await expect(page.locator('.platform-tab', { hasText: p.displayName })).toBeVisible({ timeout: 10000 })
+    }
   })
 
   test('B-2. ScopeBadge — Rules 列表中的 card 显示 scope 标签', async ({ page }) => {

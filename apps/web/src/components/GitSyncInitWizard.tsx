@@ -1,3 +1,5 @@
+import { PixelIcon } from './PixelIcon'
+import { discoveredPlatformIds, platformLabel } from '../constants/platforms'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GitSyncConfig, GitInitResult } from '@prism/shared'
@@ -39,10 +41,9 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
   const [completedConfig, setCompletedConfig] = useState<GitSyncConfig | null>(null)
 
   // Step 3 fields
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Record<string, boolean>>({
-    'claude-code': true,
-    'codebuddy': false,
-  })
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(discoveredPlatformIds('rules').map((id, i) => [id, i === 0])),
+  )
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState('')
 
@@ -151,7 +152,7 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
               fontWeight: 600,
               flexShrink: 0,
             }}>
-              {step > s ? '✓' : s}
+              {step > s ? <PixelIcon name="check" size={12} /> : s}
             </div>
             {s < 4 && (
               <div style={{ width: 24, height: 1, background: 'var(--border-default)' }} />
@@ -262,7 +263,7 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
                     setSelectedPlatforms((prev) => ({ ...prev, [id]: e.target.checked }))
                   }
                 />
-                {id === 'claude-code' ? t('gitSyncInitWizard.claudeCode') : t('gitSyncInitWizard.codebuddy')}
+                {platformLabel(id)}
               </label>
             ))}
           </div>
@@ -299,7 +300,7 @@ export function GitSyncInitWizard({ onComplete, onCancel }: GitSyncInitWizardPro
             {t('gitSyncInitWizard.allDone', { count: publishedCount })}
           </div>
           <button className="btn btn-primary btn-sm" onClick={handleDone}>
-            {t('gitSyncInitWizard.done')} ✓
+            {t('gitSyncInitWizard.done')} <PixelIcon name="check" size={14} />
           </button>
         </div>
       )}

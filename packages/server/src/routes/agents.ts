@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify'
+import { pickStore, platformIdsWith, resolvePlatformId } from './platform-store.js'
 import type { AgentStore } from '@prism/core'
-import { getPlatformAgentsDir, agentFileName } from '@prism/core'
+import { agentFileName } from '@prism/core'
 import type { CreateAgentDto, UpdateAgentDto, PlatformId } from '@prism/shared'
 
-const ALL_PLATFORM_IDS: PlatformId[] = ['claude-code', 'codebuddy']
 
 const createAgentSchema = {
   body: {
@@ -39,8 +39,7 @@ export async function registerAgentsRoutes(
   stores: Map<string, AgentStore>,
 ): Promise<void> {
   function getStore(platform: unknown): AgentStore {
-    const id = typeof platform === 'string' ? platform : 'claude-code'
-    return stores.get(id) ?? stores.get('claude-code')!
+    return pickStore(stores, platform)
   }
 
   // GET /agents
@@ -101,17 +100,12 @@ export async function registerAgentsRoutes(
         return { error: 'Agent not found' }
       }
 
-      // Only include platforms that support agents (getPlatformAgentsDir returns non-null)
-      const projections: Array<{ platformId: string; fileName: string; content: string }> = []
-      for (const platformId of ALL_PLATFORM_IDS) {
-        if (getPlatformAgentsDir(platformId) !== null) {
-          projections.push({
-            platformId,
-            fileName: agentFileName(agent.name),
-            content: agent.content,
-          })
-        }
-      }
+      // Only include platforms that support agents
+      const projections = platformIdsWith('agentsDir').map(platformId => ({
+        platformId,
+        fileName: agentFileName(agent.name),
+        content: agent.content,
+      }))
 
       return { projections }
     },

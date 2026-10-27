@@ -1,3 +1,4 @@
+import { frontMatterString } from '../utils/dir-store-utils.js'
 export interface ParsedCommand {
   name: string
   description?: string
@@ -37,8 +38,8 @@ export function parseCommandFile(raw: string, fileName?: string): ParsedCommand 
     : undefined
 
   return {
-    name: typeof meta.name === 'string' ? meta.name : deriveNameFromFileName(fileName),
-    description: typeof meta.description === 'string' ? meta.description : undefined,
+    name: frontMatterString(raw, 'name') || deriveNameFromFileName(fileName),
+    description: frontMatterString(raw, 'description') ?? (typeof meta.description === 'string' ? meta.description : undefined),
     tags: tags && tags.length > 0 ? tags : undefined,
     targetPlatforms: targetPlatforms && targetPlatforms.length > 0 ? targetPlatforms : undefined,
     // Strip leading newline that appears when content follows closing ---

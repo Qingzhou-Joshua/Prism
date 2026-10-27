@@ -1,3 +1,5 @@
+import { PixelIcon } from '../components/PixelIcon'
+import { discoveredPlatformIds, platformLabel } from '../constants/platforms'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { KnowledgeEntry, DeveloperProfile, GeneratedAsset } from '@prism/shared'
@@ -51,7 +53,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
           domain: domainFilter || undefined,
           projectPath: projectPathFilter || undefined,
         }),
-        knowledgeApi.getHookStatus(['claude-code', 'codebuddy']),
+        knowledgeApi.getHookStatus(discoveredPlatformIds('hooks')),
         knowledgeApi.listGenerated(),
       ])
       setProfile(profileData)
@@ -71,10 +73,10 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
     setHookLoading(true)
     try {
       if (hookEnabled) {
-        await knowledgeApi.teardownHook(['claude-code', 'codebuddy'])
+        await knowledgeApi.teardownHook(discoveredPlatformIds('hooks'))
         setHookEnabled(false)
       } else {
-        await knowledgeApi.setupHook(['claude-code', 'codebuddy'])
+        await knowledgeApi.setupHook(discoveredPlatformIds('hooks'))
         setHookEnabled(true)
       }
     } catch (e) {
@@ -178,7 +180,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
   if (loading) return <div className="loading-state">{tCommon('status.loading')}</div>
   if (error) return (
     <div className="error-state">
-      <span>⚠ {error}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><PixelIcon name="warning" size={14} /> {error}</span>
       <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
@@ -216,7 +218,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
           >
             {hookLoading ? (
               <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-            ) : hookEnabled ? '✓' : null}
+            ) : hookEnabled ? <PixelIcon name="check" size={12} /> : null}
             {hookEnabled ? t('knowledge.autoCaptureOn') : t('knowledge.configureAutoCapture')}
           </button>
           <button className="btn btn-primary btn-sm" onClick={onEditProfile}>
@@ -254,7 +256,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
       {/* ── Empty state ── */}
       {entries.length === 0 && (
         <div className="empty-state">
-          <div className="empty-state-icon">🧠</div>
+          <div className="empty-state-icon"><PixelIcon name="book" size={32} /></div>
           <div className="empty-state-title">{t('knowledge.empty')}</div>
           <div className="empty-state-desc">
             {t('knowledge.emptyHint')}
@@ -376,7 +378,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
         {/* Empty state */}
         {generatedAssets.length === 0 && (
           <div className="empty-state">
-            <div className="empty-state-icon">✨</div>
+            <div className="empty-state-icon"><PixelIcon name="sparkle" size={32} /></div>
             <div className="empty-state-title">{t('knowledge.noGeneratedAssets')}</div>
             <div className="empty-state-desc">
               {t('knowledge.noGeneratedHint')}
@@ -410,7 +412,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                     {asset.publishedTo.length > 0 ? (
                       asset.publishedTo.map(p => (
                         <span key={p.platformId} className="badge badge-accent" style={{ gap: 4 }}>
-                          ✓ {p.platformId}
+                          <PixelIcon name="check" size={11} /> {p.platformId}
                         </span>
                       ))
                     ) : (
@@ -427,8 +429,9 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                         onChange={e => setPublishSelect(asset.id, { platformId: e.target.value })}
                         style={{ maxWidth: 130, fontSize: 12, padding: '2px 4px' }}
                       >
-                        <option value="claude-code">claude-code</option>
-                        <option value="codebuddy">codebuddy</option>
+                        {discoveredPlatformIds(sel.assetType === 'skill' ? 'skills' : 'rules').map(pid => (
+                          <option key={pid} value={pid}>{platformLabel(pid)}</option>
+                        ))}
                       </select>
                       <select
                         className="editor-meta-input"
@@ -454,7 +457,7 @@ export function KnowledgePage({ onEditProfile, onViewEntry }: KnowledgePageProps
                       onClick={() => void handleDeleteGenerated(asset)}
                       disabled={deletingGeneratedId === asset.id}
                     >
-                      {deletingGeneratedId === asset.id ? '…' : '🗑'}
+                      {deletingGeneratedId === asset.id ? '…' : <PixelIcon name="trash" size={12} />}
                     </button>
                   </div>
                 </MotionCard>

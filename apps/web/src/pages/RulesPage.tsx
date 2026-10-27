@@ -1,3 +1,4 @@
+import { PixelIcon } from '../components/PixelIcon'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UnifiedRule } from '@prism/shared'
@@ -53,7 +54,7 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
   if (loading) return <div className="loading-state">{tCommon('status.loading')}</div>
   if (error) return (
     <div className="error-state">
-      <span>⚠ {error}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><PixelIcon name="warning" size={14} /> {error}</span>
       <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{tCommon('btn.retry')}</button>
     </div>
   )
@@ -75,7 +76,7 @@ export function RulesPage({ onEdit, onNew, rulesDir, platformId }: RulesPageProp
       {rules.length === 0 && (
         <FadeIn delay={0.1}>
           <div className="empty-state">
-            <div className="empty-state-icon">📋</div>
+            <div className="empty-state-icon"><PixelIcon name="document" size={32} /></div>
             <div className="empty-state-title">{t('rules.empty')}</div>
             <div className="empty-state-desc">
               {t('rules.emptyHint')}

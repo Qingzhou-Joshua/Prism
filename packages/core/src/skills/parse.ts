@@ -1,3 +1,4 @@
+import { frontMatterString } from '../utils/dir-store-utils.js'
 export interface ParsedSkill {
   trigger?: string
   category?: string
@@ -22,7 +23,7 @@ export function parseSkillFile(raw: string): ParsedSkill {
   return {
     trigger: typeof meta.trigger === 'string' ? meta.trigger : undefined,
     category: typeof meta.category === 'string' ? meta.category : undefined,
-    description: typeof meta.description === 'string' ? meta.description : undefined,
+    description: frontMatterString(raw, 'description') ?? (typeof meta.description === 'string' ? meta.description : undefined),
     arguments: Array.isArray(meta.arguments)
       ? (meta.arguments as unknown[]).filter((a): a is string => typeof a === 'string')
       : undefined,

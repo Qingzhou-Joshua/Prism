@@ -137,3 +137,31 @@ trigger: /my-skill
     expect(found!.content).toBe('body')
   })
 })
+
+describe('DirSkillStore — native skill dirs', () => {
+  it('edits and deletes using the real directory, keeping native front matter', async () => {
+    const { mkdtemp, writeFile: wf, readFile: rf, readdir: rd, mkdir: mk, rm: rmrf } = await import('node:fs/promises')
+    const { tmpdir: td } = await import('node:os')
+    const { join: j } = await import('node:path')
+    const d = await mkdtemp(j(td(), 'prism-skill-native-'))
+    try {
+      // Dir name differs from kebab(display name)
+      await mk(j(d, 'pdf_tools'))
+      await wf(j(d, 'pdf_tools', 'SKILL.md'), '---\nname: PDF Tools\ndescription: Work with PDFs\nallowed-tools: Read, Bash\nlicense: MIT\n---\nbody\n')
+      const store = new DirSkillStore(d)
+      const [skill] = await store.list()
+
+      await store.update(skill.id, { content: 'new' })
+      expect(await rd(d)).toEqual(['pdf_tools'])
+      const text = await rf(j(d, 'pdf_tools', 'SKILL.md'), 'utf-8')
+      expect(text).toContain('allowed-tools: Read, Bash')
+      expect(text).toContain('license: MIT')
+      expect(text).not.toContain('createdAt')
+
+      expect(await store.delete(skill.id)).toBe(true)
+      expect(await rd(d)).toEqual([])
+    } finally {
+      await rmrf(d, { recursive: true, force: true })
+    }
+  })
+})

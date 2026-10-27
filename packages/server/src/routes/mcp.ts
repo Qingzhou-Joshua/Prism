@@ -1,58 +1,67 @@
 import type { FastifyInstance } from 'fastify'
-import type { McpStore } from '@prism/core'
-import type { AdapterRegistry } from '@prism/core'
-import type { CreateMcpServerDto, UpdateMcpServerDto } from '@prism/shared'
+import type { McpStore, AdapterRegistry } from '@prism/core'
+import type { CreateMcpServerDto, UpdateMcpServerDto, ImportedMcpServer } from '@prism/shared'
+import { pickStore } from './platform-store.js'
+
+const serverProperties = {
+  name:            { type: 'string', minLength: 1 },
+  command:         { type: 'string' },
+  args:            { type: 'array', items: { type: 'string' } },
+  env:             { type: 'object', additionalProperties: { type: 'string' } },
+  type:            { type: 'string', enum: ['stdio', 'http', 'sse'] },
+  url:             { type: 'string' },
+  headers:         { type: 'object', additionalProperties: { type: 'string' } },
+  enabled:         { type: 'boolean' },
+  description:     { type: 'string' },
+  targetPlatforms: { type: 'array', items: { type: 'string' } },
+}
 
 const createMcpSchema = {
   body: {
     type: 'object' as const,
-    required: ['name', 'command', 'args', 'targetPlatforms'],
-    properties: {
-      name:            { type: 'string', minLength: 1 },
-      command:         { type: 'string', minLength: 1 },
-      args:            { type: 'array', items: { type: 'string' } },
-      env:             { type: 'object', additionalProperties: { type: 'string' } },
-      description:     { type: 'string' },
-      targetPlatforms: { type: 'array', items: { type: 'string' } },
-    },
+    required: ['name', 'args', 'targetPlatforms'],
+    properties: serverProperties,
   },
 }
 
 const updateMcpSchema = {
   body: {
     type: 'object' as const,
-    properties: {
-      name:            { type: 'string', minLength: 1 },
-      command:         { type: 'string', minLength: 1 },
-      args:            { type: 'array', items: { type: 'string' } },
-      env:             { type: 'object', additionalProperties: { type: 'string' } },
-      description:     { type: 'string' },
-      targetPlatforms: { type: 'array', items: { type: 'string' } },
-    },
+    properties: serverProperties,
   },
 }
 
+type PlatformQuery = { Querystring: { platform?: string } }
+
+/**
+ * MCP servers live in each platform's own config file; `?platform=` selects
+ * which one (defaults to the first discovered platform).
+ */
 export async function registerMcpRoutes(
   app: FastifyInstance,
-  store: McpStore,
+  stores: Map<string, McpStore>,
   registry?: AdapterRegistry,
 ): Promise<void> {
-  // GET /mcp — list all
-  app.get('/mcp', async () => {
-    const items = await store.findAll()
+  const getStore = (platform: unknown) => pickStore(stores, platform)
+
+  app.get<PlatformQuery>('/mcp', async (request) => {
+    const items = await getStore(request.query.platform).findAll()
     return { items }
   })
 
-  // POST /mcp — create
-  app.post<{ Body: CreateMcpServerDto }>('/mcp', { schema: createMcpSchema }, async (request, reply) => {
-    const server = await store.create(request.body)
+  app.post<PlatformQuery & { Body: CreateMcpServerDto }>('/mcp', { schema: createMcpSchema }, async (request, reply) => {
+    const body = request.body
+    if (!body.command && !body.url) {
+      reply.code(400)
+      return { error: 'Either command (stdio) or url (http/sse) is required' }
+    }
+    const server = await getStore(request.query.platform).create({ ...body, command: body.command ?? '' })
     reply.code(201)
     return server
   })
 
-  // GET /mcp/:id
-  app.get<{ Params: { id: string } }>('/mcp/:id', async (request, reply) => {
-    const server = await store.findById(request.params.id)
+  app.get<PlatformQuery & { Params: { id: string } }>('/mcp/:id', async (request, reply) => {
+    const server = await getStore(request.query.platform).findById(request.params.id)
     if (!server) {
       reply.code(404)
       return { error: 'MCP server not found' }
@@ -60,12 +69,11 @@ export async function registerMcpRoutes(
     return server
   })
 
-  // PUT /mcp/:id
-  app.put<{ Params: { id: string }; Body: UpdateMcpServerDto }>(
+  app.put<PlatformQuery & { Params: { id: string }; Body: UpdateMcpServerDto }>(
     '/mcp/:id',
     { schema: updateMcpSchema },
     async (request, reply) => {
-      const server = await store.update(request.params.id, request.body)
+      const server = await getStore(request.query.platform).update(request.params.id, request.body)
       if (!server) {
         reply.code(404)
         return { error: 'MCP server not found' }
@@ -74,9 +82,8 @@ export async function registerMcpRoutes(
     },
   )
 
-  // DELETE /mcp/:id
-  app.delete<{ Params: { id: string } }>('/mcp/:id', async (request, reply) => {
-    const deleted = await store.delete(request.params.id)
+  app.delete<PlatformQuery & { Params: { id: string } }>('/mcp/:id', async (request, reply) => {
+    const deleted = await getStore(request.query.platform).delete(request.params.id)
     if (!deleted) {
       reply.code(404)
       return { error: 'MCP server not found' }
@@ -85,82 +92,55 @@ export async function registerMcpRoutes(
     return null
   })
 
-  // GET /mcp/:id/projections
-  app.get<{ Params: { id: string } }>('/mcp/:id/projections', async (request, reply) => {
-    const server = await store.findById(request.params.id)
+  // GET /mcp/:id/projections — how this server would look on each other MCP-capable platform
+  app.get<PlatformQuery & { Params: { id: string } }>('/mcp/:id/projections', async (request, reply) => {
+    const server = await getStore(request.query.platform).findById(request.params.id)
     if (!server) {
       reply.code(404)
       return { error: 'MCP server not found' }
     }
-    // MCP projection: how this server would appear in a platform settings.json mcpServers block
-    const projections: Array<{
-      platformId: string
-      key: string
-      config: { command: string; args: string[]; env?: Record<string, string> }
-    }> = []
-    for (const platformId of server.targetPlatforms) {
-      projections.push({
-        platformId,
-        key: server.name,
-        config: {
-          command: server.command,
-          args: server.args,
-          ...(server.env ? { env: server.env } : {}),
-        },
-      })
-    }
+    const projections = [...stores.keys()].map(platformId => ({
+      platformId,
+      key: server.name,
+      config: server.url
+        ? { type: server.type, url: server.url, ...(server.headers ? { headers: server.headers } : {}) }
+        : { command: server.command, args: server.args, ...(server.env ? { env: server.env } : {}) },
+    }))
     return { projections }
   })
 
-  // POST /platforms/:platformId/mcp/import — import from platform config and persist
-  app.post<{ Params: { platformId: string } }>(
+  function getImporter(platformId: string): (() => Promise<ImportedMcpServer[]>) | null {
+    const adapter = registry?.get(platformId)
+    return adapter?.importMcpServers ? adapter.importMcpServers.bind(adapter) : null
+  }
+
+  // POST /platforms/:platformId/mcp/import?platform=<target> — copy servers from
+  // one platform's config into the target platform's config
+  app.post<PlatformQuery & { Params: { platformId: string } }>(
     '/platforms/:platformId/mcp/import',
     async (request, reply) => {
-      if (!registry) {
-        reply.code(501)
-        return { error: 'Registry not configured' }
-      }
-      const { platformId } = request.params
-      const adapter = registry.get(platformId as Parameters<typeof registry.get>[0])
-      const adapterAny = adapter as unknown as Record<string, unknown>
-      if (!adapter || typeof adapterAny.importMcpServers !== 'function') {
+      const importer = getImporter(request.params.platformId)
+      if (!importer) {
         reply.code(404)
         return { error: 'Platform not found or does not support MCP import' }
       }
-      try {
-        const imported = await (adapterAny.importMcpServers as () => Promise<import('@prism/shared').ImportedMcpServer[]>)()
-        await store.importServers(imported)
-        const items = await store.findAll()
-        return { imported: imported.length, items }
-      } catch (err) {
-        reply.code(500)
-        return { error: err instanceof Error ? err.message : 'Import failed' }
-      }
+      const target = getStore(request.query.platform)
+      const imported = await importer()
+      await target.importServers(imported)
+      return { imported: imported.length, items: await target.findAll() }
     },
   )
 
-  // GET /platforms/:platformId/mcp/scan — read-only preview, no store mutation
+  // GET /platforms/:platformId/mcp/scan — read-only preview
   app.get<{ Params: { platformId: string } }>(
     '/platforms/:platformId/mcp/scan',
     async (request, reply) => {
-      if (!registry) {
-        reply.code(501)
-        return { error: 'Registry not configured' }
-      }
-      const { platformId } = request.params
-      const adapter = registry.get(platformId as Parameters<typeof registry.get>[0])
-      const adapterAny = adapter as unknown as Record<string, unknown>
-      if (!adapter || typeof adapterAny.importMcpServers !== 'function') {
+      const importer = getImporter(request.params.platformId)
+      if (!importer) {
         reply.code(404)
         return { error: 'Platform not found or does not support MCP import' }
       }
-      try {
-        const servers = await (adapterAny.importMcpServers as () => Promise<import('@prism/shared').ImportedMcpServer[]>)()
-        return { servers }
-      } catch (err) {
-        reply.code(500)
-        return { error: err instanceof Error ? err.message : 'Scan failed' }
-      }
+      return { servers: await importer() }
     },
   )
 }

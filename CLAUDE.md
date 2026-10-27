@@ -37,11 +37,11 @@ curl -X POST http://localhost:3001/scan
 
 ## Architecture
 
-Prism is a **Harness Engineering environment management tool** — it manages the infrastructure that AI agents depend on: Rules, Skills, Agents, MCP Servers, Hooks, and Commands, across multiple platforms (Claude Code, Codebuddy, OpenClaw). It is NOT a chat interface or agent runtime.
+Prism is a **Harness Engineering environment management tool** — it manages the infrastructure that AI agents depend on: Rules, Skills, Agents, MCP Servers, Plugins, Hooks, and Commands, across multiple platforms (Claude Code, CodeBuddy, Cursor, Codex, OpenCode). It is NOT a chat interface or agent runtime.
 
 **Core Design Principles:**
 1. **卸载安全**：Prism 永远不持有资产文件本身，只持有元数据和索引。文件永远住在各 IDE 目录。
-2. **手动发布**：编辑永不自动写入 IDE 目录，所有变更需手动触发 diff preview → confirm → apply。
+2. **直接编辑，审慎发布**：编辑单个资产立即写回其原文件（只改动被编辑的部分，保留无关字段/注释），无预览、无备份；跨平台推送一组资产走 Profile 发布：diff preview → confirm → apply，自动备份并记录可回滚的 Revision。不发布就不会把内容复制到其他平台。
 3. **文件优先**：IDE 目录里的文件是真相源，Prism 感知 IDE 目录变化并提示同步。
 
 **Harness Engineering** = the 3-layer framework that makes agents work reliably:
@@ -58,27 +58,34 @@ packages/shared/      → Pure types only. Zero dependencies.
 
 packages/core/        → Business logic, no HTTP dependency.
                          Store 层:
-                           rules/dir-store.ts    → DirRuleStore，直接读写 ~/.claude-internal/rules/ 等
+                           rules/dir-store.ts    → DirRuleStore，直接读写各平台 rules/ 目录
                            skills/dir-store.ts   → DirSkillStore，同上
                            agents/dir-store.ts   → DirAgentStore，同上
                            hooks/store.ts        → FileHookStore，读写 settings.json hooks 字段
-                           mcp/store.ts          → FileMcpStore【⚠️ 存在 ~/.prism/mcp/servers.json，待迁移】
+                           platforms/instances.ts → 平台发现 + PlatformInstance 路径表（所有路径的唯一来源）
+                           platforms/adapter.ts  → createInstanceAdapter()，通用扫描/导入
+                           mcp/native-store.ts   → NativeMcpStore，直接读写各平台原生 MCP 配置（JSON/JSONC/TOML 方言）
+                           plugins/store.ts      → PluginStore，列出插件 + 启用/禁用
                            profiles/store.ts     → FileProfileStore
                            publish/engine.ts     → PublishEngine【⚠️ 只支持整 Profile 发布，Hooks 未接入】
                            publish/revision-store.ts → FileRevisionStore
 
-packages/adapters/
-  adapter-claude-code/ → 扫描 ~/.claude-internal (fallback ~/.claude)
-  adapter-codebuddy/   → 扫描 ~/.codebuddy
-  adapter-openclaw/    → 代码存在【⚠️ server/src/index.ts 未注册】
+（已无独立 adapter 包——平台由 core/platforms/instances.ts 声明式描述）
+  Claude Code → 通配 ~/.*claude*（含 ~/.claude、~/.tclaude、CLAUDE_CONFIG_DIR），每个目录一个实例
+               id: ~/.claude → `claude-code`，其他 → `claude-code-<name>`；MCP 在 ~/.claude.json 或 <dir>/.claude.json
+  CodeBuddy   → ~/.codebuddy（rules 为 .mdc，MCP 在 mcp.json）
+  Cursor      → ~/.cursor（MCP 在 mcp.json，插件只读）
+  Codex       → ~/.codex / CODEX_HOME（无 rules/agents；commands=prompts；MCP+插件在 config.toml）
+  OpenCode    → ~/.config/opencode（无 rules；MCP+插件在 opencode.json(c)）
 
 packages/server/      → Fastify API; wires stores → HTTP.
                          已有路由: /health, /platforms, /scan,
-                           /rules, /skills, /agents, /mcp, /hooks,
+                           /rules, /skills, /agents, /mcp, /plugins, /hooks,
                            /profiles, /publish, /revisions
+                         所有资产路由用 ?platform=<instanceId> 选择平台；未知平台返回 404
 
 apps/web/             → React + Vite 前端
-                         已有页面: Rules, Skills, Agents, MCP, Hooks
+                         已有页面: Rules, Skills, Agents, MCP, Plugins, Hooks（侧边栏按平台 capabilities 显示）
                          (含列表页 + Monaco 编辑器 + Projection Preview)
                          Profiles/Revisions 页面按路由定义存在但需确认完整性
 ```
@@ -86,18 +93,19 @@ apps/web/             → React + Vite 前端
 ### Storage Layout
 
 ```
-~/.claude-internal/          ← Claude Code 配置（Prism 直接读写）
-├── rules/*.md
-├── skills/*/SKILL.md
-├── agents/*.md
-└── settings.json            ← mcpServers + hooks 字段
+~/.claude/ ~/.tclaude/ …     ← Claude Code 实例（Prism 直接读写）
+├── rules/*.md  skills/*/SKILL.md  agents/*.md  commands/*.md
+├── settings.json            ← hooks + enabledPlugins 字段
+└── plugins/installed_plugins.json
+~/.claude.json               ← ~/.claude 实例的 mcpServers（其他实例为 <dir>/.claude.json）
 
-~/.codebuddy/                ← Codebuddy 配置（同上）
-└── ...（同结构）
+~/.codebuddy/                ← rules/*.mdc、mcp.json、settings.json、plugins/
+~/.cursor/                   ← rules、skills、agents、commands、mcp.json、plugins/cache
+~/.codex/config.toml         ← [mcp_servers.*] + [plugins."id"]
+~/.config/opencode/opencode.json(c) ← mcp + plugin
 
 ~/.prism/                    ← Prism 自身数据目录
 ├── registry.json            ← 【待实现】资产索引，核心架构
-├── mcp/servers.json         ← 【待迁移】MCP 配置，违反卸载安全原则
 ├── backups/{revisionId}/    ← 发布前自动备份
 ├── revisions/               ← 版本历史记录
 └── overrides/               ← 【待实现】platform override 内容
@@ -115,17 +123,19 @@ apps/web/             → React + Vite 前端
 - 读取时扁平化为 `UnifiedHook[]`，写入时 GroupBy eventType，保留 settings.json 其他字段
 - **这是最符合卸载安全原则的实现，可作为其他嵌入型资产的参考模式**
 
-**FileMcpStore** (`packages/core/src/mcp/store.ts`):
-- ⚠️ 当前存在 `~/.prism/mcp/servers.json`，违反卸载安全原则
-- 发布时已实现 READ settings.json → MERGE mcpServers → WRITE 模式
-- **v1.0 需要迁移**：去掉 Prism 副本，仅索引 settings.json 里的内容
+**NativeMcpStore** (`packages/core/src/mcp/native-store.ts`):
+- 每个平台一个实例，直接读写原生配置，Prism 不保存副本
+- 更新时合并原条目，保留未知字段；JSONC 通过 jsonc-parser 编辑保留注释；TOML 只替换目标表（`utils/toml-edit.ts`）
+
+**写入安全**：rules/skills/agents/commands 更新时通过 `renderWithFrontMatter()` 合并 front matter，
+保留原生字段（globs、alwaysApply、allowed-tools…）和原文件扩展名；更新/删除始终使用文件真实路径。
 
 ### Data Flow
 
 ```
 Browser → PUT /rules/:id
   → DirRuleStore.update()
-    → 直接写入 ~/.claude-internal/rules/rule.md
+    → 直接写入 ~/.claude/rules/rule.md
     → （待实现）更新 registry.json 索引
 
 Browser → POST /profiles/:id/publish
@@ -180,8 +190,6 @@ All cross-package imports use `@prism/*` aliases (configured in `tsconfig.base.j
 
 | 问题 | 位置 | 严重程度 |
 |------|------|----------|
-| MCP 数据存在 `~/.prism/mcp/` 违反卸载安全原则 | `core/src/mcp/store.ts` | 🔴 高 |
-| OpenClaw adapter 有代码但未在 server 注册 | `server/src/index.ts` | 🟡 中 |
 | Profile 缺少 `hookIds` 字段，Hook 无法进入发布流程 | `shared/src/profile.ts` | 🟡 中 |
 | RuleScope 语义错误（`project` 应为 `platform-only`） | `shared/src/rule.ts` | 🟡 中 |
 | PublishEngine 只支持整 Profile 发布，无法单资产发布 | `core/src/publish/engine.ts` | 🟡 中 |

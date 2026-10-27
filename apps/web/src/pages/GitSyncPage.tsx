@@ -1,3 +1,4 @@
+import { PixelIcon } from '../components/PixelIcon'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SyncStatus, GitConflict, GitConflictResolution, GitSyncConfig } from '@prism/shared'
@@ -168,7 +169,7 @@ export function GitSyncPage() {
 
       {!loading && !config && (
         <div className="empty-state">
-          <div className="empty-state-icon">🔄</div>
+          <div className="empty-state-icon"><PixelIcon name="refresh" size={32} /></div>
           <div className="empty-state-title">{t('gitSync.notConfigured')}</div>
           <div className="empty-state-desc">
             {t('gitSync.notConfiguredHint')}
@@ -191,7 +192,7 @@ export function GitSyncPage() {
                 color: '#22c55e',
               }}
             >
-              ✓ {opSuccess}
+              <PixelIcon name="check" size={12} /> {opSuccess}
               <button
                 onClick={clearOpMessages}
                 style={{ marginLeft: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 14 }}
@@ -212,7 +213,7 @@ export function GitSyncPage() {
                 color: '#ef4444',
               }}
             >
-              ✗ {opError}
+              <PixelIcon name="close" size={12} /> {opError}
               <button
                 onClick={clearOpMessages}
                 style={{ marginLeft: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 14 }}

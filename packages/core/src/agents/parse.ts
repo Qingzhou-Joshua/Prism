@@ -1,3 +1,4 @@
+import { frontMatterString } from '../utils/dir-store-utils.js'
 export interface ParsedAgent {
   name: string
   description?: string
@@ -33,8 +34,8 @@ export function parseAgentFile(raw: string, fileName?: string): ParsedAgent {
     : undefined
 
   return {
-    name: typeof meta.name === 'string' ? meta.name : deriveNameFromFileName(fileName),
-    description: typeof meta.description === 'string' ? meta.description : undefined,
+    name: frontMatterString(raw, 'name') || deriveNameFromFileName(fileName),
+    description: frontMatterString(raw, 'description') ?? (typeof meta.description === 'string' ? meta.description : undefined),
     tools: tools && tools.length > 0 ? tools : undefined,
     model: typeof meta.model === 'string' ? meta.model : undefined,
     // Strip leading newline that appears when content follows closing ---
